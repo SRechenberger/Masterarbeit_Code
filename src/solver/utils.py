@@ -25,7 +25,7 @@ class Formula:
             rh = re.compile(r'-?0x[0-9a-fA-F]+') # find hex numbers
 
             for line in f:
-                elif line[0] == 'c':
+                if line[0] == 'c':
                     if line.startswith('c assgn'):
                         hex_val = rh.findall(line)
                         self.satisfing_assignment = Assignment(hex_val)
@@ -137,7 +137,7 @@ class Falselist:
         return len(self.lst)
 
 
-def Assignment:
+class Assignment:
     """ Assignment modelled as an array of bits """
 
     def generate_random_assignment(num_vars):
@@ -148,10 +148,11 @@ def Assignment:
         if type(num_vars) is not int:
             raise TypeError('num_vars is not int')
         if num_vars <= 0:
-            raise ValueError('num_vars must be positive')
+            raise ValueError('num_vars must be positive ({})'.format(num_vars))
 
         return Assignment(
-            random.randrange(0,pow(2,num_vars))
+            random.randrange(0,pow(2,num_vars)),
+            num_vars,
         )
 
 
@@ -173,20 +174,23 @@ def Assignment:
             n *= 2
             n += 1 if tmp.pop() else 0
 
-        return tmp
+        return n
 
 
     def flip(self, var_index):
         """ Flips the variable with the index given """
         if type(var_index) is not int:
-            raise TypeError('var is not int')
+            raise TypeError('var_index is not int')
         if var_index <= 0 or self.num_vars < var_index:
-            raise ValueError('0 < vars <= num_vars must hold')
+            raise ValueError(
+                '0 < var_index ({}) <= num_vars ({}) must hold'
+                .format(var_index,self.num_vars)
+            )
 
-        self.atoms[var_index+1] = not self.atoms[var_index+1]
+        self.atoms[var_index-1] = not self.atoms[var_index-1]
 
 
-    def get_value(self, var_index)
+    def get_value(self, var_index):
         """ Returns the assignment to the variable with the index given """
         if type(var_index) is not int:
             raise TypeError('var is not int')
@@ -196,16 +200,17 @@ def Assignment:
         return self.atoms[var_index+1]
 
 
-    def __init__(self, number):
+    def __init__(self, number, num_vars):
         """ Generate an assignment from an integer """
         if type(number) is not int:
             raise TypeError('number is not int')
 
-        self.atoms = atoms_from_integer(atoms)
-        self.num_vars = len(atoms)
+        self.atoms = Assignment.atoms_from_integer(number)
+        self.atoms += [False]*(num_vars-len(self.atoms))
+        self.num_vars = num_vars
 
 
     def __str__(self):
         """ Converts the assignment to a hex literal with 0x prefix """
-        return hex(integer_from_atoms(self.atoms))
+        return hex(Assignment.integer_from_atoms(self.atoms))
 
