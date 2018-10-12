@@ -52,6 +52,7 @@ class Formula:
         self.ratio = self.num_clauses / self.num_vars
         self.is_init = True
 
+
     def __str__(self):
         """ Represent formula in DIMACS format """
 
@@ -69,6 +70,7 @@ class Formula:
 
         return toReturn
 
+
     def is_satisfied_by(self, assignment):
         if not isinstance(assignment, Assignment):
             raise TypeError('The given argument is no assignment.')
@@ -84,10 +86,50 @@ class Formula:
 
         return True
 
+
     def get_occurrences(self, literal):
         return self.occurrences[self.num_vars + literal]
+
 
     def generate_satisfiable_formula(clause_length, num_vars, ratio):
         raise RuntimeError(
             'Method \'generate_satisfiable_formula\' not implemented yet.'
         )
+
+
+class Falselist:
+    """ Models a list with no need for order,
+    for the list of unsatisfied clauses.
+    """
+    def __init__(self):
+        self.lst = []
+        self.mapping = {}
+
+
+    def remove(self, idx):
+        if not type(idx) == int:
+            raise TypeError('Type of idx :: {} is not int'
+                            .format(type(idx)))
+        if idx < 0:
+            raise IndexError('idx = {} is negative'
+                             .format(idx))
+        if idx >= len(self.lst):
+            raise IndexError('idx = {} is greater or equal to len(lst) = {}'
+                             .format(idx, len(self.lst)))
+
+        tmp = self.lst[idx]
+        if idx == len(self.lst)-1:
+            self.lst.pop()
+        else:
+            self.lst[idx] = self.lst.pop()
+            self.mapping[self.lst[idx]] = idx
+        del self.mapping[tmp]
+
+
+    def add(self, elem):
+        self.lst.append(elem)
+        self.mapping[elem] = len(self.lst)-1
+
+
+    def __len__(self):
+        return len(self.lst)
