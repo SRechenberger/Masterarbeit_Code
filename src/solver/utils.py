@@ -18,9 +18,9 @@ class Formula:
         self.occurrences = []
         self.max_clause_length = 0
 
-        # Parse the file.
+        # parse the file.
         with open(filepath) as f:
-            r = re.compile(r'-?\d+')  # find numbers
+            r = re.compile(r'-?\d+')           # find numbers
             rh = re.compile(r'-?[0-9a-fA-F]+') # find hex numbers
 
             for line in f:
