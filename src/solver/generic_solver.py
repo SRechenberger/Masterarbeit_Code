@@ -6,6 +6,7 @@ def generic_sls(
         formula,
         max_tries,
         max_flips
+        solution_found = None,
         init_context = lambda formula assignment: None,
         update_context = lambda state variable: None,
     ):
@@ -33,8 +34,14 @@ def generic_sls(
         f = 0
         while f < max_flips:
             # check, if the current assignment is a solution
-            if formula.is_satisfied(current_assignment):
-                return current_assignment, measurement
+            if solution_found:
+                # either by checking the context, if possible
+                if solution_found(context):
+                    return current_assignment, measurement
+            else:
+                ## or by checking the formula
+                if formula.is_satisfied_by(current_assignment):
+                    return current_assignment, measurement
 
             # choose variable to flip
             to_flip = heuristic(
