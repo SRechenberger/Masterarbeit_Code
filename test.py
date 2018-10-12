@@ -8,15 +8,15 @@ class TestAssignment(unittest.TestCase):
         self.maxDiff = None
 
     def test_creation(self):
-        for _ in range(0,10000):
-            num_vars = random.randrange(1,1001)
+        for i in range(1,5000):
+            num_vars = random.randrange(1,i+1)
             assgn1 = Assignment.generate_random_assignment(num_vars)
             assgn2 = Assignment(int(str(assgn1),16),num_vars)
             self.assertEqual(str(assgn1),str(assgn2))
 
     def test_flip(self):
-        for _ in range(0,10000):
-            num_vars = random.randrange(1,1001)
+        for i in range(1,5000):
+            num_vars = random.randrange(1,i+1)
             number   = random.randrange(0,pow(2,num_vars))
             assgn    = Assignment(number, num_vars)
             self.assertEqual(hex(number), str(assgn))
