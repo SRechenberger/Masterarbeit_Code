@@ -1,3 +1,4 @@
+import random
 class Formula:
     """ CNF formulae in DIMACS format """
 
@@ -134,3 +135,77 @@ class Falselist:
 
     def __len__(self):
         return len(self.lst)
+
+
+def Assignment:
+    """ Assignment modelled as an array of bits """
+
+    def generate_random_assignment(num_vars):
+        """ Randomly generating a number between
+        0 and 2^num_vars, converting it into an assignment,
+        and returning it
+        """
+        if type(num_vars) is not int:
+            raise TypeError('num_vars is not int')
+        if num_vars <= 0:
+            raise ValueError('num_vars must be positive')
+
+        return Assignment(
+            random.randrange(0,pow(2,num_vars))
+        )
+
+
+    def atoms_from_integer(number):
+        """ Takes a number and converts it into a list of booleans """
+        atoms = []
+        n = number
+        while n > 0:
+            atoms.append(n % 2 == 1)
+            n //= 2
+        return atoms
+
+
+    def integer_from_atoms(atoms):
+        """ Takes a list of booleans and converts it into a number """
+        n = 0
+        tmp = atoms.copy()
+        while tmp:
+            n *= 2
+            n += 1 if tmp.pop() else 0
+
+        return tmp
+
+
+    def flip(self, var_index):
+        """ Flips the variable with the index given """
+        if type(var_index) is not int:
+            raise TypeError('var is not int')
+        if var_index <= 0 or self.num_vars < var_index:
+            raise ValueError('0 < vars <= num_vars must hold')
+
+        self.atoms[var_index+1] = not self.atoms[var_index+1]
+
+
+    def get_value(self, var_index)
+        """ Returns the assignment to the variable with the index given """
+        if type(var_index) is not int:
+            raise TypeError('var is not int')
+        if var_index <= 0 or self.num_vars < var_index:
+            raise ValueError('0 < vars <= num_vars must hold')
+
+        return self.atoms[var_index+1]
+
+
+    def __init__(self, number):
+        """ Generate an assignment from an integer """
+        if type(number) is not int:
+            raise TypeError('number is not int')
+
+        self.atoms = atoms_from_integer(atoms)
+        self.num_vars = len(atoms)
+
+
+    def __str__(self):
+        """ Converts the assignment to a hex literal with 0x prefix """
+        return hex(integer_from_atoms(self.atoms))
+
