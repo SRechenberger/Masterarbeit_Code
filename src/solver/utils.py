@@ -21,12 +21,13 @@ class Formula:
         # parse the file.
         with open(filepath) as f:
             r = re.compile(r'-?\d+')           # find numbers
-            rh = re.compile(r'-?[0-9a-fA-F]+') # find hex numbers
+            rh = re.compile(r'-?0x[0-9a-fA-F]+') # find hex numbers
 
             for line in f:
-                if line.startswith('c assgn'):
-                    self.satisfying_assignment = int(rh.find(line),16)
-                if line[0] == 'c':
+                elif line[0] == 'c':
+                    if line.startswith('c assgn'):
+                        hex_val = rh.findall(line)
+                        self.satisfing_assignment = Assignment(hex_val)
                     self.comments.append(line)
                 elif line[0] == 'p':
                     n, m = r.findall(line)
@@ -91,7 +92,7 @@ class Formula:
         return self.occurrences[self.num_vars + literal]
 
 
-    def generate_satisfiable_formula(clause_length, num_vars, ratio):
+    def generate_satisfiable_formula(clause_length, num_vars, ratio, seed=None):
         raise RuntimeError(
             'Method \'generate_satisfiable_formula\' not implemented yet.'
         )
