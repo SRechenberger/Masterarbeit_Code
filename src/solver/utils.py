@@ -137,6 +137,7 @@ class Falselist:
         return len(self.lst)
 
 
+
 class Assignment:
     """ Assignment modelled as an array of bits """
 
