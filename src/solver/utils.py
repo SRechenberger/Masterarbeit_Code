@@ -94,6 +94,26 @@ class Formula:
 
 
     def generate_satisfiable_formula(clause_length, num_vars, ratio, seed=None):
+        # type check
+        if type(clause_length) is not int:
+            raise TypeError('clause_length is not of type int')
+        if type(num_vars) is not int:
+            raise TypeError('num_vars is not of type int')
+        if type(ratio) is not float:
+            raise TypeError('ratio is not of type float')
+
+        # value check
+        if clause_length <= 0:
+            raise ValueError('clause_length must be greater than 0')
+        if num_vars <= 0:
+            raise ValueError('num_vars must be greater than 0')
+        if ratio <= 0:
+            raise ValueError('ratio must be greater than 0')
+
+        # optional arguments
+        if seed:
+            random.seed(seed)
+
         raise RuntimeError(
             'Method \'generate_satisfiable_formula\' not implemented yet.'
         )
@@ -141,7 +161,7 @@ class Falselist:
 class Assignment:
     """ Assignment modelled as an array of bits """
 
-    def generate_random_assignment(num_vars):
+    def generate_random_assignment(num_vars, seed = None):
         """ Randomly generating a number between
         0 and 2^num_vars, converting it into an assignment,
         and returning it
@@ -150,6 +170,9 @@ class Assignment:
             raise TypeError('num_vars is not int')
         if num_vars <= 0:
             raise ValueError('num_vars must be positive ({})'.format(num_vars))
+
+        if seed:
+            random.seed(seed)
 
         return Assignment(
             random.randrange(0,pow(2,num_vars)),
