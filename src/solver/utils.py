@@ -201,6 +201,16 @@ class Assignment:
         return self.atoms[var_index+1]
 
 
+    def is_true(self, literal):
+        if type(literal) is not int:
+            raise TypeError('literal is not int')
+        if literal == 0:
+            raise ValueError('literal is equal to 0')
+
+        t = self.get_value(abs(literal))
+        return t if literal > 0 else not t
+
+
     def __init__(self, number, num_vars):
         """ Generate an assignment from an integer """
         if type(number) is not int:
@@ -215,3 +225,119 @@ class Assignment:
         """ Converts the assignment to a hex literal with 0x prefix """
         return hex(Assignment.integer_from_atoms(self.atoms))
 
+
+
+class Breakscore:
+    def __init__(self, formula, assignment, falselist):
+        if not isinstance(formula, Formula):
+            raise TypeError("The given object formula={} is no cnf-formula."
+                            .format(formula))
+        if not isinstance(assignment, Assignment):
+            raise TypeError("The given object assignment={} is no assignment."
+                            .format(assignment))
+        if not isinstance(falselist, Falselist):
+            raise TypeError("The given object falselist={} is no assignment."
+                            .format(falselist))
+
+
+        self.crit_var = []
+        self.num_true_lit = []
+        self.breaks = {}
+
+        # Begin at clause 0
+        clause_idx = 0
+        # for each clause of the formula
+        for clause in formula.clauses:
+            # init the criticial variable
+            self.crit_var.append(None)
+            # init the number of true literals for this clause
+            self.num_true_lit.append(0)
+            # a local variable to track the critical variable
+            crit_var = 0
+            # for each literal of the clause
+            for lit in clause:
+                # if the literal is satisfied
+                if assignment.is_true(lit):
+                    # it MAY BE the critical variable of the clause
+                    crit_var = abs(lit)
+                    # there is one more true literal
+                    self.num_true_lit[-1] += 1
+
+            # if after the traverse of the clause there is exactly one true
+            # literal
+            if self.num_true_lit[-1] == 1:
+                # it is the critical literal
+                self.crit_var[-1] = crit_var
+                # thus it breaks the clause
+                self.increment_break_score(crit_var)
+
+            # if there is no true literal
+            elif self.num_true_lit[-1] == 0:
+                # add the clause to the list of false clauses
+                falselist.add(clause_idx)
+
+            # next clause
+            clause_idx += 1
+
+
+    def increment_break_score(self, variable):
+        if not type(variable) == int:
+            raise TypeError("variable={} is not of type int.".format(variable))
+
+        if variable in self.breaks:
+            self.breaks[variable] += 1
+        else:
+            self.breaks[variable] = 1
+
+
+    def get_break_score(self, variable):
+        if not type(variable) == int:
+            raise TypeError("variable={} is not of type int.".format(variable))
+
+        if variable in self.breaks:
+            return self.breaks[variable]
+        else:
+            return 0
+
+
+    def flip(self, variable, formula, assignment, falselist):
+        if type(variable) != int:
+            raise TypeError("variable={} is not of type int.".format(variable))
+        if not isinstance(formula, CNF):
+            raise TypeError("The given object formula={} is no cnf-formula."
+                            .format(formula))
+        if not isinstance(assignment, Assignment):
+            raise TypeError("The given object assignment={} is no assignment."
+                            .format(assignment))
+        if not isinstance(falselist, Falselist):
+            raise TypeError("The given object falselist={} is no assignment."
+                            .format(falselist))
+
+        # a[v] = -a[v]
+        assignment.flip(variable)
+        # satisfyingLiteral = a[v] ? v : -v
+        satisfying_literal = variable if assignment.is_true(variable) else -variable
+        # falsifyingLiteral = a[v] ? -v : v
+        # isn't this just -satisfyingLiteral ?
+        falsifying_literal = -variable if assignment.is_true(variable) else variable
+        occs = formula.occurrences
+        for clause_idx in formula.get_occurrences(satisfying_literal):
+            if self.num_true_lit[clause_idx] == 0:
+                falselist.remove(falselist.mapping[clause_idx])
+                self.increment_break_score(variable)
+                self.crit_var[clause_idx] = variable
+            elif self.num_true_lit[clause_idx] == 1:
+                self.breaks[self.crit_var[clause_idx]] -= 1
+            self.num_true_lit[clause_idx] += 1
+
+        for clause_idx in formula.get_occurrences(falsifying_literal):
+            if self.num_true_lit[clause_idx] == 1:
+                falselist.add(clause_idx)
+                self.breaks[variable] -= 1
+                self.crit_var[clause_idx] = variable
+            elif self.num_true_lit[clause_idx] == 2:
+                for lit in formula.clauses[clause_idx]:
+                    if assignment.is_true(lit):
+                        self.crit_var[clause_idx] = abs(lit)
+                        self.increment_break_score(abs(lit))
+            self.num_true_lit[clause_idx] -= 1
