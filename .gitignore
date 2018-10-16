@@ -1,3 +1,4 @@
+*.swp
 # generated tex files
 *.gen.tex
 # Byte-compiled / optimized / DLL files
