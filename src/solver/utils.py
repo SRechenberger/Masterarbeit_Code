@@ -18,6 +18,7 @@ class Formula:
         self.comments = []
         self.occurrences = []
         self.max_clause_length = 0
+        self.satisfying_assignment = None
 
         # parse the file.
         with open(filepath) as f:
@@ -28,7 +29,7 @@ class Formula:
                 if line[0] == 'c':
                     if line.startswith('c assgn'):
                         hex_val = rh.findall(line)
-                        self.satisfing_assignment = Assignment(hex_val)
+                        self.satisfying_assignment = Assignment(hex_val)
                     self.comments.append(line)
                 elif line[0] == 'p':
                     n, m = r.findall(line)
@@ -266,6 +267,7 @@ class Breakscore:
         self.crit_var = []
         self.num_true_lit = []
         self.breaks = {}
+        self.makes = {}
 
         # Begin at clause 0
         clause_idx = 0
@@ -312,6 +314,14 @@ class Breakscore:
         else:
             self.breaks[variable] = 1
 
+    def increment_make_score(self, variable):
+        if not type(variable) == int:
+            raise TypeError("variable={} is not of type int.".format(variable))
+        if variable in self.makes:
+            self.makes[variable] += 1
+        else:
+            self.makes[variable] = 1
+
 
     def get_break_score(self, variable):
         if not type(variable) == int:
@@ -319,6 +329,16 @@ class Breakscore:
 
         if variable in self.breaks:
             return self.breaks[variable]
+        else:
+            return 0
+
+
+    def get_make_score(self, variable):
+        if not type(variable) == int:
+            raise TypeError("variable={} is not of type int.".format(variable))
+
+        if variable in self.makes:
+            return self.makes[variable]
         else:
             return 0
 
@@ -349,6 +369,7 @@ class Breakscore:
                 falselist.remove(falselist.mapping[clause_idx])
                 self.increment_break_score(variable)
                 self.crit_var[clause_idx] = variable
+                # no variable in the clause will make it sat
             elif self.num_true_lit[clause_idx] == 1:
                 self.breaks[self.crit_var[clause_idx]] -= 1
             self.num_true_lit[clause_idx] += 1
@@ -358,6 +379,7 @@ class Breakscore:
                 falselist.add(clause_idx)
                 self.breaks[variable] -= 1
                 self.crit_var[clause_idx] = variable
+                # every variable in the clause will make it sat
             elif self.num_true_lit[clause_idx] == 2:
                 for lit in formula.clauses[clause_idx]:
                     if assignment.is_true(lit):
