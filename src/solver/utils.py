@@ -1,15 +1,24 @@
 import random
+import re
+import copy
+from collections.abc import Sequence
 class Formula:
     """ CNF formulae in DIMACS format """
 
-    def __init__(self, filepath):
+    def __init__(self, dimacs = None, clauses = None, num_vars = None, sat_assignment = None):
         """ Load a formula from a .cnf (DIMACS) file """
         # check for argument validity
-        if not type(filepath) == str:
-            raise TypeError("Argument 'filepath' was no string.")
+        if dimacs and not type(dimacs) is str:
+            raise TypeError("Argument 'dimacs' is no string.")
 
-        if not filepath.endswith('.cnf'):
-            raise ValueError(filepath + " is no .cnf file.")
+        if clauses and not isinstance(clauses, Sequence):
+            raise TypeError("Argument 'clauses' must be a sequence")
+
+        if num_vars and not type(num_vars) is int:
+            raise TypeError("Argument 'num_vars' must be an int")
+
+        if sat_assignment and not isinstance(sat_assignment, Assignment):
+            raise TypeError("Argument 'sat_assignment' must be an Assignment")
 
         # init variables
         self.clauses = []
@@ -21,31 +30,46 @@ class Formula:
         self.satisfying_assignment = None
 
         # parse the file.
-        with open(filepath) as f:
+        if dimacs:
             r = re.compile(r'-?\d+')           # find numbers
             rh = re.compile(r'-?0x[0-9a-fA-F]+') # find hex numbers
 
-            for line in f:
+            for line in dimacs.splitlines():
                 if line[0] == 'c':
                     if line.startswith('c assgn'):
-                        hex_val = rh.findall(line)
-                        self.satisfying_assignment = Assignment(hex_val)
-                    self.comments.append(line)
+                        hex_val, = rh.findall(line)
+                    else:
+                        self.comments.append(line)
                 elif line[0] == 'p':
                     n, m = r.findall(line)
                     self.num_vars = int(n)
                     self.num_clauses = int(m)
+                    self.satisfying_assignment = Assignment(int(hex_val,16), int(n))
                 else:
                     self.clauses.append(list(map(int, r.findall(line)))[:-1])
                     if len(self.clauses[-1]) > self.max_clause_length:
                         self.max_clause_length = len(self.clauses[-1])
 
-        for i in range(0, self.numVars*2+1):
+        # or use the given stuff
+        elif not dimacs and clauses and num_vars and sat_assignment:
+            self.satisfying_assignment = sat_assignment
+            self.clauses = clauses
+            self.num_clauses = len(clauses)
+            self.num_vars = num_vars
+            self.max_clause_length = max(map(len,clauses))
+
+        else:
+            raise ValueError(
+                "Either 'dimacs' or 'clauses', 'num_vars' and 'sat_assignment' must be provided"
+            )
+
+        self.occurrences = [];
+        for _ in range(0,self.num_vars*2+1):
             self.occurrences.append([])
 
         for idx in range(0, self.num_clauses):
             for literal in self.clauses[idx]:
-                self.occurrences[self.numVars + literal].append(idx)
+                self.occurrences[self.num_vars + literal].append(idx)
 
         self.max_occs = 0
         for occ in self.occurrences:
@@ -53,18 +77,21 @@ class Formula:
                 self.max_occs = len(occ)
 
         self.ratio = self.num_clauses / self.num_vars
-        self.is_init = True
 
+    def __eq__(self, formula):
+        return all([
+            self.num_vars == formula.num_vars,
+            self.clauses == formula.clauses,
+            str(self.satisfying_assignment) == str(formula.satisfying_assignment)])
 
     def __str__(self):
         """ Represent formula in DIMACS format """
-
-        self.checkInit()
 
         toReturn = ''
 
         for comment in self.comments:
             toReturn += comment
+        toReturn += 'c assgn {}\n'.format(str(self.satisfying_assignment))
         toReturn += 'p cnf {} {}\n'.format(self.num_vars, self.num_clauses)
         for clause in self.clauses:
             for literal in clause:
@@ -94,7 +121,7 @@ class Formula:
         return self.occurrences[self.num_vars + literal]
 
 
-    def generate_satisfiable_formula(clause_length, num_vars, ratio, seed=None):
+    def generate_satisfiable_formula(num_vars, ratio, clause_length = 3, seed=None):
         # type check
         if type(clause_length) is not int:
             raise TypeError('clause_length is not of type int')
@@ -115,9 +142,47 @@ class Formula:
         if seed:
             random.seed(seed)
 
-        raise RuntimeError(
-            'Method \'generate_satisfiable_formula\' not implemented yet.'
+        if clause_length != 3:
+            raise RuntimeError(
+                'Method \'generate_satisfiable_formula\' only implemented for 3CNF yet.'
+            )
+
+        satisfying_assignment = Assignment.generate_random_assignment(
+            num_vars,
+            seed = seed
         )
+
+
+        num_clauses = int(ratio * num_vars)
+        clauses = []
+        p={1: 0.191, 2: 0.118, 3: 0.073}
+        for i in range(0, num_clauses + 1):
+            variables = random.sample(range(1,num_vars+1), clause_length)
+
+            acc = [[]]
+            for var in variables:
+                acc = list(map(lambda xs: [var] + xs, acc)) + list(map(lambda xs: [-var] + xs, acc))
+
+            f = lambda lit: 1 if satisfying_assignment.is_true(lit) else 0
+            cs, ws = [], []
+            for clause in acc:
+                x = sum(map(f,clause))
+                if x > 0:
+                    cs.append(clause)
+                    ws.append(p[x])
+
+            c, = random.choices(cs,weights=ws)
+            clauses.append(c)
+
+        formula = Formula(
+            clauses = clauses,
+            num_vars = num_vars,
+            sat_assignment = satisfying_assignment
+        )
+        if not formula.is_satisfied_by(satisfying_assignment):
+            raise RuntimeError('formula not satisfied')
+        return formula
+
 
 
 class Falselist:
@@ -222,7 +287,7 @@ class Assignment:
         if var_index <= 0 or self.num_vars < var_index:
             raise ValueError('0 < vars <= num_vars must hold')
 
-        return self.atoms[var_index+1]
+        return self.atoms[var_index-1]
 
 
     def is_true(self, literal):
