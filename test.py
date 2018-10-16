@@ -1,6 +1,6 @@
 import unittest
 import random
-from src.solver.utils import Assignment, Falselist
+from src.solver.utils import Assignment, Falselist, Formula
 
 class TestAssignment(unittest.TestCase):
     def setUp(self):
@@ -45,6 +45,35 @@ class TestFalselist(unittest.TestCase):
         # TODO
         pass
 
+
+class TestFormula(unittest.TestCase):
+    def setUp(self):
+        random.seed()
+        self.tries_per_test = 500
+
+    def test_random_creation_and_reading(self):
+        for i in range(0,self.tries_per_test):
+            f = Formula.generate_satisfiable_formula(500, 4.2)
+            self.assertEqual(f, Formula(dimacs = str(f)))
+
+    def test_random_creation(self):
+        for i in range(0,self.tries_per_test):
+            n = random.randrange(10,1001)
+            r = random.randrange(20,42)/10
+            f = Formula.generate_satisfiable_formula(n, r)
+            self.assertTrue(abs(f.num_clauses - n * r) < 2)
+
+    def test_hardness(self):
+        n = 500
+        for i in range(0,self.tries_per_test):
+            f = Formula.generate_satisfiable_formula(n, 4.2)
+            atoms = 0
+            for var in range(1,n+1):
+                if len(f.get_occurrences(var)) > len(f.get_occurrences(-var)):
+                    atoms += 1
+                atoms *= 2
+            a = Assignment(atoms, n)
+            self.assertFalse(f.is_satisfied_by(a))
 
 
 if __name__ == '__main__':
