@@ -15,15 +15,18 @@ def strict_negative(x):
 def equal_to(y):
     return lambda x: x == y
 
+def not_equal_to(y):
+    return lambda x: x != y
+
 def type_check(name, value, *accepted_types, optional = False):
     # check if accepted_types are all types
     if not all(type(t) == type for t in accepted_types):
         raise RuntimeError('accepted_types need to be all types')
 
-    if not value and not optional:
+    if value == None and not optional:
         raise TypeError(
-            '{} is None, but not optional'
-            .format(name)
+            '{} = {} is None, but not optional'
+            .format(name, value)
         )
 
     if value and type(value) not in accepted_types:
@@ -44,7 +47,7 @@ def instance_check(name, value, *accepted_classes, quantifier = 'any', optional 
     if not quantifier in ['any','all']:
         raise RuntimeError('quantifier needs to be \'any\' or \'all\'')
 
-    if not value and not optional:
+    if value == None and not optional:
         raise TypeError(
             '{} is None, but not optional'
             .format(name)
@@ -63,23 +66,23 @@ def instance_check(name, value, *accepted_classes, quantifier = 'any', optional 
                 .format(name, quantifier, accepted_classes)
             )
 
-def value_check(name, value, optional = False, **predicates):
+def value_check(name, value, optional = False, error = ValueError, **predicates):
     if not all(callable(f) and len(inspect.signature(f).parameters) == 1
                for _,f in predicates.items()):
         raise RuntimeError(
             'accepted_classes values need to be callable with arity 1'
         )
 
-    if not value and not optional:
+    if value == None and not optional:
         raise TypeError(
-            '{} is None, but not optional'
-            .format(name)
+            '{} = {} is None, but not optional'
+            .format(name, value)
         )
 
     if value:
         for n,p in predicates.items():
             if not p(value):
-                raise ValueError(
+                raise error(
                     '{} = {} does not satisfy predicate {}'
                     .format(name,value,n)
                 )
