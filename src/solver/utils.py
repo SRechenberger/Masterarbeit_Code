@@ -9,11 +9,12 @@ class Formula:
     def __init__(self, dimacs = None, clauses = None, num_vars = None, sat_assignment = None):
         """ Load a formula from a .cnf (DIMACS) file """
         # check for argument validity
-        type_check('dimacs', dimacs, str, optional = True)
-        instance_check('clauses', clauses, Sequence, optional = True)
-        type_check('num_vars', num_vars, int, optional = True)
-        value_check('num_vars', num_vars, optional = True, positive = strict_positive)
-        instance_check('sat_assignment', sat_assignment, Assignment, optional = True)
+        if __debug__:
+            type_check('dimacs', dimacs, str, optional = True)
+            instance_check('clauses', clauses, Sequence, optional = True)
+            type_check('num_vars', num_vars, int, optional = True)
+            value_check('num_vars', num_vars, optional = True, positive = strict_positive)
+            instance_check('sat_assignment', sat_assignment, Assignment, optional = True)
 
         # init variables
         self.clauses = []
@@ -74,10 +75,14 @@ class Formula:
         self.ratio = self.num_clauses / self.num_vars
 
     def __eq__(self, formula):
-        return all([
-            self.num_vars == formula.num_vars,
-            self.clauses == formula.clauses,
-            str(self.satisfying_assignment) == str(formula.satisfying_assignment)])
+        if not formula:
+            return False
+        else:
+            return all([
+                self.num_vars == formula.num_vars,
+                self.clauses == formula.clauses,
+                str(self.satisfying_assignment) == str(formula.satisfying_assignment)
+            ])
 
     def __str__(self):
         """ Represent formula in DIMACS format """
@@ -97,8 +102,8 @@ class Formula:
 
 
     def is_satisfied_by(self, assignment):
-        if not isinstance(assignment, Assignment):
-            raise TypeError('The given argument is no assignment.')
+        if __debug__:
+            instance_check('assignment',assignment,Assignment)
 
         for clause in self.clauses:
             true_clause = False
@@ -117,30 +122,26 @@ class Formula:
 
 
     def generate_satisfiable_formula(num_vars, ratio, clause_length = 3, seed=None):
-        # type check
-        if type(clause_length) is not int:
-            raise TypeError('clause_length is not of type int')
-        if type(num_vars) is not int:
-            raise TypeError('num_vars is not of type int')
-        if type(ratio) is not float:
-            raise TypeError('ratio is not of type float')
+        if __debug__:
+            # type check
+            type_check('clause_length',clause_length,int)
+            type_check('num_vars',num_vars,int)
+            type_check('ratio',ratio,float)
 
-        # value check
-        if clause_length <= 0:
-            raise ValueError('clause_length must be greater than 0')
-        if num_vars <= 0:
-            raise ValueError('num_vars must be greater than 0')
-        if ratio <= 0:
-            raise ValueError('ratio must be greater than 0')
+            # value check
+            value_check('clause_length', clause_length, strict_positive=strict_positive)
+            value_check('num_vars', num_vars, strict_positive=strict_positive)
+            value_check('ratio', ratio, strict_positive=strict_positive)
+
+            if clause_length != 3:
+                raise RuntimeError(
+                    'Method \'generate_satisfiable_formula\' only implemented for 3CNF yet.'
+                )
+
 
         # optional arguments
         if seed:
             random.seed(seed)
-
-        if clause_length != 3:
-            raise RuntimeError(
-                'Method \'generate_satisfiable_formula\' only implemented for 3CNF yet.'
-            )
 
         satisfying_assignment = Assignment.generate_random_assignment(
             num_vars,
@@ -193,9 +194,11 @@ class Falselist:
 
 
     def remove(self, elem):
-        if elem not in self.mapping:
-            raise IndexError('elem = {} is not in the list'
-                             .format(elem))
+        if __debug__:
+            value_check(
+                'elem', elem, error=IndexError,
+                registered = lambda e: e in self.mapping
+            )
 
         idx = self.mapping[elem]
         tmp = self.lst[idx]
@@ -225,10 +228,9 @@ class Assignment:
         0 and 2^num_vars, converting it into an assignment,
         and returning it
         """
-        if type(num_vars) is not int:
-            raise TypeError('num_vars is not int')
-        if num_vars <= 0:
-            raise ValueError('num_vars must be positive ({})'.format(num_vars))
+        if __debug__:
+            type_check('num_vars',num_vars,int)
+            value_check('num_vars',num_vars,strict_positive=strict_positive)
 
         if seed:
             random.seed(seed)
@@ -262,32 +264,30 @@ class Assignment:
 
     def flip(self, var_index):
         """ Flips the variable with the index given """
-        if type(var_index) is not int:
-            raise TypeError('var_index is not int')
-        if var_index <= 0 or self.num_vars < var_index:
-            raise ValueError(
-                '0 < var_index ({}) <= num_vars ({}) must hold'
-                .format(var_index,self.num_vars)
-            )
+        if __debug__:
+            type_check('var_index',var_index,int)
+            value_check('var_index',var_index,strict_positive=strict_positive)
 
         self.atoms[var_index-1] = not self.atoms[var_index-1]
 
 
     def get_value(self, var_index):
         """ Returns the assignment to the variable with the index given """
-        if type(var_index) is not int:
-            raise TypeError('var is not int')
-        if var_index <= 0 or self.num_vars < var_index:
-            raise ValueError('0 < vars <= num_vars must hold')
+        if __debug__:
+            type_check('var_index',var_index,int)
+            value_check(
+                'var_index',var_index,
+                strict_positive = strict_positive,
+                less_than_n = lambda x: x <= self.num_vars
+            )
 
         return self.atoms[var_index-1]
 
 
     def is_true(self, literal):
-        if type(literal) is not int:
-            raise TypeError('literal is not int')
-        if literal == 0:
-            raise ValueError('literal is equal to 0')
+        if __debug__:
+            type_check('literal',literal,int)
+            value_check('literal',literal,not_zero = not_equal_to(0))
 
         t = self.get_value(abs(literal))
         return t if literal > 0 else not t
@@ -295,8 +295,8 @@ class Assignment:
 
     def __init__(self, number, num_vars):
         """ Generate an assignment from an integer """
-        if type(number) is not int:
-            raise TypeError('number is not int')
+        if __debug__:
+            type_check('number',number,int)
 
         self.atoms = Assignment.atoms_from_integer(number)
         self.atoms += [False]*(num_vars-len(self.atoms))
@@ -311,16 +311,10 @@ class Assignment:
 
 class Scores:
     def __init__(self, formula, assignment, falselist):
-        if not isinstance(formula, Formula):
-            raise TypeError("The given object formula={} is no cnf-formula."
-                            .format(formula))
-        if not isinstance(assignment, Assignment):
-            raise TypeError("The given object assignment={} is no assignment."
-                            .format(assignment))
-        if not isinstance(falselist, Falselist):
-            raise TypeError("The given object falselist={} is no assignment."
-                            .format(falselist))
-
+        if __debug__:
+            instance_check('formula',formula,Formula)
+            instance_check('assignment',assignment,Assignment)
+            instance_check('falselist',falselist,Falselist)
 
         self.crit_var = []
         self.num_true_lit = []
@@ -367,8 +361,8 @@ class Scores:
 
 
     def increment_break_score(self, variable):
-        if not type(variable) == int:
-            raise TypeError("variable={} is not of type int.".format(variable))
+        if __debug__:
+            type_check('variable',variable,int)
 
         if variable in self.breaks:
             self.breaks[variable] += 1
@@ -376,28 +370,25 @@ class Scores:
             self.breaks[variable] = 1
 
     def increment_make_score(self, variable):
-        if not type(variable) == int:
-            raise TypeError("variable={} is not of type int.".format(variable))
+        if __debug__:
+            type_check('variable',variable,int)
+
         if variable in self.makes:
             self.makes[variable] += 1
         else:
             self.makes[variable] = 1
 
     def decrement_make_score(self, variable):
-        if not type(variable) == int:
-            raise TypeError("variable={} is not of type int.".format(variable))
+        if __debug__:
+            type_check('variable',variable,int)
+
         if variable in self.makes:
-            if self.makes[variable] > 0:
-                self.makes[variable] -= 1
-            else:
-                raise ValueError(
-                    "self.makes[{}] = {} is less than or equal to zero."
-                    .format(variable, self.makes[variable])
-                )
+            value_check('variable', variable, strict_positive = strict_positive)
+            self.makes[variable] -= 1
 
     def get_break_score(self, variable):
-        if not type(variable) == int:
-            raise TypeError("variable={} is not of type int.".format(variable))
+        if __debug__:
+            type_check('variable',variable,int)
 
         if variable in self.breaks:
             return self.breaks[variable]
@@ -406,8 +397,8 @@ class Scores:
 
 
     def get_make_score(self, variable):
-        if not type(variable) == int:
-            raise TypeError("variable={} is not of type int.".format(variable))
+        if __debug__:
+            type_check('variable',variable,int)
 
         if variable in self.makes:
             return self.makes[variable]
@@ -416,17 +407,11 @@ class Scores:
 
 
     def flip(self, variable, formula, assignment, falselist):
-        if type(variable) != int:
-            raise TypeError("variable={} is not of type int.".format(variable))
-        if not isinstance(formula, Formula):
-            raise TypeError("The given object formula={} is no cnf-formula."
-                            .format(formula))
-        if not isinstance(assignment, Assignment):
-            raise TypeError("The given object assignment={} is no assignment."
-                            .format(assignment))
-        if not isinstance(falselist, Falselist):
-            raise TypeError("The given object falselist={} is no assignment."
-                            .format(falselist))
+        if __debug__:
+            type_check('variable',variable,int)
+            instance_check('formula',formula,Formula)
+            instance_check('assignment',assignment,Assignment)
+            instance_check('falselist',falselist,Falselist)
 
         # a[v] = -a[v]
         assignment.flip(variable)
