@@ -194,20 +194,15 @@ class Falselist:
         self.mapping = {}
 
     def __iter__(self):
-        return self.lst
+        return iter(self.lst)
 
 
-    def remove(self, idx):
-        if not type(idx) == int:
-            raise TypeError('Type of idx :: {} is not int'
-                            .format(type(idx)))
-        if idx < 0:
-            raise IndexError('idx = {} is negative'
-                             .format(idx))
-        if idx >= len(self.lst):
-            raise IndexError('idx = {} is greater or equal to len(lst) = {}'
-                             .format(idx, len(self.lst)))
+    def remove(self, elem):
+        if elem not in self.mapping:
+            raise IndexError('elem = {} is not in the list'
+                             .format(elem))
 
+        idx = self.mapping[elem]
         tmp = self.lst[idx]
         if idx == len(self.lst)-1:
             self.lst.pop()
@@ -428,7 +423,7 @@ class Scores:
     def flip(self, variable, formula, assignment, falselist):
         if type(variable) != int:
             raise TypeError("variable={} is not of type int.".format(variable))
-        if not isinstance(formula, CNF):
+        if not isinstance(formula, Formula):
             raise TypeError("The given object formula={} is no cnf-formula."
                             .format(formula))
         if not isinstance(assignment, Assignment):
@@ -448,7 +443,7 @@ class Scores:
         occs = formula.occurrences
         for clause_idx in formula.get_occurrences(satisfying_literal):
             if self.num_true_lit[clause_idx] == 0:
-                falselist.remove(falselist.mapping[clause_idx])
+                falselist.remove(clause_idx)
                 self.increment_break_score(variable)
                 self.crit_var[clause_idx] = variable
 
