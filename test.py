@@ -1,6 +1,6 @@
 import unittest
 import random
-from src.solver.utils import Assignment, Falselist, Formula
+from src.solver.utils import Assignment, Falselist, Formula, Scores
 
 class TestAssignment(unittest.TestCase):
     def setUp(self):
@@ -42,8 +42,15 @@ class TestFalselist(unittest.TestCase):
             self.assertEqual(set(l.lst),t)
 
     def test_remove(self):
-        # TODO
-        pass
+        l = Falselist()
+        xs = list(range(1,1000))
+        random.shuffle(xs)
+        for x in xs:
+            l.add(x)
+        for x in random.sample(xs, 100):
+            l.remove(x)
+        for k,v in l.mapping.items():
+            self.assertEqual(k, l.lst[v])
 
 
 class TestFormula(unittest.TestCase):
@@ -75,8 +82,7 @@ class TestFormula(unittest.TestCase):
             a = Assignment(atoms, n)
             self.assertFalse(f.is_satisfied_by(a))
 
-
-class TestScores(unitttest.TestCase):
+class TestScores(unittest.TestCase):
     def setUp(self):
         random.seed()
         self.tries_per_test = 500
@@ -115,17 +121,17 @@ class TestScores(unitttest.TestCase):
         for i in range(0,self.tries_per_test):
             formula = Formula.generate_satisfiable_formula(n, 4.2)
             falselist = Falselist()
-            assgn = formula.sat_assignment
+            assgn = formula.satisfying_assignment
             # may crash
             scores = Scores(formula, assgn, falselist)
 
-            check_consistency(score, formula, falselist, assgn)
+            check_consistency(scores, formula, falselist, assgn, 50)
 
             # may crash
             for to_flip in random.sample(range(1,n+1), 3):
-                scores.flip(to_flip, formula, assingment, falselist)
+                scores.flip(to_flip, formula, assgn, falselist)
 
-            check_consistency(score, formula, falselist, assgn)
+            check_consistency(scores, formula, falselist, assgn, 50)
 
 
 
