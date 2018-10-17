@@ -387,6 +387,12 @@ class Breakscore:
         else:
             self.makes[variable] = 1
 
+    def decrement_make_score(self, variable):
+        if not type(variable) == int:
+            raise TypeError("variable={} is not of type int.".format(variable))
+        if variable in self.makes:
+            self.makes[variable] = max(0,self.makes[variable]-1)
+
 
     def get_break_score(self, variable):
         if not type(variable) == int:
@@ -434,7 +440,11 @@ class Breakscore:
                 falselist.remove(falselist.mapping[clause_idx])
                 self.increment_break_score(variable)
                 self.crit_var[clause_idx] = variable
-                # no variable in the clause will make it sat
+
+                # no variable in the clause will make it sat (because it already
+                # is)
+                for lit in formula.clauses[clause_idx]:
+                    self.decrement_make_score(abs(lit))
             elif self.num_true_lit[clause_idx] == 1:
                 self.breaks[self.crit_var[clause_idx]] -= 1
             self.num_true_lit[clause_idx] += 1
@@ -444,7 +454,12 @@ class Breakscore:
                 falselist.add(clause_idx)
                 self.breaks[variable] -= 1
                 self.crit_var[clause_idx] = variable
-                # every variable in the clause will make it sat
+
+                # every variable in the clause will make it sat (because it is
+                # no longer)
+                for lit in formula.clauses[clause_idx]:
+                    self.increment_make_score(abs(lit))
+
             elif self.num_true_lit[clause_idx] == 2:
                 for lit in formula.clauses[clause_idx]:
                     if assignment.is_true(lit):
