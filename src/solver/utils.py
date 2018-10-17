@@ -1,6 +1,15 @@
 import random
 import re
 import copy
+from src.utils import
+    type_check,
+    value_check,
+    instance_check,
+    positive,
+    strict_positive,
+    negative,
+    strict_negative,
+    equal_to
 from collections.abc import Sequence
 class Formula:
     """ CNF formulae in DIMACS format """
@@ -8,17 +17,11 @@ class Formula:
     def __init__(self, dimacs = None, clauses = None, num_vars = None, sat_assignment = None):
         """ Load a formula from a .cnf (DIMACS) file """
         # check for argument validity
-        if dimacs and not type(dimacs) is str:
-            raise TypeError("Argument 'dimacs' is no string.")
-
-        if clauses and not isinstance(clauses, Sequence):
-            raise TypeError("Argument 'clauses' must be a sequence")
-
-        if num_vars and not type(num_vars) is int:
-            raise TypeError("Argument 'num_vars' must be an int")
-
-        if sat_assignment and not isinstance(sat_assignment, Assignment):
-            raise TypeError("Argument 'sat_assignment' must be an Assignment")
+        type_check('dimacs', dimacs, str, optional = True)
+        instance_check('clauses', clauses, Sequence, optional = True)
+        type_check('num_vars', num_vars, int, optional = True)
+        value_check('num_vars', num_vars, optional = True, positive = strict_positive)
+        instance_check('sat_assignment', sat_assignment, Assignment, optional = True)
 
         # init variables
         self.clauses = []
