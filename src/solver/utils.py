@@ -1,15 +1,7 @@
 import random
 import re
 import copy
-from src.utils import
-    type_check,
-    value_check,
-    instance_check,
-    positive,
-    strict_positive,
-    negative,
-    strict_negative,
-    equal_to
+from src.utils import *
 from collections.abc import Sequence
 class Formula:
     """ CNF formulae in DIMACS format """
