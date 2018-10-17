@@ -76,5 +76,62 @@ class TestFormula(unittest.TestCase):
             self.assertFalse(f.is_satisfied_by(a))
 
 
+class TestScores(unitttest.TestCase):
+    def setUp(self):
+        random.seed()
+        self.tries_per_test = 500
+
+
+    def test_creation_and_flip(self):
+        def check_consistency(score, formula, falselist, assgn, samplesize):
+            # all clauses in the false list should be unsat
+            for cl_idx in falselist:
+                for lit in formula.clauses[cl_idx]:
+                    self.assertFalse(assgn.is_true(lit))
+
+            for x in random.sample(range(1,n+1), samplesize):
+                mk = 0
+                for cl_idx in falselist:
+                    if x in map(abs, formula.clauses[cl_idx]):
+                        mk += 1
+                self.assertEqual(mk, score.get_make_score(x))
+
+                br = 0
+                for clause in formula.clauses:
+                    if x in map(abs,clause):
+                        critical = 0
+                        for lit in clause:
+                            if assgn.is_true(lit) and critical > 0:
+                                critical = 0
+                                break
+                            elif assgn.is_true(lit):
+                                critical = abs(lit)
+                        if x == critical:
+                            br += 1
+                self.assertEqual(br, score.get_break_score(x))
+
+
+        n = 500
+        for i in range(0,self.tries_per_test):
+            formula = Formula.generate_satisfiable_formula(n, 4.2)
+            falselist = Falselist()
+            assgn = formula.sat_assignment
+            # may crash
+            scores = Scores(formula, assgn, falselist)
+
+            check_consistency(score, formula, falselist, assgn)
+
+            # may crash
+            for to_flip in random.sample(range(1,n+1), 3):
+                scores.flip(to_flip, formula, assingment, falselist)
+
+            check_consistency(score, formula, falselist, assgn)
+
+
+
+
+
+
+
 if __name__ == '__main__':
     unittest.main()
