@@ -193,6 +193,9 @@ class Falselist:
         self.lst = []
         self.mapping = {}
 
+    def __iter__(self):
+        return self.lst
+
 
     def remove(self, idx):
         if not type(idx) == int:
