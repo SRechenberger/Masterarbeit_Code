@@ -316,7 +316,7 @@ class Assignment:
 
 
 
-class Breakscore:
+class Scores:
     def __init__(self, formula, assignment, falselist):
         if not isinstance(formula, Formula):
             raise TypeError("The given object formula={} is no cnf-formula."
@@ -365,6 +365,9 @@ class Breakscore:
             elif self.num_true_lit[-1] == 0:
                 # add the clause to the list of false clauses
                 falselist.add(clause_idx)
+                # a flip every literal in the clause will make it sat
+                for lit in clause:
+                    self.increment_make_score(abs(lit))
 
             # next clause
             clause_idx += 1
@@ -391,8 +394,13 @@ class Breakscore:
         if not type(variable) == int:
             raise TypeError("variable={} is not of type int.".format(variable))
         if variable in self.makes:
-            self.makes[variable] = max(0,self.makes[variable]-1)
-
+            if self.makes[variable] > 0:
+                self.makes[variable] -= 1
+            else:
+                raise ValueError(
+                    "self.makes[{}] = {} is less than or equal to zero."
+                    .format(variable, self.makes[variable])
+                )
 
     def get_break_score(self, variable):
         if not type(variable) == int:
