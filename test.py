@@ -2,6 +2,9 @@ import unittest
 import random
 from src.solver.utils import Assignment, Falselist, Formula, Scores
 
+if __debug__:
+    print("DEBUG")
+
 class TestAssignment(unittest.TestCase):
     def setUp(self):
         random.seed()
@@ -56,7 +59,7 @@ class TestFalselist(unittest.TestCase):
 class TestFormula(unittest.TestCase):
     def setUp(self):
         random.seed()
-        self.tries_per_test = 500
+        self.tries_per_test = 10 if __debug__ else 500
 
     def test_random_creation_and_reading(self):
         for i in range(0,self.tries_per_test):
@@ -85,7 +88,7 @@ class TestFormula(unittest.TestCase):
 class TestScores(unittest.TestCase):
     def setUp(self):
         random.seed()
-        self.tries_per_test = 500
+        self.tries_per_test = 10 if __debug__ else 500
 
 
     def test_creation_and_flip(self):
