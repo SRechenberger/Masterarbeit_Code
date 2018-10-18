@@ -137,6 +137,5 @@ class TestScores(unittest.TestCase):
             check_consistency(scores, formula, falselist, assgn, 50)
 
 
-
 if __name__ == '__main__':
     unittest.main()
