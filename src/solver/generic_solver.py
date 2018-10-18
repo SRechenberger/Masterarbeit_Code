@@ -1,24 +1,62 @@
 from src.solver.utils import Formula, Assignment
 from src.experiment.utils import Measurement
+from src.utils import *
+
+class Measurement:
+    """ Abstract Measurement Class;
+    the generic SLS solver needs the given measurement object
+    to be an instance of this class or a subclass.
+    """
+    def init_run(self, assgn):
+        raise Warning('Nothing implemented yet.')
+
+    def count(self, flipped_var):
+        raise Warning('Nothing implemented yet.')
+
+
+class Context:
+    """ Abstract Context Class;
+    the generic SLS solver needs the given context constructor
+    to construct an instance of this class or a subclass.
+    """
+    def update(flipped_var):
+        raise Warning('Nothing implemented yet.')
+
 
 def generic_sls(
         heuristic,
         formula,
         max_tries,
-        max_flips
-        solution_found = None,
-        init_context = lambda formula assignment: None,
-        update_context = lambda state variable: None,
-    ):
+        max_flips,
+        measurement,
+        context_constructor,
+        solution_found = None):
     """ Generic SLS-Solver according to Algorithm 1,
     including measurement facilities.
     """
 
-    #initialize measurement object
-    measurement = Measurement(
-        formula.satisfying_assignment
-    )
+    if __debug__:
+        value_check(
+            'heuristic',heuristic,
+            is_callable = callable,
+            arity_3     = has_arity(3)
+        )
+        instance_check('formula',formula,Formula)
+        type_check('max_tries',max_tries,int)
+        type_check('max_flips',max_flips,int)
+        instance_check('measurement',measurement,Measurement)
+        value_check(
+            'context_constructor', context_constructor,
+            is_callable = callable,
+            arity_2 = has_arity(2)
+        )
+        value_check(
+            'solution_found',solution_found,optional = True,
+            is_callable = callable,
+            arity_1 = has_arity(1)
+        )
 
+    #initialize measurement object
     t = 0
     while t < max_tries:
         # generate random assingnment
@@ -29,7 +67,9 @@ def generic_sls(
         measurement.init_run(current_assignment)
 
         # initialize context
-        context = init_context(formula, current_assignment)
+        context = context_contructor(formula, current_assignment)
+        if __debug__:
+            instance_check('context',context,Context)
 
         f = 0
         while f < max_flips:
@@ -41,7 +81,7 @@ def generic_sls(
             else:
                 ## or by checking the formula
                 if formula.is_satisfied_by(current_assignment):
-                    return current_assignment, measurement
+                    return current_assignment
 
             # choose variable to flip
             to_flip = heuristic(
@@ -51,14 +91,14 @@ def generic_sls(
             )
 
             # flip variable
-            current_assignment = current_assignment.flip(to_flip)
+            current_assignment.flip(to_flip)
 
             # update context
-            context = update_context(s, i)
+            context.update(i)
 
             # register flip in measurement object
             measurement.count_flip(to_flip)
 
     # If no solution is found,
-    # return None and the measurement object
-    return None, measurement
+    # return None
+    return None
