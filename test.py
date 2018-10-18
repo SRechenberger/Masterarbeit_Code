@@ -98,7 +98,7 @@ class TestScores(unittest.TestCase):
                 for lit in formula.clauses[cl_idx]:
                     self.assertFalse(assgn.is_true(lit))
 
-            for x in random.sample(range(1,n+1), samplesize):
+            for x in random.sample(range(1,formula.num_vars+1), samplesize):
                 mk = 0
                 for cl_idx in falselist:
                     if x in map(abs, formula.clauses[cl_idx]):
@@ -118,12 +118,6 @@ class TestScores(unittest.TestCase):
                         if x == critical:
                             br += 1
                 self.assertEqual(br, score.get_break_score(x))
-
-            best = max(
-                range(1,formula.num_vars+1),
-                lambda x: score.get_make_score(x) - score.get_break_score(x)
-            )
-            self.assertEqual(best, score.max_make_minus_break)
 
 
         n = 500

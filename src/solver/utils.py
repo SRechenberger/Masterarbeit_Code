@@ -321,8 +321,6 @@ class Scores:
         self.breaks = {}
         self.makes = {}
 
-        # for GSAT
-        self.max_make_minus_break = 1
 
         # Begin at clause 0
         clause_idx = 0
@@ -363,16 +361,6 @@ class Scores:
             clause_idx += 1
 
 
-    def check_max_make_minus_break(self, variable):
-        if __debug__:
-            type_check('variable',variable,int)
-            value_check('variable',variable, strict_pos = strict_positive)
-        best = self.max_make_minus_break
-        var_score = self.get_make_score(variable) - self.get_break_score(variable)
-        best_score = self.get_make_score(best) - self.get_break_score(best)
-        if var_score > best_score:
-            self.max_make_minus_break = variable
-
 
     def increment_break_score(self, variable):
         if __debug__:
@@ -384,7 +372,6 @@ class Scores:
         else:
             self.breaks[variable] = 1
 
-        self.check_max_make_minus_break(variable)
 
 
     def decrement_break_score(self, variable):
@@ -400,7 +387,6 @@ class Scores:
                     positive = positive
                 )
 
-        self.check_max_make_minus_break(variable)
 
 
     def increment_make_score(self, variable):
@@ -413,7 +399,6 @@ class Scores:
         else:
             self.makes[variable] = 1
 
-        self.check_max_make_minus_break(variable)
 
 
     def decrement_make_score(self, variable):
@@ -429,7 +414,6 @@ class Scores:
                     positive = positive
                 )
 
-        self.check_max_make_minus_break(variable)
 
 
     def get_break_score(self, variable):
