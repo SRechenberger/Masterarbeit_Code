@@ -18,6 +18,8 @@ def equal_to(y):
 def not_equal_to(y):
     return lambda x: x != y
 
+def has_arity(n):
+    return lambda f: len(inspect.signature(f).parameters) == n
 def type_check(name, value, *accepted_types, optional = False):
     # check if accepted_types are all types
     if not all(type(t) == type for t in accepted_types):
