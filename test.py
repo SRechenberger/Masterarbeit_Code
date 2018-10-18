@@ -119,6 +119,12 @@ class TestScores(unittest.TestCase):
                             br += 1
                 self.assertEqual(br, score.get_break_score(x))
 
+            best = max(
+                range(1,formula.num_vars+1),
+                lambda x: score.get_make_score(x) - score.get_break_score(x)
+            )
+            self.assertEqual(best, score.max_make_minus_break)
+
 
         n = 500
         for i in range(0,self.tries_per_test):
