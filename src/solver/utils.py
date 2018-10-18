@@ -322,7 +322,7 @@ class Scores:
         self.makes = {}
 
         # for GSAT
-        self.max_make_minus_break = 0
+        self.max_make_minus_break = 1
 
         # Begin at clause 0
         clause_idx = 0
@@ -430,6 +430,7 @@ class Scores:
                 )
 
         self.check_max_make_minus_break(variable)
+
 
     def get_break_score(self, variable):
         if __debug__:
