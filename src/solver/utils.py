@@ -321,6 +321,9 @@ class Scores:
         self.breaks = {}
         self.makes = {}
 
+        # for GSAT
+        self.max_make_minus_break = 0
+
         # Begin at clause 0
         clause_idx = 0
         # for each clause of the formula
@@ -360,31 +363,73 @@ class Scores:
             clause_idx += 1
 
 
+    def check_max_make_minus_break(self, variable):
+        if __debug__:
+            type_check('variable',variable,int)
+            value_check('variable',variable, strict_pos = strict_positive)
+        best = self.max_make_minus_break
+        var_score = self.get_make_score(variable) - self.get_break_score(variable)
+        best_score = self.get_make_score(best) - self.get_break_score(best)
+        if var_score > best_score:
+            self.max_make_minus_break = variable
+
+
     def increment_break_score(self, variable):
         if __debug__:
             type_check('variable',variable,int)
+            value_check('variable', variable, strict_positive = strict_positive)
 
         if variable in self.breaks:
             self.breaks[variable] += 1
         else:
             self.breaks[variable] = 1
 
+        self.check_max_make_minus_break(variable)
+
+
+    def decrement_break_score(self, variable):
+        if __debug__:
+            type_check('variable',variable,int)
+            value_check('variable', variable, strict_positive = strict_positive)
+
+        if variable in self.breaks:
+            self.breaks[variable] -= 1
+            if __debug__:
+                value_check(
+                    'self.breaks[{}]'.format(variable),self.breaks[variable],
+                    positive = positive
+                )
+
+        self.check_max_make_minus_break(variable)
+
+
     def increment_make_score(self, variable):
         if __debug__:
             type_check('variable',variable,int)
+            value_check('variable', variable, strict_positive = strict_positive)
 
         if variable in self.makes:
             self.makes[variable] += 1
         else:
             self.makes[variable] = 1
 
+        self.check_max_make_minus_break(variable)
+
+
     def decrement_make_score(self, variable):
         if __debug__:
             type_check('variable',variable,int)
+            value_check('variable', variable, strict_positive = strict_positive)
 
         if variable in self.makes:
-            value_check('variable', variable, strict_positive = strict_positive)
             self.makes[variable] -= 1
+            if __debug__:
+                value_check(
+                    'self.makes[{}]'.format(variable),self.makes[variable],
+                    positive = positive
+                )
+
+        self.check_max_make_minus_break(variable)
 
     def get_break_score(self, variable):
         if __debug__:
@@ -432,13 +477,13 @@ class Scores:
                 for lit in formula.clauses[clause_idx]:
                     self.decrement_make_score(abs(lit))
             elif self.num_true_lit[clause_idx] == 1:
-                self.breaks[self.crit_var[clause_idx]] -= 1
+                self.decrement_break_score(self.crit_var[clause_idx])
             self.num_true_lit[clause_idx] += 1
 
         for clause_idx in formula.get_occurrences(falsifying_literal):
             if self.num_true_lit[clause_idx] == 1:
                 falselist.add(clause_idx)
-                self.breaks[variable] -= 1
+                self.decrement_break_score(variable)
                 self.crit_var[clause_idx] = variable
 
                 # every variable in the clause will make it sat (because it is
