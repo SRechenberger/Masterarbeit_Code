@@ -1,5 +1,27 @@
 import src.solver.utils as s_utils
 
+class Measurement:
+    """ Abstract Measurement Class;
+    the generic SLS solver needs the given measurement object
+    to be an instance of this class or a subclass.
+    """
+    def init_run(self, assgn):
+        raise Warning('Nothing implemented yet.')
+
+    def count(self, flipped_var):
+        raise Warning('Nothing implemented yet.')
+
+
+class DummyMeasurement(Measurement):
+    def __init__(self):
+        self.flips = 0
+
+    def init_run(self,assgn):
+        pass
+
+    def count(self, flipped_var):
+        self.flips += 1
+
 class FormulaSupply:
   """ Support of formulae, holding at max 'buffsize' formulae,
   and reloads at max 'buffsize' new, if necessary.
