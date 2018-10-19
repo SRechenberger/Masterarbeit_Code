@@ -142,7 +142,7 @@ class TestScores(unittest.TestCase):
 class TestGSAT(unittest.TestCase):
     def setUp(self):
         random.seed()
-        self.cases = range(1,5 if __debug__ else 500)
+        self.cases = range(1,5 if __debug__ else 50)
         self.n = 500
 
 
