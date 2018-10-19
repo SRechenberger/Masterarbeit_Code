@@ -19,7 +19,7 @@ class Context:
     the generic SLS solver needs the given context constructor
     to construct an instance of this class or a subclass.
     """
-    def update(flipped_var):
+    def update(self, flipped_var):
         raise Warning('Nothing implemented yet.')
 
 
@@ -89,9 +89,6 @@ def generic_sls(
                 current_assignment,
                 context
             )
-
-            # flip variable
-            current_assignment.flip(to_flip)
 
             # update context
             context.update(i)
