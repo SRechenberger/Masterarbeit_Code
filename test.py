@@ -3,6 +3,7 @@ import random
 from src.solver.utils import Assignment, Falselist, Formula, Scores
 from src.experiment.utils import DummyMeasurement
 from src.solver.gsat import gsat
+from src.solver.walksat import walksat
 
 if __debug__:
     print("DEBUG")
@@ -139,25 +140,55 @@ class TestScores(unittest.TestCase):
             check_consistency(scores, formula, falselist, assgn, 50)
 
 
-class TestGSAT(unittest.TestCase):
+class TestSolvers(unittest.TestCase):
     def setUp(self):
         random.seed()
         self.cases = range(1,5 if __debug__ else 50)
         self.n = 500
+        self.max_tries = 50
+        self.max_flips = self.n*3
+        self.r = 3.0
 
 
-    def test_correctness(self):
+    def test_gsat(self):
         successes = 0
         for i in self.cases:
-            formula = Formula.generate_satisfiable_formula(self.n,3.0)
+            formula = Formula.generate_satisfiable_formula(self.n,self.r)
             measurement = DummyMeasurement()
-            assgn, _ = gsat(formula,100,self.n*3,measurement)
+            assgn = gsat(
+                formula,
+                self.max_tries,
+                self.max_flips,
+                measurement)
             if assgn:
-                self.assertTrue(measurement.flips % (self.n*3) > 0)
+                self.assertTrue(measurement.flips % self.max_flips > 0)
                 self.assertTrue(formula.is_satisfied_by(assgn))
                 successes += 1
+
         self.assertTrue(successes > 0)
         print('GSAT successes: {}/{}'.format(successes,len(self.cases)))
+
+
+    def test_walksat(self):
+        successes = 0
+        rho = 0.57
+        for i in self.cases:
+            formula = Formula.generate_satisfiable_formula(self.n,self.r)
+            measurement = DummyMeasurement()
+            assgn = walksat(
+                rho,
+                formula,
+                self.max_tries,
+                self.max_flips,
+                measurement
+            )
+            if assgn:
+                self.assertTrue(measurement.flips % self.max_flips > 0)
+                self.assertTrue(formula.is_satisfied_by(assgn))
+                successes += 1
+
+        self.assertTrue(successes > 0)
+        print('WalkSAT successes: {}/{}'.format(successes,len(self.cases)))
 
 
 
