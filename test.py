@@ -4,6 +4,7 @@ from src.solver.utils import Assignment, Falselist, Formula, Scores
 from src.experiment.utils import DummyMeasurement
 from src.solver.gsat import gsat
 from src.solver.walksat import walksat
+from src.solver.probsat import probsat
 
 if __debug__:
     print("DEBUG")
@@ -143,14 +144,14 @@ class TestScores(unittest.TestCase):
 class TestSolvers(unittest.TestCase):
     def setUp(self):
         random.seed()
-        self.cases = range(1,5 if __debug__ else 50)
-        self.n = 500
-        self.max_tries = 50
+        self.cases = range(0,5)
+        self.n = 128
+        self.max_tries = 5
         self.max_flips = self.n*3
-        self.r = 3.0
+        self.r = 4.0
 
 
-    def test_gsat(self):
+    def test3_gsat(self):
         successes = 0
         for i in self.cases:
             formula = Formula.generate_satisfiable_formula(self.n,self.r)
@@ -169,7 +170,7 @@ class TestSolvers(unittest.TestCase):
         print('GSAT successes: {}/{}'.format(successes,len(self.cases)))
 
 
-    def test_walksat(self):
+    def test2_walksat(self):
         successes = 0
         rho = 0.57
         for i in self.cases:
@@ -190,6 +191,28 @@ class TestSolvers(unittest.TestCase):
         self.assertTrue(successes > 0)
         print('WalkSAT successes: {}/{}'.format(successes,len(self.cases)))
 
+    def test1_probsat(self):
+        successes = 0
+        c_make, c_break = 0.0,2.3
+        for i in self.cases:
+            formula = Formula.generate_satisfiable_formula(self.n,self.r)
+            measurement = DummyMeasurement()
+            assgn = probsat(
+                c_make,
+                c_break,
+                'poly',
+                formula,
+                self.max_tries,
+                self.max_flips,
+                measurement
+            )
+            if assgn:
+                self.assertTrue(measurement.flips % self.max_flips > 0)
+                self.assertTrue(formula.is_satisfied_by(assgn))
+                successes += 1
+
+        self.assertTrue(successes > 0)
+        print('ProbSAT successes: {}/{}'.format(successes,len(self.cases)))
 
 
 if __name__ == '__main__':
