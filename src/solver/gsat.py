@@ -1,6 +1,6 @@
-from collections.abc import Sequence
-from src.solver.generic_solver import Measurement, Context, generic_sls
+from src.solver.generic_solver import Context, generic_sls
 from src.solver.utils import Formula, Assignment, Scores, Falselist
+from collections.abc import Sequence
 import random
 from src.utils import *
 
