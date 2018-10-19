@@ -60,7 +60,7 @@ def generic_sls(
         while f < max_flips:
             # check, if the current assignment is a solution
             if context.is_sat():
-                return current_assignment, measurement
+                return current_assignment
 
             # choose variable to flip
             to_flip = heuristic(context)
