@@ -145,21 +145,26 @@ class TestSolvers(unittest.TestCase):
     def setUp(self):
         random.seed()
         self.cases = range(0,5)
+        
         self.n = 128
-        self.max_tries = 5
-        self.max_flips = self.n*3
         self.r = 4.0
-
-
-    def test3_gsat(self):
+        
+        self.setup = dict(
+            gsat    = dict(max_flips = self.n    , max_tries = 15),
+            walksat = dict(max_flips = self.n * 3, max_tries = 5),
+            probsat = dict(max_flips = self.n * 3, max_tries = 5)
+        )
+        
+        
+    def test_gsat(self):
         successes = 0
         for i in self.cases:
             formula = Formula.generate_satisfiable_formula(self.n,self.r)
             measurement = DummyMeasurement()
             assgn = gsat(
                 formula,
-                self.max_tries,
-                self.max_flips,
+                self.setup['gsat']['max_tries']
+                self.setup['gsat']['max_flips']
                 measurement)
             if assgn:
                 self.assertTrue(measurement.flips % self.max_flips > 0)
@@ -170,7 +175,7 @@ class TestSolvers(unittest.TestCase):
         print('GSAT successes: {}/{}'.format(successes,len(self.cases)))
 
 
-    def test2_walksat(self):
+    def test_walksat(self):
         successes = 0
         rho = 0.57
         for i in self.cases:
@@ -179,8 +184,8 @@ class TestSolvers(unittest.TestCase):
             assgn = walksat(
                 rho,
                 formula,
-                self.max_tries,
-                self.max_flips,
+                self.setup['walksat']['max_tries']
+                self.setup['walksat']['max_flips']
                 measurement
             )
             if assgn:
@@ -191,7 +196,8 @@ class TestSolvers(unittest.TestCase):
         self.assertTrue(successes > 0)
         print('WalkSAT successes: {}/{}'.format(successes,len(self.cases)))
 
-    def test1_probsat(self):
+        
+    def test_probsat(self):
         successes = 0
         c_make, c_break = 0.0,2.3
         for i in self.cases:
@@ -202,8 +208,8 @@ class TestSolvers(unittest.TestCase):
                 c_break,
                 'poly',
                 formula,
-                self.max_tries,
-                self.max_flips,
+                self.setup['probsat']['max_tries']
+                self.setup['probsat']['max_flips']
                 measurement
             )
             if assgn:
