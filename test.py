@@ -163,8 +163,8 @@ class TestSolvers(unittest.TestCase):
             measurement = DummyMeasurement()
             assgn = gsat(
                 formula,
-                self.setup['gsat']['max_tries']
-                self.setup['gsat']['max_flips']
+                self.setup['gsat']['max_tries'],
+                self.setup['gsat']['max_flips'],
                 measurement)
             if assgn:
                 self.assertTrue(measurement.flips % self.max_flips > 0)
@@ -184,8 +184,8 @@ class TestSolvers(unittest.TestCase):
             assgn = walksat(
                 rho,
                 formula,
-                self.setup['walksat']['max_tries']
-                self.setup['walksat']['max_flips']
+                self.setup['walksat']['max_tries'],
+                self.setup['walksat']['max_flips'],
                 measurement
             )
             if assgn:
@@ -208,8 +208,8 @@ class TestSolvers(unittest.TestCase):
                 c_break,
                 'poly',
                 formula,
-                self.setup['probsat']['max_tries']
-                self.setup['probsat']['max_flips']
+                self.setup['probsat']['max_tries'],
+                self.setup['probsat']['max_flips'],
                 measurement
             )
             if assgn:
