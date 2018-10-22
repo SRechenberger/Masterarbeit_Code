@@ -283,6 +283,15 @@ class Assignment:
 
         return self.atoms[var_index-1]
 
+    def __getitem__(self, var_index):
+        return self.get_value(var_index)
+
+    def __setitem__(self, var_index, value):
+        self.atoms[var_index] = True if value else False
+
+    def __delitem__(self, var_index):
+        pass
+
 
     def is_true(self, literal):
         if __debug__:
@@ -307,6 +316,20 @@ class Assignment:
         """ Converts the assignment to a hex literal with 0x prefix """
         return hex(Assignment.integer_from_atoms(self.atoms))
 
+
+    def hamming_dist(self, assgn):
+        if __debug__:
+            instance_check('assgn',assgn,Assignment)
+            value_check(
+                'assgn',assgn,
+                n_matches = lambda a: a.num_vars == self.num_vars
+            )
+
+        dist = 0
+        for i in range(0,self.num_vars):
+            dist += 1 if self[i] != assgn[i] else 0
+
+        return dist
 
 
 class Scores:
