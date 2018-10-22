@@ -1,7 +1,8 @@
 import unittest
 import random
+import os
 from src.solver.utils import Assignment, Falselist, Formula, Scores
-from src.experiment.utils import DummyMeasurement
+from src.experiment.utils import DummyMeasurement, FormulaSupply
 from src.solver.gsat import gsat
 from src.solver.walksat import walksat
 from src.solver.probsat import probsat
@@ -32,6 +33,14 @@ class TestAssignment(unittest.TestCase):
             number ^= 1 << (to_flip-1)
             self.assertEqual(hex(number), str(assgn))
 
+    def test_index(self):
+        for i in range(1,1000):
+            num_vars = random.randrange(1,i+1)
+            assgn    = Assignment.generate_random_assignment(num_vars)
+            to_flip  = random.randrange(1,num_vars+1)
+            old      = assgn[to_flip]
+            assgn.flip(to_flip)
+            self.assertNotEqual(old, assgn[to_flip])
 
 class TestFalselist(unittest.TestCase):
     def setUp(self):
@@ -60,47 +69,18 @@ class TestFalselist(unittest.TestCase):
             self.assertEqual(k, l.lst[v])
 
 
-class TestFormula(unittest.TestCase):
-    def setUp(self):
-        random.seed()
-        self.cases = 10 if __debug__ else 500
-
-    def test_random_creation_and_reading(self):
-        for i in range(0,self.cases):
-            f = Formula.generate_satisfiable_formula(500, 4.2)
-            self.assertEqual(f, Formula(dimacs = str(f)))
-
-    def test_random_creation(self):
-        for i in range(0,self.cases):
-            n = random.randrange(10,1001)
-            r = random.randrange(20,42)/10
-            f = Formula.generate_satisfiable_formula(n, r)
-            self.assertTrue(abs(f.num_clauses - n * r) < 2)
-
-    def test_satisfiable_assignment(self):
-        """This test really should not fail """
-        for i in range(0,self.cases):
-            n = random.randrange(10,1001)
-            r = random.randrange(20,42)/10
-            f = Formula.generate_satisfiable_formula(n,r)
-            self.assertTrue(f.is_satisfied_by(f.satisfying_assignment))
-
-    def test_hardness(self):
-        n = 500
-        for i in range(0,self.tries_per_test):
-            f = Formula.generate_satisfiable_formula(n, 4.2)
-            atoms = 0
-            for var in range(1,n+1):
-                if len(f.get_occurrences(var)) > len(f.get_occurrences(-var)):
-                    atoms += 1
-                atoms *= 2
-            a = Assignment(atoms, n)
-            self.assertFalse(f.is_satisfied_by(a))
-
 class TestScores(unittest.TestCase):
     def setUp(self):
         random.seed()
-        self.tries_per_test = 10 if __debug__ else 500
+        dirname = 'test/testfiles'
+        self.paths = list(map(
+            lambda fname: os.path.join(dirname, fname),
+            filter(
+                lambda fname: fname.endswith('.cnf'),
+                os.listdir(dirname)
+            )
+        ))
+        self.buffsize = 5
 
 
     def test_creation_and_flip(self):
@@ -132,9 +112,8 @@ class TestScores(unittest.TestCase):
                 self.assertEqual(br, score.get_break_score(x))
 
 
-        n = 500
-        for i in range(0,self.tries_per_test):
-            formula = Formula.generate_satisfiable_formula(n, 4.2)
+        for formula in FormulaSupply(self.paths, self.buffsize):
+            n = formula.num_vars
             falselist = Falselist()
             assgn = formula.satisfying_assignment
             # may crash
@@ -152,7 +131,6 @@ class TestScores(unittest.TestCase):
 class TestSolvers(unittest.TestCase):
     def setUp(self):
         random.seed()
-        self.cases = range(0,5)
 
         self.n = 128
         self.r = 4.0
@@ -162,20 +140,31 @@ class TestSolvers(unittest.TestCase):
             walksat = dict(max_flips = self.n * 3, max_tries = 5),
             probsat = dict(max_flips = self.n * 3, max_tries = 5)
         )
+        dirname = 'test/testfiles'
+        self.paths = list(map(
+            lambda fname: os.path.join(dirname, fname),
+            filter(
+                lambda fname: fname.endswith('.cnf'),
+                os.listdir(dirname)
+            )
+        ))
+        self.buffsize = 5
 
 
     def test_gsat(self):
         successes = 0
-        for i in self.cases:
-            formula = Formula.generate_satisfiable_formula(self.n,self.r)
+        for formula in FormulaSupply(self.paths, self.buffsize):
             measurement = DummyMeasurement()
             assgn = gsat(
                 formula,
                 self.setup['gsat']['max_tries'],
                 self.setup['gsat']['max_flips'],
-                measurement)
+                measurement
+            )
             if assgn:
-                self.assertTrue(measurement.flips % self.max_flips > 0)
+                self.assertTrue(
+                    measurement.flips % self.setup['gsat']['max_flips'] > 0
+                )
                 self.assertTrue(formula.is_satisfied_by(assgn))
                 successes += 1
 
@@ -186,8 +175,7 @@ class TestSolvers(unittest.TestCase):
     def test_walksat(self):
         successes = 0
         rho = 0.57
-        for i in self.cases:
-            formula = Formula.generate_satisfiable_formula(self.n,self.r)
+        for formula in FormulaSupply(self.paths, self.buffsize):
             measurement = DummyMeasurement()
             assgn = walksat(
                 rho,
@@ -197,7 +185,9 @@ class TestSolvers(unittest.TestCase):
                 measurement
             )
             if assgn:
-                self.assertTrue(measurement.flips % self.max_flips > 0)
+                self.assertTrue(
+                    measurement.flips % self.setup['walksat']['max_flips'] > 0
+                )
                 self.assertTrue(formula.is_satisfied_by(assgn))
                 successes += 1
 
@@ -208,8 +198,7 @@ class TestSolvers(unittest.TestCase):
     def test_probsat(self):
         successes = 0
         c_make, c_break = 0.0,2.3
-        for i in self.cases:
-            formula = Formula.generate_satisfiable_formula(self.n,self.r)
+        for formula in FormulaSupply(self.paths, self.buffsize):
             measurement = DummyMeasurement()
             assgn = probsat(
                 c_make,
@@ -221,12 +210,53 @@ class TestSolvers(unittest.TestCase):
                 measurement
             )
             if assgn:
-                self.assertTrue(measurement.flips % self.max_flips > 0)
+                self.assertTrue(
+                    measurement.flips % self.setup['probsat']['max_flips'] > 0
+                )
                 self.assertTrue(formula.is_satisfied_by(assgn))
                 successes += 1
 
         self.assertTrue(successes > 0)
         print('ProbSAT successes: {}/{}'.format(successes,len(self.cases)))
+
+
+class TestFormula(unittest.TestCase):
+    def setUp(self):
+        random.seed()
+        self.cases = 10 if __debug__ else 500
+
+    def test_random_creation_and_reading(self):
+        for i in range(0,self.cases):
+            f = Formula.generate_satisfiable_formula(500, 4.2)
+            self.assertEqual(f, Formula(dimacs = str(f)))
+
+    def test_random_creation(self):
+        for i in range(0,self.cases):
+            n = random.randrange(10,1001)
+            r = random.randrange(20,42)/10
+            f = Formula.generate_satisfiable_formula(n, r)
+            self.assertTrue(abs(f.num_clauses - n * r) < 2)
+
+    def test_satisfiable_assignment(self):
+        """This test really should not fail """
+        for i in range(0,self.cases):
+            n = random.randrange(10,1001)
+            r = random.randrange(20,42)/10
+            f = Formula.generate_satisfiable_formula(n,r)
+            self.assertTrue(f.is_satisfied_by(f.satisfying_assignment))
+
+    def test_hardness(self):
+        n = 500
+        for i in range(0,self.cases):
+            f = Formula.generate_satisfiable_formula(n, 4.2)
+            atoms = 0
+            for var in range(1,n+1):
+                if len(f.get_occurrences(var)) > len(f.get_occurrences(-var)):
+                    atoms += 1
+                atoms *= 2
+            a = Assignment(atoms, n)
+            self.assertFalse(f.is_satisfied_by(a))
+
 
 
 if __name__ == '__main__':
