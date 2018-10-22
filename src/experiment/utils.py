@@ -117,8 +117,9 @@ class FormulaSupply:
   def __fill_buffer(self):
     i = self.buffsize
     while i > 0 and self.file_paths:
-      self.buffer.append(s_utils.Formula(self.file_paths.pop()))
-      i -= 1
+        with open(self.file_paths.pop()) as f:
+            self.buffer.append(s_utils.Formula(f.read()))
+        i -= 1
 
   def __iter__(self):
     return self
