@@ -63,19 +63,27 @@ class TestFalselist(unittest.TestCase):
 class TestFormula(unittest.TestCase):
     def setUp(self):
         random.seed()
-        self.tries_per_test = 10 if __debug__ else 500
+        self.cases = 10 if __debug__ else 500
 
     def test_random_creation_and_reading(self):
-        for i in range(0,self.tries_per_test):
+        for i in range(0,self.cases):
             f = Formula.generate_satisfiable_formula(500, 4.2)
             self.assertEqual(f, Formula(dimacs = str(f)))
 
     def test_random_creation(self):
-        for i in range(0,self.tries_per_test):
+        for i in range(0,self.cases):
             n = random.randrange(10,1001)
             r = random.randrange(20,42)/10
             f = Formula.generate_satisfiable_formula(n, r)
             self.assertTrue(abs(f.num_clauses - n * r) < 2)
+
+    def test_satisfiable_assignment(self):
+        """This test really should not fail """
+        for i in range(0,self.cases):
+            n = random.randrange(10,1001)
+            r = random.randrange(20,42)/10
+            f = Formula.generate_satisfiable_formula(n,r)
+            self.assertTrue(f.is_satisfied_by(f.satisfying_assignment))
 
     def test_hardness(self):
         n = 500
@@ -145,17 +153,17 @@ class TestSolvers(unittest.TestCase):
     def setUp(self):
         random.seed()
         self.cases = range(0,5)
-        
+
         self.n = 128
         self.r = 4.0
-        
+
         self.setup = dict(
             gsat    = dict(max_flips = self.n    , max_tries = 15),
             walksat = dict(max_flips = self.n * 3, max_tries = 5),
             probsat = dict(max_flips = self.n * 3, max_tries = 5)
         )
-        
-        
+
+
     def test_gsat(self):
         successes = 0
         for i in self.cases:
@@ -196,7 +204,7 @@ class TestSolvers(unittest.TestCase):
         self.assertTrue(successes > 0)
         print('WalkSAT successes: {}/{}'.format(successes,len(self.cases)))
 
-        
+
     def test_probsat(self):
         successes = 0
         c_make, c_break = 0.0,2.3
