@@ -1,10 +1,10 @@
 language: python
 python:
-#  - "3.5"
+  #  - "3.5"
   - "3.6"
 
 install: true
 
 script:
-  - python -m unittest test.py      # test with checks
-  - python -O -m unittest test.py   # test without checks
+  - python -m unittest test/test.py      # test with checks
+  - python -O -m unittest test/test.py   # test without checks
