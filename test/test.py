@@ -110,6 +110,10 @@ class TestScores(unittest.TestCase):
                         if x == critical:
                             br += 1
                 self.assertEqual(br, score.get_break_score(x))
+                self.assertEqual(
+                    mk-br,
+                    score.bucket_mapping[x]
+                )
 
 
         for formula in FormulaSupply(self.paths, self.buffsize):
@@ -136,7 +140,7 @@ class TestSolvers(unittest.TestCase):
         self.r = 4.0
 
         self.setup = dict(
-            gsat    = dict(max_flips = self.n    , max_tries = 15),
+            gsat    = dict(max_flips = self.n / 3, max_tries = 5*6),
             walksat = dict(max_flips = self.n * 3, max_tries = 5),
             probsat = dict(max_flips = self.n * 3, max_tries = 5)
         )
@@ -149,6 +153,7 @@ class TestSolvers(unittest.TestCase):
             )
         ))
         self.buffsize = 5
+        self.cases = len(self.paths)
 
 
     def test_gsat(self):
@@ -167,6 +172,9 @@ class TestSolvers(unittest.TestCase):
                 )
                 self.assertTrue(formula.is_satisfied_by(assgn))
                 successes += 1
+                print('+', end='')
+            else:
+                print('-', end='')
 
         self.assertTrue(successes > 0)
         print('GSAT successes: {}/{}'.format(successes,len(self.cases)))
@@ -190,6 +198,9 @@ class TestSolvers(unittest.TestCase):
                 )
                 self.assertTrue(formula.is_satisfied_by(assgn))
                 successes += 1
+                print('+', end='')
+            else:
+                print('-', end='')
 
         self.assertTrue(successes > 0)
         print('WalkSAT successes: {}/{}'.format(successes,len(self.cases)))
@@ -215,6 +226,9 @@ class TestSolvers(unittest.TestCase):
                 )
                 self.assertTrue(formula.is_satisfied_by(assgn))
                 successes += 1
+                print('+', end='')
+            else:
+                print('-', end='')
 
         self.assertTrue(successes > 0)
         print('ProbSAT successes: {}/{}'.format(successes,len(self.cases)))
