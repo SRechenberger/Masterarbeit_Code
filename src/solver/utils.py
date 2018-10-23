@@ -332,6 +332,7 @@ class Assignment:
         return dist
 
 
+
 class Scores:
     def __init__(self, formula, assignment, falselist):
         if __debug__:
@@ -344,6 +345,15 @@ class Scores:
         self.breaks = {}
         self.makes = {}
 
+        self.diff_buckets = {
+            k: set() for k in range(-formula.max_occs, formula.max_occs+1)
+        }
+        self.bucket_mapping = [
+            None for _ in range(0,formula.num_vars+1)
+        ]
+
+        self.best_score = -formula.max_occs
+        self.minimum_score = -formula.max_occs
 
         # Begin at clause 0
         clause_idx = 0
@@ -383,6 +393,42 @@ class Scores:
             # next clause
             clause_idx += 1
 
+        for var in range(1,formula.num_vars+1):
+            self.update_diff(var)
+
+
+    def update_diff(self, variable):
+        if __debug__:
+            type_check('variable',variable,int)
+            value_check('variable',variable,strict_positive=strict_positive)
+
+        # calculate the new score
+        new_score = self.get_make_score(variable) - self.get_break_score(variable)
+        # read the old score
+        old_score = self.bucket_mapping[variable]
+
+        # if there is an old score
+        if old_score:
+            # remove from old bucket
+            self.diff_buckets[old_score].remove(variable)
+
+        # add to new bucket
+        self.diff_buckets[new_score].add(variable)
+        self.bucket_mapping[variable] = new_score
+
+        old_score = old_score if old_score else -self.minimum_score
+
+        if new_score > self.best_score:
+            self.best_score = new_score
+        elif new_score < old_score and old_score == self.best_score:
+            for i in range(old_score, new_score-1, -1):
+                if self.diff_buckets[i]:
+                    self.best_score = i
+                    break
+
+
+    def get_best_bucket(self):
+        return self.diff_buckets[self.best_score]
 
 
     def increment_break_score(self, variable):
@@ -424,6 +470,7 @@ class Scores:
 
 
 
+
     def decrement_make_score(self, variable):
         if __debug__:
             type_check('variable',variable,int)
@@ -439,6 +486,7 @@ class Scores:
 
 
 
+
     def get_break_score(self, variable):
         if __debug__:
             type_check('variable',variable,int)
@@ -449,6 +497,7 @@ class Scores:
             return 0
 
 
+
     def get_make_score(self, variable):
         if __debug__:
             type_check('variable',variable,int)
@@ -457,6 +506,7 @@ class Scores:
             return self.makes[variable]
         else:
             return 0
+
 
 
     def flip(self, variable, formula, assignment, falselist):
@@ -484,24 +534,29 @@ class Scores:
                 # is)
                 for lit in formula.clauses[clause_idx]:
                     self.decrement_make_score(abs(lit))
+                    self.update_diff(abs(lit))
             elif self.num_true_lit[clause_idx] == 1:
                 self.decrement_break_score(self.crit_var[clause_idx])
+                self.update_diff(self.crit_var[clause_idx])
             self.num_true_lit[clause_idx] += 1
 
         for clause_idx in formula.get_occurrences(falsifying_literal):
             if self.num_true_lit[clause_idx] == 1:
                 falselist.add(clause_idx)
                 self.decrement_break_score(variable)
+                self.update_diff(variable)
                 self.crit_var[clause_idx] = variable
 
                 # every variable in the clause will make it sat (because it is
                 # no longer)
                 for lit in formula.clauses[clause_idx]:
                     self.increment_make_score(abs(lit))
+                    self.update_diff(abs(lit))
 
             elif self.num_true_lit[clause_idx] == 2:
                 for lit in formula.clauses[clause_idx]:
                     if assignment.is_true(lit):
                         self.crit_var[clause_idx] = abs(lit)
                         self.increment_break_score(abs(lit))
+                        self.update_diff(abs(lit))
             self.num_true_lit[clause_idx] -= 1
