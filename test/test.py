@@ -140,7 +140,7 @@ class TestSolvers(unittest.TestCase):
         self.r = 4.0
 
         self.setup = dict(
-            gsat    = dict(max_flips = self.n / 3, max_tries = 5*6),
+            gsat    = dict(max_flips = int(self.n / 3), max_tries = 5*6),
             walksat = dict(max_flips = self.n * 3, max_tries = 5),
             probsat = dict(max_flips = self.n * 3, max_tries = 5)
         )
@@ -175,12 +175,9 @@ class TestSolvers(unittest.TestCase):
                 )
                 self.assertTrue(formula.is_satisfied_by(assgn))
                 successes += 1
-                print('+', end='')
-            else:
-                print('-', end='')
 
         self.assertTrue(successes > 0)
-        print('GSAT successes: {}/{}'.format(successes,len(self.cases)))
+        print('GSAT successes: {}/{}'.format(successes,self.cases))
 
 
     def test_walksat(self):
@@ -201,12 +198,9 @@ class TestSolvers(unittest.TestCase):
                 )
                 self.assertTrue(formula.is_satisfied_by(assgn))
                 successes += 1
-                print('+', end='')
-            else:
-                print('-', end='')
 
         self.assertTrue(successes > 0)
-        print('WalkSAT successes: {}/{}'.format(successes,len(self.cases)))
+        print('WalkSAT successes: {}/{}'.format(successes,self.cases))
 
 
     def test_probsat(self):
@@ -229,12 +223,9 @@ class TestSolvers(unittest.TestCase):
                 )
                 self.assertTrue(formula.is_satisfied_by(assgn))
                 successes += 1
-                print('+', end='')
-            else:
-                print('-', end='')
 
         self.assertTrue(successes > 0)
-        print('ProbSAT successes: {}/{}'.format(successes,len(self.cases)))
+        print('ProbSAT successes: {}/{}'.format(successes,self.cases))
 
 
 class TestFormula(unittest.TestCase):
