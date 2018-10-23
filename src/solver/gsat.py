@@ -56,12 +56,9 @@ def max_seq(seq, key=lambda x:x):
 def gsat_heuristic(context):
     """ Sucks complexitywise; needs to be somehow constant in |Var(F)| """
 
-    best = max_seq(
-        context.variables,
-        key = lambda v: context.score.get_make_score(v) - context.score.get_break_score(v)
-    )
+    best = context.score.get_best_bucket()
 
-    return random.choice(best)
+    return random.choice(list(best))
 
 def gsat(formula, max_tries, max_flips, measurement):
     return generic_sls(

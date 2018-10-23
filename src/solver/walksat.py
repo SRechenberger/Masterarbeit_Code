@@ -17,11 +17,8 @@ def walksat_heuristic(rho):
 
         # Greedy
         if dice < rho:
-            best_vars = max_seq(
-                list(map(abs,clause)),
-                key = lambda v: context.score.get_make_score(v) - context.score.get_break_score(v)
-            )
-            return random.choice(best_vars)
+            best = context.score.get_best_bucket()
+            return random.choice(list(best))
 
         # Noisy
         else:
