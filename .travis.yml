@@ -6,5 +6,5 @@ python:
 install: true
 
 script:
-  - python -m unittest test/test.py      # test with checks
-  - python -O -m unittest test/test.py   # test without checks
+  - travis_wait python -m unittest test/test.py      # test with checks
+  - travis_wait python -O -m unittest test/test.py   # test without checks
