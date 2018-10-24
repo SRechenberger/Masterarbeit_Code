@@ -126,3 +126,40 @@ class TestScores(unittest.TestCase):
                 scores.flip(to_flip, formula, assgn, falselist)
 
             check_consistency(scores, formula, falselist, assgn, 50)
+
+
+class TestFormula(unittest.TestCase):
+    def setUp(self):
+        random.seed()
+        self.cases = 10 if __debug__ else 500
+
+    def test_random_creation_and_reading(self):
+        for i in range(0,self.cases):
+            f = Formula.generate_satisfiable_formula(500, 4.2)
+            self.assertEqual(f, Formula(dimacs = str(f)))
+
+    def test_random_creation(self):
+        for i in range(0,self.cases):
+            n = random.randrange(10,1001)
+            r = random.randrange(20,42)/10
+            f = Formula.generate_satisfiable_formula(n, r)
+            self.assertTrue(abs(f.num_clauses - n * r) < 2)
+
+    def test_satisfiable_assignment(self):
+        for i in range(0,self.cases):
+            n = random.randrange(10,1001)
+            r = random.randrange(20,42)/10
+            f = Formula.generate_satisfiable_formula(n,r)
+            self.assertTrue(f.is_satisfied_by(f.satisfying_assignment))
+
+    def test_hardness(self):
+        n = 500
+        for i in range(0,self.cases):
+            f = Formula.generate_satisfiable_formula(n, 4.2)
+            atoms = 0
+            for var in range(1,n+1):
+                if len(f.get_occurrences(var)) > len(f.get_occurrences(-var)):
+                    atoms += 1
+                atoms *= 2
+            a = Assignment(atoms, n)
+            self.assertFalse(f.is_satisfied_by(a))
