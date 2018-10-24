@@ -143,7 +143,7 @@ class TestSolvers(unittest.TestCase):
         self.r = 4.0
 
         self.setup = dict(
-            gsat    = dict(max_flips = int(self.n), max_tries = 50*3),
+            gsat    = dict(max_flips = self.n* 3, max_tries = 50),
             walksat = dict(max_flips = self.n * 3, max_tries = 50),
             probsat = dict(max_flips = self.n * 3, max_tries = 50)
         )
