@@ -246,7 +246,6 @@ class TestFormula(unittest.TestCase):
             self.assertTrue(abs(f.num_clauses - n * r) < 2)
 
     def test_satisfiable_assignment(self):
-        """This test really should not fail """
         for i in range(0,self.cases):
             n = random.randrange(10,1001)
             r = random.randrange(20,42)/10
