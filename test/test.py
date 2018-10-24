@@ -161,7 +161,10 @@ class TestSolvers(unittest.TestCase):
 
     def test_gsat(self):
         successes = 0
+        cnt = 1
         for formula in FormulaSupply(self.paths, self.buffsize):
+            print('Formula #{}'.format(cnt))
+            cnt += 1
             measurement = DummyMeasurement()
             assgn = gsat(
                 formula,
