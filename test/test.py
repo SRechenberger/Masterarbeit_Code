@@ -161,7 +161,7 @@ class TestSolvers(unittest.TestCase):
         self.buffsize = 5
         self.cases = len(self.paths)
 
-    @unittest.skip("takes to long")
+   # @unittest.skip("takes to long")
     def test3_gsat(self):
         successes = 0
         if debug:
