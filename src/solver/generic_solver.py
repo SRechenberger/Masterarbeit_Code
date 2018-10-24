@@ -82,6 +82,11 @@ def generic_sls(
 
             # register flip in measurement object
             measurement.count(to_flip)
+            # increment flip counter
+            f += 1
+            
+        # increment try counter
+        t += 1
 
     # If no solution is found,
     # return None
