@@ -37,7 +37,7 @@ class TestSolver(unittest.TestCase):
             max_flips     = n * 5,
             max_tries     = 100,
             formulae      = formulae,
-            max_run_time  = 120,
+            max_run_time  = 20,
             cases         = cases,
             min_successes = cases / 10,
         )
@@ -62,7 +62,9 @@ class TestSolver(unittest.TestCase):
                 run_time_exceeded += 1
 
         self.assertTrue(successes >= self.solver_setup['min_successes'])
-        self.assertTrue(run_time_exceeded < self.solver_setup['min_successes'])
+        self.assertTrue(
+            run_time_exceeded < self.solver_setup['cases'] - self.solver_setup['min_successes']
+        )
 
 
     def test_solver(self):
