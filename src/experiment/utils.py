@@ -6,10 +6,10 @@ class Measurement:
     to be an instance of this class or a subclass.
     """
     def init_run(self, assgn):
-        raise Warning('Nothing implemented yet.')
+        pass
 
     def count(self, flipped_var):
-        raise Warning('Nothing implemented yet.')
+        pass
 
 
 class DummyMeasurement(Measurement):
