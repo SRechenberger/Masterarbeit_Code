@@ -2,6 +2,8 @@ from src.solver.utils import Formula, Assignment
 from src.experiment.utils import Measurement
 from src.utils import *
 
+debug = True
+
 class Context:
     """ Abstract Context Class;
     the generic SLS solver needs the given context constructor
@@ -44,7 +46,7 @@ def generic_sls(
     #initialize measurement object
     t = 0
     while t < max_tries:
-        if __debug__:
+        if debug:
             print('*',end='',flush=True)
         # generate random assingnment
         current_assignment = Assignment.generate_random_assignment(
