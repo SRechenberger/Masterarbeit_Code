@@ -84,13 +84,13 @@ def generic_sls(
             measurement.count(to_flip)
             # increment flip counter
             f += 1
-            
+
         # increment try counter
         t += 1
 
     # If no solution is found,
     # return None
-    
+
     if debug:
         t_end = time.time()
         t_diff = t_end-t_begin
