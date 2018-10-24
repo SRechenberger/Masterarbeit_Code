@@ -161,8 +161,8 @@ class TestSolvers(unittest.TestCase):
         self.buffsize = 5
         self.cases = len(self.paths)
 
-
-    def test_gsat(self):
+    
+    def test3_gsat(self):
         successes = 0
         if debug:
             cnt = 1
@@ -188,7 +188,7 @@ class TestSolvers(unittest.TestCase):
         print('GSAT successes: {}/{}'.format(successes,self.cases))
 
 
-    def test_walksat(self):
+    def test2_walksat(self):
         successes = 0
         rho = 0.57
         if debug:
@@ -216,7 +216,7 @@ class TestSolvers(unittest.TestCase):
         print('WalkSAT successes: {}/{}'.format(successes,self.cases))
 
 
-    def test_probsat(self):
+    def test1_probsat(self):
         successes = 0
         c_make, c_break = 0.0,2.3
         if debug:
