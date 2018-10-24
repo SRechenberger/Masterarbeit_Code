@@ -143,9 +143,9 @@ class TestSolvers(unittest.TestCase):
         self.r = 4.0
 
         self.setup = dict(
-            gsat    = dict(max_flips = self.n* 3, max_tries = 50),
-            walksat = dict(max_flips = self.n * 3, max_tries = 50),
-            probsat = dict(max_flips = self.n * 3, max_tries = 50)
+            gsat    = dict(max_flips = self.n * 5, max_tries = 100),
+            walksat = dict(max_flips = self.n * 5, max_tries = 100),
+            probsat = dict(max_flips = self.n * 5, max_tries = 100)
         )
         dirname = 'test/testfiles'
         self.paths = list(map(
