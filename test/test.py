@@ -148,16 +148,14 @@ class TestSolvers(unittest.TestCase):
             probsat = dict(max_flips = self.n * 3, max_tries = 50)
         )
         dirname = 'test/testfiles'
-        self.paths = random.sample(
-            list(map(
-                lambda fname: os.path.join(dirname, fname),
-                filter(
-                    lambda fname: fname.endswith('.cnf'),
-                    os.listdir(dirname)
-                )
-            )),
-            2
-        )
+        self.paths = list(map(
+            lambda fname: os.path.join(dirname, fname),
+            filter(
+                lambda fname: fname.endswith('.cnf'),
+                os.listdir(dirname)
+            )
+        ))
+        
         self.buffsize = 5
         self.cases = len(self.paths)
 
