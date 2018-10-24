@@ -1,6 +1,7 @@
 import unittest
 import random
 import os
+
 from src.solver.utils import Assignment, Falselist, Formula, Scores
 from src.experiment.utils import DummyMeasurement, FormulaSupply
 from src.solver.gsat import gsat
