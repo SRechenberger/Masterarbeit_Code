@@ -1,6 +1,7 @@
 import unittest
 import random
 import os
+
 from src.solver.utils import Assignment, Falselist, Formula, Scores
 from src.experiment.utils import DummyMeasurement, FormulaSupply
 from src.solver.gsat import gsat
@@ -11,7 +12,6 @@ if __debug__:
     print("DEBUG")
 
 
-
 class TestSolvers(unittest.TestCase):
     def setUp(self):
         random.seed()
@@ -20,28 +20,30 @@ class TestSolvers(unittest.TestCase):
         self.r = 4.0
 
         self.setup = dict(
-            gsat    = dict(max_flips = int(self.n / 3), max_tries = 5*6),
-            walksat = dict(max_flips = self.n * 3, max_tries = 5),
-            probsat = dict(max_flips = self.n * 3, max_tries = 5)
+            gsat    = dict(max_flips = self.n * 5, max_tries = 100),
+            walksat = dict(max_flips = self.n * 5, max_tries = 100),
+            probsat = dict(max_flips = self.n * 5, max_tries = 100)
         )
         dirname = 'test/testfiles'
-        self.paths = random.sample(
-            list(map(
-                lambda fname: os.path.join(dirname, fname),
-                filter(
-                    lambda fname: fname.endswith('.cnf'),
-                    os.listdir(dirname)
-                )
-            )),
-            2
-        )
+        self.paths = list(map(
+            lambda fname: os.path.join(dirname, fname),
+            filter(
+                lambda fname: fname.endswith('.cnf'),
+                os.listdir(dirname)
+            )
+        ))
+
         self.buffsize = 5
         self.cases = len(self.paths)
 
-
-    def test_gsat(self):
+    def test3_gsat(self):
         successes = 0
+        if debug:
+            cnt = 1
         for formula in FormulaSupply(self.paths, self.buffsize):
+            if debug:
+                print('\n{}'.format(cnt), end='')
+                cnt += 1
             measurement = DummyMeasurement()
             assgn = gsat(
                 formula,
@@ -60,10 +62,15 @@ class TestSolvers(unittest.TestCase):
         print('GSAT successes: {}/{}'.format(successes,self.cases))
 
 
-    def test_walksat(self):
+    def test2_walksat(self):
         successes = 0
         rho = 0.57
+        if debug:
+            cnt = 1
         for formula in FormulaSupply(self.paths, self.buffsize):
+            if debug:
+                print('\n{}'.format(cnt), end='')
+                cnt += 1
             measurement = DummyMeasurement()
             assgn = walksat(
                 rho,
@@ -83,10 +90,15 @@ class TestSolvers(unittest.TestCase):
         print('WalkSAT successes: {}/{}'.format(successes,self.cases))
 
 
-    def test_probsat(self):
+    def test1_probsat(self):
         successes = 0
         c_make, c_break = 0.0,2.3
+        if debug:
+            cnt = 1
         for formula in FormulaSupply(self.paths, self.buffsize):
+            if debug:
+                print('\n{}'.format(cnt), end='')
+                cnt += 1
             measurement = DummyMeasurement()
             assgn = probsat(
                 c_make,
@@ -126,7 +138,6 @@ class TestFormula(unittest.TestCase):
             self.assertTrue(abs(f.num_clauses - n * r) < 2)
 
     def test_satisfiable_assignment(self):
-        """This test really should not fail """
         for i in range(0,self.cases):
             n = random.randrange(10,1001)
             r = random.randrange(20,42)/10
