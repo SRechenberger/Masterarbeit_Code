@@ -2,6 +2,8 @@ from src.solver.utils import Formula, Assignment
 from src.experiment.utils import Measurement
 from src.utils import *
 
+import time
+
 debug = True
 
 class Context:
@@ -48,6 +50,7 @@ def generic_sls(
     while t < max_tries:
         if debug:
             print('*',end='',flush=True)
+            t_begin = time.time()
         # generate random assingnment
         current_assignment = Assignment.generate_random_assignment(
             formula.num_vars
@@ -64,6 +67,10 @@ def generic_sls(
         while f < max_flips:
             # check, if the current assignment is a solution
             if context.is_sat():
+                if debug:
+                    t_end = time.time()
+                    t_diff = t_end-t_begin
+                    print('Avg time per flip: {} seconds'.format(t_diff/(f+t*max_flips)))
                 return current_assignment
 
             # choose variable to flip
@@ -78,4 +85,9 @@ def generic_sls(
 
     # If no solution is found,
     # return None
+    
+    if debug:
+        t_end = time.time()
+        t_diff = t_end-t_begin
+        print('Avg time per flip: {} seconds'.format(t_diff/(max_tries*max_flips)))
     return None
