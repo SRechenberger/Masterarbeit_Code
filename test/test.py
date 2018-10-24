@@ -10,6 +10,8 @@ from src.solver.probsat import probsat
 if __debug__:
     print("DEBUG")
 
+debug = True
+    
 class TestAssignment(unittest.TestCase):
     def setUp(self):
         random.seed()
@@ -161,10 +163,10 @@ class TestSolvers(unittest.TestCase):
 
     def test_gsat(self):
         successes = 0
-        if __debug__:
+        if debug:
             cnt = 1
         for formula in FormulaSupply(self.paths, self.buffsize):
-            if __debug__:
+            if debug:
                 print('\n{}'.format(cnt), end='')
                 cnt += 1
             measurement = DummyMeasurement()
@@ -188,10 +190,10 @@ class TestSolvers(unittest.TestCase):
     def test_walksat(self):
         successes = 0
         rho = 0.57
-        if __debug__:
+        if debug:
             cnt = 1
         for formula in FormulaSupply(self.paths, self.buffsize):
-            if __debug__:
+            if debug:
                 print('\n{}'.format(cnt), end='')
                 cnt += 1
             measurement = DummyMeasurement()
@@ -216,10 +218,10 @@ class TestSolvers(unittest.TestCase):
     def test_probsat(self):
         successes = 0
         c_make, c_break = 0.0,2.3
-        if __debug__:
+        if debug:
             cnt = 1
         for formula in FormulaSupply(self.paths, self.buffsize):
-            if __debug__:
+            if debug:
                 print('\n{}'.format(cnt), end='')
                 cnt += 1
             measurement = DummyMeasurement()
