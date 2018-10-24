@@ -37,7 +37,7 @@ class TestSolver(unittest.TestCase):
             max_flips     = n * 5,
             max_tries     = 100,
             formulae      = formulae,
-            max_run_time  = 20,
+            max_run_time  = 120,
             cases         = cases,
             min_successes = cases / 10,
         )
@@ -45,6 +45,7 @@ class TestSolver(unittest.TestCase):
 
     def generic_test_solver(self, solver):
         successes = 0
+        run_time_exceeded = 0
         for formula in self.solver_setup['formulae']:
             measurement = TestMeasurement()
             assgn = solver(
@@ -55,9 +56,13 @@ class TestSolver(unittest.TestCase):
             )
             if assgn:
                 self.assertTrue(measurement.flips > 0)
-                self.assertTrue(measurement.get_run_time() < max_run_time)
                 successes += 1
+
+            if measurement.get_run_time() >= self.solver_setup['max_run_time']:
+                run_time_exceeded += 1
+
         self.assertTrue(successes >= self.solver_setup['min_successes'])
+        self.assertTrue(run_time_exceeded < self.solver_setup['min_successes'])
 
 
     def test_solver(self):
