@@ -45,7 +45,7 @@ def generic_sls(
     t = 0
     while t < max_tries:
         if __debug__:
-            print('*',end='')
+            print('*',end='',flush=True)
         # generate random assingnment
         current_assignment = Assignment.generate_random_assignment(
             formula.num_vars
