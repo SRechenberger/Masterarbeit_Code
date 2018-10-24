@@ -6,5 +6,5 @@ python:
 install: true
 
 script:
-  - python -m unittest test/test.py      # test with checks
-  - python -O -m unittest test/test.py   # test without checks
+  - python -v -m unittest test/test.py      # test with checks
+  - python -v -O -m unittest test/test.py   # test without checks
