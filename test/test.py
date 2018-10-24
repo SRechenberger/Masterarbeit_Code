@@ -161,10 +161,12 @@ class TestSolvers(unittest.TestCase):
 
     def test_gsat(self):
         successes = 0
-        cnt = 1
+        if __debug__:
+            cnt = 1
         for formula in FormulaSupply(self.paths, self.buffsize):
-            print('Formula #{}'.format(cnt))
-            cnt += 1
+            if __debug__:
+                print('\n{}'.format(cnt), end='')
+                cnt += 1
             measurement = DummyMeasurement()
             assgn = gsat(
                 formula,
@@ -186,7 +188,12 @@ class TestSolvers(unittest.TestCase):
     def test_walksat(self):
         successes = 0
         rho = 0.57
+        if __debug__:
+            cnt = 1
         for formula in FormulaSupply(self.paths, self.buffsize):
+            if __debug__:
+                print('\n{}'.format(cnt), end='')
+                cnt += 1
             measurement = DummyMeasurement()
             assgn = walksat(
                 rho,
@@ -209,7 +216,12 @@ class TestSolvers(unittest.TestCase):
     def test_probsat(self):
         successes = 0
         c_make, c_break = 0.0,2.3
+        if __debug__:
+            cnt = 1
         for formula in FormulaSupply(self.paths, self.buffsize):
+            if __debug__:
+                print('\n{}'.format(cnt), end='')
+                cnt += 1
             measurement = DummyMeasurement()
             assgn = probsat(
                 c_make,
