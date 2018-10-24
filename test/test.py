@@ -11,7 +11,7 @@ from src.solver.probsat import probsat
 if __debug__:
     print("DEBUG")
 
-debug = True
+debug = False
     
 class TestAssignment(unittest.TestCase):
     def setUp(self):
