@@ -5,6 +5,8 @@ class Measurement:
     the generic SLS solver needs the given measurement object
     to be an instance of this class or a subclass.
     """
+    def __init__(self, formula):
+        pass
     def init_run(self, assgn):
         pass
 
@@ -13,7 +15,7 @@ class Measurement:
 
 
 class DummyMeasurement(Measurement):
-    def __init__(self):
+    def __init__(self, formula):
         self.flips = 0
 
     def init_run(self,assgn):
