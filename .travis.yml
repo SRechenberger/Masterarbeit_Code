@@ -6,4 +6,5 @@ python:
 install: true
 
 script:
+  - python -m unittest discover -v -s test -p "*.py"
   - python -O -m unittest discover -v -s test -p "*.py"
