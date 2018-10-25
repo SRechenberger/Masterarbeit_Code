@@ -24,7 +24,7 @@ def generic_sls(
         max_tries,
         max_flips,
         context_constructor,
-        measurement):
+        measurement_constructor):
     """ Generic SLS-Solver according to Algorithm 1,
     including measurement facilities.
     """
@@ -38,7 +38,11 @@ def generic_sls(
         instance_check('formula',formula,Formula)
         type_check('max_tries',max_tries,int)
         type_check('max_flips',max_flips,int)
-        instance_check('measurement',measurement,Measurement)
+        value_check(
+            'measurement_constructor',measurement_constructor,
+            is_callable = callable,
+            arity_1 = has_arity(1)
+        )
         value_check(
             'context_constructor', context_constructor,
             is_callable = callable,
@@ -46,6 +50,8 @@ def generic_sls(
         )
 
     #initialize measurement object
+    measurement = measurement_constructor(formula)
+
     t = 0
     while t < max_tries:
         if debug:
@@ -71,7 +77,7 @@ def generic_sls(
                     t_end = time.time()
                     t_diff = t_end-t_begin
                     print('Avg time per flip: {} seconds'.format(t_diff/(f+t*max_flips)))
-                return current_assignment
+                return current_assignment, measurement
 
             # choose variable to flip
             to_flip = heuristic(context)
@@ -95,4 +101,4 @@ def generic_sls(
         t_end = time.time()
         t_diff = t_end-t_begin
         print('Avg time per flip: {} seconds'.format(t_diff/(max_tries*max_flips)))
-    return None
+    return None, measurement
