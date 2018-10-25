@@ -88,3 +88,7 @@ def value_check(name, value, optional = False, error = ValueError, **predicates)
                     '{} = {} does not satisfy predicate {}'
                     .format(name,value,n)
                 )
+
+
+def identity(x):
+    return x
