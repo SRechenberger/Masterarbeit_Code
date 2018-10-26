@@ -68,7 +68,14 @@ class TestFalselist(unittest.TestCase):
 class TestScores(unittest.TestCase):
     def setUp(self):
         random.seed()
-        dirname = 'testfiles'
+        dirname = 'test_files'
+        Formula.generate_formula_pool(
+            dirname,
+            20,
+            256,
+            4.2,
+            poolsize=3
+        )
         self.paths = list(map(
             lambda fname: os.path.join(dirname, fname),
             filter(
