@@ -189,7 +189,8 @@ class Formula:
             ratio,
             clause_length = 3,
             seed = None,
-            poolsize = 1):
+            poolsize = 1,
+            verbose = False):
         if __debug__:
             type_check('directory',directory,str)
             type_check('number',number,int)
@@ -232,6 +233,14 @@ class Formula:
                 )
                 with open(os.path.join(directory,filename),'w') as target:
                     target.write(str(f))
+
+                if verbose:
+                    print(
+                        'File {} written.'.format(
+                            os.path.join(directory,filename)
+                        )
+                    )
+
 
 
     def __hash__(self):
