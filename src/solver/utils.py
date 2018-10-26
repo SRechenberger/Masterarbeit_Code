@@ -1,6 +1,8 @@
 import random
 import re
 import copy
+import os
+import multiprocessing as mp
 from src.utils import *
 from collections.abc import Sequence
 class Formula:
@@ -180,6 +182,70 @@ class Formula:
         return formula
 
 
+    def generate_formula_pool(
+            directory,
+            number,
+            num_vars,
+            ratio,
+            clause_length = 3,
+            seed = None,
+            poolsize = 1):
+        if __debug__:
+            type_check('directory',directory,str)
+            type_check('number',number,int)
+            value_check('number',number,strict_pos = strict_positive)
+            type_check('num_vars',num_vars,int)
+            value_check('num_vars',num_vars,strict_pos = strict_positive)
+            type_check('ratio',ratio,float)
+            value_check('ratio',ratio,strict_pos = strict_positive)
+            type_check('clause_length',clause_length,int)
+            value_check('clause_length',clause_length,strict_pos = strict_positive)
+
+        if seed:
+            random.seed(seed)
+
+        try:
+            os.mkdir(directory)
+        except FileExistsError:
+            pass
+
+        with mp.Pool(processes = 3) as pool:
+            future_formulae = []
+            for _ in range(0,number):
+                ff = pool.apply_async(
+                    Formula.generate_satisfiable_formula,
+                    (
+                        num_vars,
+                        ratio,
+                        clause_length
+                    )
+                )
+                future_formulae.append(ff)
+
+            for ff in future_formulae:
+                f = ff.get()
+                filename = 'n{}-r{:.2f}-k{}-{:016X}.cnf'.format(
+                    num_vars,
+                    ratio,
+                    clause_length,
+                    hash(f),
+                )
+                with open(os.path.join(directory,filename),'w') as target:
+                    target.write(str(f))
+
+
+    def __hash__(self):
+        return abs(
+            hash(
+                '{}{}{}{}{}'.format(
+                    self.num_vars,
+                    self.max_clause_length,
+                    self.ratio,
+                    str(self.satisfying_assignment),
+                    id(self)
+                )
+            )
+        )
 
 class Falselist:
     """ Models a list with no need for order,
