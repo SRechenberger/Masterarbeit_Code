@@ -3,7 +3,8 @@ python:
   #  - "3.5"
   - "3.6"
 
-install: true
+install:
+  - pip install -r req.txt
 
 script:
   - python -m unittest discover -v -s test -p "*.py"
