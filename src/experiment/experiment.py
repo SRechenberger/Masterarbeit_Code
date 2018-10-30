@@ -1,10 +1,20 @@
 import os
 import random
 import multiprocessing as mp
+import src.solver.gsat as gsat
+import src.solver.walksat as walksat
+import src.solver.probsat as probsat
 
 from functools import partial
 from src.utils import *
 from src.experiment.utils import FormulaSupply, Measurement
+
+solvers = dict(
+    gsat    = gsat.gsat,
+    walksat = walksat.walksat,
+    probsat = probsat.probsat
+)
+
 
 class Experiment:
     def __init__(
@@ -33,7 +43,12 @@ class Experiment:
                                 lambda s: s.endswith('.cnf'),
                                 os.listdir(input_dir)))))
             # checks for 'solver'
-            value_check('solver',solver,is_callable = callable)
+            type_check('solver',solver,str)
+            value_check(
+                'solver',
+                solver,
+                is_solver = lambda x: x in solvers
+            )
             # checks for 'max_tries'
             type_check('max_tries',max_tries,int)
             value_check('max_tries',max_tries,strict_pos = strict_positive)
@@ -82,30 +97,49 @@ class Experiment:
 
         self.evaluate = evaluation
         self.poolsize = poolsize
-        self.run = False
+        self.results = None
 
 
-    def run_solver(self, formula):
-        return self.setup['solver'](
+    def _run_solver(self, formula):
+        return solvers[self.setup['solver']](
             *self.setup['solver_specific'],
             formula,
             *self.setup['solver_generic']
         )
 
 
-    def __call__(self):
-        if self.run:
+    def run_experiment(self):
+        if self.results:
             raise RuntimeError('Experiment already performed')
+
         self.run = True
         with mp.Pool(processes = self.poolsize) as pool:
-            results = pool.map(self.run_solver,self.formulae)
+            results = pool.map(self._run_solver,self.formulae)
 
-        return list(
+        self.results = list(
             map(
                 lambda result: (result[0], self.evaluate(result[1])),
                 results
             )
         )
+        return self.results
+
+
+    def __hash__(self):
+        return hash(id(self)) % pow(2,32)
+
+
+    def save_results(self, filename = None, directory = '.'):
+        if not filename:
+            filename = 'experiment-{:08x}.db'.format(hash(self))
+
+        filepath = os.path.join(directory, filename)
+        # TODO
+
+
+
+
+
 
 
 

@@ -26,47 +26,38 @@ class TestExperiment(unittest.TestCase):
         )
 
 
-    def test_creation(self):
-        experiment = Experiment(
-            self.pool_dir,
-            self.sample_size,
-            identity,
-            1,1,Measurement
-        )
-        self.assertIsNotNone(experiment)
-
     def test_experiment_with_gsat(self):
         experiment = Experiment(
             self.pool_dir,
             self.sample_size,
-            gsat,
+            'gsat',
             10,500,Measurement,
             poolsize = 3
         )
-        results = experiment()
+        results = experiment.run_experiment()
         self.assertTrue(len(results),self.sample_size)
 
     def test_experiment_with_walksat(self):
         experiment = Experiment(
             self.pool_dir,
             self.sample_size,
-            walksat,
+            'walksat',
             10,500,Measurement,
             0.57,
             poolsize = 3
         )
-        results = experiment()
+        results = experiment.run_experiment()
         self.assertTrue(len(results),self.sample_size)
 
     def test_experiment_with_probsat(self):
         experiment = Experiment(
             self.pool_dir,
             self.sample_size,
-            probsat,
+            'probsat',
             10,500,Measurement,
             0.0,2.3,'poly',
             poolsize = 3
         )
-        results = experiment()
+        results = experiment.run_experiment()
         self.assertTrue(len(results),self.sample_size)
 
