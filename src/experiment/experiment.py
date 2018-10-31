@@ -1,5 +1,6 @@
 import os
 import random
+import sqlite3
 import multiprocessing as mp
 import src.solver.gsat as gsat
 import src.solver.walksat as walksat
@@ -15,6 +16,96 @@ solvers = dict(
     probsat = probsat.probsat
 )
 
+create_experiment = """
+CREATE TABLE IF NOT EXISTS experiment
+    ( id            INTEGER PRIMARY KEY
+    , solver        TEXT
+    , source_folder TEXT
+    , sample_size   INT
+    )
+"""
+
+save_experiment = """
+INSERT INTO experiment
+    ( solver
+    , source_folder
+    , sample_size
+    )
+VALUES (?,?,?)
+"""
+
+create_parameter = """
+CREATE TABLE IF NOT EXISTS parameter
+    ( id                INTEGER PRIMARY KEY
+    , experiment_id     INTEGER
+    , name              TEXT
+    , val               TEXT
+    , type              TEXT
+    , FOREIGN KEY(experiment_id) REFERENCES experiment(id)
+    )
+"""
+
+save_parameters = """
+INSERT INTO parameters
+    ( experiment_id
+    , name
+    , val
+    , type
+    )
+VALUES (?,?,?,?)
+"""
+
+create_algorithm_run = """
+CREATE TABLE IF NOT EXISTS algorithm_run
+    ( id                INTEGER PRIMARY KEY
+    , experiment_id     INTEGER
+    , formula           TEXT
+    , sat_assgn         TEXT
+    , clauses           INT
+    , vars              INT
+    , sat               BOOL
+    , tms_entropy       REAL
+    , FOREIGN KEY(experiment_id) REFERENCES experiment(id)
+    )
+"""
+
+save_algorithm_run = """
+INSERT INTO algorithm_run
+    ( experiment_id
+    , formula
+    , sat_assgn
+    , clauses
+    , vars
+    , sat
+    , tms_entropy
+    )
+VALUES (?,?,?,?,?,?,?)
+"""
+
+create_search_run = """
+CREATE TABLE IF NOT EXISTS search_run
+    ( id                INTEGER PRIMARY KEY
+    , run_id            INTEGER
+    , flips             INT
+    , single_entropy    REAL
+    , joint_entropy     REAL
+    , start_assgn       TEXT
+    , end_assgn         TEXT
+    , FOREIGN KEY(run_id) REFERENCES algorithm_rum(id)
+    )
+"""
+
+save_search_run = """
+INSERT INTO search_run
+    ( run_id
+    , flips
+    , single_entropy
+    , joint_entropy
+    , start_assgn
+    , end_assgn
+    )
+VALUES (?,?,?,?,?,?)
+"""
 
 class Experiment:
     def __init__(
@@ -24,9 +115,10 @@ class Experiment:
             solver,                 # the solver to be used
             max_tries, max_flips,   # generic solver parameters
             measurement_constructor,
-            *solver_params,         # special parameters of the solver
             evaluation = identity,  # function to transform Measurement instances
-            poolsize = 1):          # number of parallel processes
+            poolsize = 1,           # number of parallel processes
+            database = 'experiments.db',
+            **solver_params):       # special parameters of the solver
 
         # some checks in debug mode
         if __debug__:
@@ -88,23 +180,36 @@ class Experiment:
         self.setup = dict(
             solver = solver,
             solver_specific = solver_params,
-            solver_generic  = (
-                max_tries,
-                max_flips,
-                measurement_constructor
+            solver_generic  = dict(
+                max_tries = max_tries,
+                max_flips = max_flips,
+            ),
+            meta = (
+                measurement_constructor,
             )
         )
 
         self.evaluate = evaluation
         self.poolsize = poolsize
         self.results = None
+        self.database = database
+
+        with sqlite3.connect(self.database) as conn:
+            c = conn.cursor()
+            c.execute(create_experiment)
+            c.execute(create_parameter)
+            c.execute(create_algorithm_run)
+            c.execute(create_search_run)
+            conn.commit()
+
 
 
     def _run_solver(self, formula):
         return solvers[self.setup['solver']](
-            *self.setup['solver_specific'],
+            *self.setup['solver_specific'].values(),
             formula,
-            *self.setup['solver_generic']
+            *self.setup['solver_generic'].values(),
+            *self.setup['meta']
         )
 
 
@@ -129,12 +234,8 @@ class Experiment:
         return hash(id(self)) % pow(2,32)
 
 
-    def save_results(self, filename = None, directory = '.'):
-        if not filename:
-            filename = 'experiment-{:08x}.db'.format(hash(self))
-
-        filepath = os.path.join(directory, filename)
-        # TODO
+    def save_results(self):
+        pass
 
 
 
