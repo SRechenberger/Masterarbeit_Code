@@ -1,3 +1,4 @@
+import platform
 import random
 import re
 import copy
@@ -7,14 +8,24 @@ from src.utils import *
 from collections.abc import Sequence
 
 if platform.sys.version_info.mayor < 3:
-  raise Exception("Must be Python 3")
+    raise Exception("Must be Python 3")
 
 if platform.sys.version_info.minor < 6:
 
-  def choices(*args,**kwars):
-    raise Exception('Not Implemented Yet')
+    def choices(seq, weights = None):
+        if not weights:
+            weights = [1/len(seq) for _ in range(0,len(seq))]
 
-  random.choices = choices
+        acc = 0
+        dice = random.random()
+        for p,x in zip(weights, seq):
+            acc += p
+            if acc > dice:
+                return x
+
+
+
+    random.choices = choices
 
 class Formula:
     """ CNF formulae in DIMACS format """
