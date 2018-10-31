@@ -43,8 +43,8 @@ class TestExperiment(unittest.TestCase):
             self.sample_size,
             'walksat',
             10,500,Measurement,
-            0.57,
-            poolsize = 3
+            poolsize = 3,
+            rho = 0.57
         )
         results = experiment.run_experiment()
         self.assertTrue(len(results),self.sample_size)
@@ -55,8 +55,8 @@ class TestExperiment(unittest.TestCase):
             self.sample_size,
             'probsat',
             10,500,Measurement,
-            0.0,2.3,'poly',
-            poolsize = 3
+            poolsize = 3,
+            c_make = 0.0, c_break = 2.3, phi = 'poly'
         )
         results = experiment.run_experiment()
         self.assertTrue(len(results),self.sample_size)
