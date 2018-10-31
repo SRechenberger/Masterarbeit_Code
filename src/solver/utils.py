@@ -7,7 +7,7 @@ import multiprocessing as mp
 from src.utils import *
 from collections.abc import Sequence
 
-if platform.sys.version_info.mayor < 3:
+if platform.sys.version_info.major < 3:
     raise Exception("Must be Python 3")
 
 if platform.sys.version_info.minor < 6:
