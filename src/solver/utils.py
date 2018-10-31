@@ -5,6 +5,17 @@ import os
 import multiprocessing as mp
 from src.utils import *
 from collections.abc import Sequence
+
+if platform.sys.version_info.mayor < 3:
+  raise Exception("Must be Python 3")
+
+if platform.sys.version_info.minor < 6:
+
+  def choices(*args,**kwars):
+    raise Exception('Not Implemented Yet')
+
+  random.choices = choices
+
 class Formula:
     """ CNF formulae in DIMACS format """
 
