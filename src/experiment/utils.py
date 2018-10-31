@@ -10,9 +10,13 @@ def eta(p):
         return -p * math.log(p,2)
 
 
-def entropy(distr, total):
+def entropy(distr):
+    total = 0
+    for _, count in distr.items():
+        total += count
+
     h = 0
-    for symbol, count in distr:
+    for symbol, count in distr.items():
         h += eta(count/total)
 
     return h
@@ -32,10 +36,11 @@ class Measurement:
     def init_run(self, assgn):
         pass
 
-    def count(self, flipped_var):
+    def end_run(self):
         pass
 
-
+    def count(self, flipped_var):
+        pass
 
 
 class EntropyMeasurement(Measurement):
@@ -53,19 +58,13 @@ class EntropyMeasurement(Measurement):
         self.run_id = 0
         self.sat_assgn = formula.satisfying_assignment
         self.formula   = formula
-        self.single_steps_total = [] # :: List[Dict[int,int]]
-        self.joint_steps_total  = [] # :: List[Dict[(int,int),int)]]
-        self.tms_steps = {}          # :: Dict[(int,int),int]
+        self.run_measurement = []
+        self.tms_steps = {}
 
 
     def init_run(self, assgn):
         if __debug__:
             instance_check('assgn',assgn,Assignment)
-
-        # save previous path, if there was one
-        if self.run_id > 0:
-            self.single_steps_total.append(self.single_steps)
-            self.joint_steps_total.append(self.joint_steps)
 
         self.run_id += 1
 
@@ -78,16 +77,24 @@ class EntropyMeasurement(Measurement):
         self.last_step = None
 
         # TMS entropy
+        self.start_assgn = str(assgn)
         self.curr_assgn = assgn
         self.curr_hamming_dist = self.sat_assgn.hamming_dist(assgn)
         self.tms_steps = {}
 
 
-    def get_single_entropy(self):
-        return entropy(self.single_steps, self.steps)
+    def end_run(self, success = False):
+        self.run_measurements.append(
+            dict(
+                single_steps = self.single_steps,
+                joint_steps  = self.joint_steps,
+                flips        = self.steps,
+                start_assgn  = self.start_assgn,
+                final_assgn  = str(self.curr_assgn),
+                success      = success,
+            )
+        )
 
-    def get_joint_entropy(self):
-        return entropy(self.joint_steps, self.steps-1)
 
     def get_tms_entropy(self, eps = 0.001, max_loops = 1000):
         # get number of states
