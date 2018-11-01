@@ -20,7 +20,7 @@ class TestExperiment(unittest.TestCase):
         Formula.generate_formula_pool(
             'test_files',
             number_formulae,
-            512,
+            256,
             4.2,
             poolsize = 3
         )
