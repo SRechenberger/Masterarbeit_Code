@@ -26,7 +26,7 @@ def walksat_heuristic(rho):
 
     return heur
 
-def walksat(formula, max_tries, max_flips, measurement, rho = 0.57):
+def walksat(formula, measurement, max_tries, max_flips, rho = 0.57):
     return generic_sls(
         walksat_heuristic(rho),
         formula,
