@@ -228,8 +228,8 @@ class Experiment:
         fp, formula = fp_and_formula
         assgn, measurement = solvers[self.setup['solver']](
             formula,
-            *self.setup['solver_generic'].values(),
             *self.setup['meta'],
+            **self.setup['solver_generic'],
             **self.setup['solver_specific'],
         )
 
