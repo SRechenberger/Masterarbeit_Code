@@ -2,7 +2,7 @@ import unittest
 import random
 
 from src.experiment.experiment import Experiment
-from src.experiment.utils import Measurement
+from src.experiment.utils import EntropyMeasurement
 from src.solver.generic_solver import Context
 from src.solver.gsat import gsat
 from src.solver.walksat import walksat
@@ -20,7 +20,7 @@ class TestExperiment(unittest.TestCase):
         Formula.generate_formula_pool(
             'test_files',
             number_formulae,
-            256,
+            512,
             4.2,
             poolsize = 3
         )
@@ -31,7 +31,7 @@ class TestExperiment(unittest.TestCase):
             self.pool_dir,
             self.sample_size,
             'gsat',
-            10,500,Measurement,
+            10,500,EntropyMeasurement,
             poolsize = 3
         )
         results = experiment.run_experiment()
@@ -42,7 +42,7 @@ class TestExperiment(unittest.TestCase):
             self.pool_dir,
             self.sample_size,
             'walksat',
-            10,500,Measurement,
+            10,500,EntropyMeasurement,
             poolsize = 3,
             rho = 0.57
         )
@@ -54,7 +54,7 @@ class TestExperiment(unittest.TestCase):
             self.pool_dir,
             self.sample_size,
             'probsat',
-            10,500,Measurement,
+            10,500,EntropyMeasurement,
             poolsize = 3,
             c_make = 0.0, c_break = 2.3, phi = 'poly'
         )
