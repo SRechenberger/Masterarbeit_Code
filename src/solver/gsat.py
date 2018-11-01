@@ -60,7 +60,7 @@ def gsat_heuristic(context):
 
     return random.choice(list(best))
 
-def gsat(formula, max_tries, max_flips, measurement):
+def gsat(formula, measurement, max_tries, max_flips):
     return generic_sls(
         gsat_heuristic,
         formula,
