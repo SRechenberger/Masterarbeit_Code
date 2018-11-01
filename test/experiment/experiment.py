@@ -17,10 +17,11 @@ class TestExperiment(unittest.TestCase):
         self.sample_size = 3
         self.pool_dir = 'test_files'
         number_formulae = 10
+        self.n = 256
         Formula.generate_formula_pool(
             'test_files',
             number_formulae,
-            256,
+            self.n,
             4.2,
             poolsize = 3
         )
@@ -31,7 +32,7 @@ class TestExperiment(unittest.TestCase):
             self.pool_dir,
             self.sample_size,
             'gsat',
-            10,500,EntropyMeasurement,
+            10,self.n*3,EntropyMeasurement,
             poolsize = 3
         )
         results = experiment.run_experiment()
@@ -42,7 +43,7 @@ class TestExperiment(unittest.TestCase):
             self.pool_dir,
             self.sample_size,
             'walksat',
-            10,500,EntropyMeasurement,
+            10,self.n*3,EntropyMeasurement,
             poolsize = 3,
             rho = 0.57
         )
@@ -54,7 +55,7 @@ class TestExperiment(unittest.TestCase):
             self.pool_dir,
             self.sample_size,
             'probsat',
-            10,500,EntropyMeasurement,
+            10,self.n*3,EntropyMeasurement,
             poolsize = 3,
             c_make = 0.0, c_break = 2.3, phi = 'poly'
         )
