@@ -21,7 +21,7 @@ if platform.sys.version_info.minor < 6:
         for p,x in zip(weights, seq):
             acc += p
             if acc > dice:
-                return x
+                return [x]
 
 
 
