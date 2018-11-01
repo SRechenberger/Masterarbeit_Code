@@ -45,8 +45,8 @@ CREATE TABLE IF NOT EXISTS parameter
     )
 """
 
-save_parameters = """
-INSERT INTO parameters
+save_parameter = """
+INSERT INTO parameter
     ( experiment_id
     , name
     , val
@@ -59,7 +59,7 @@ create_algorithm_run = """
 CREATE TABLE IF NOT EXISTS algorithm_run
     ( id                INTEGER PRIMARY KEY
     , experiment_id     INTEGER
-    , formula           TEXT
+    , formula_file      TEXT
     , sat_assgn         TEXT
     , clauses           INT
     , vars              INT
@@ -72,7 +72,7 @@ CREATE TABLE IF NOT EXISTS algorithm_run
 save_algorithm_run = """
 INSERT INTO algorithm_run
     ( experiment_id
-    , formula
+    , formula_file
     , sat_assgn
     , clauses
     , vars
@@ -84,13 +84,15 @@ VALUES (?,?,?,?,?,?,?)
 
 create_search_run = """
 CREATE TABLE IF NOT EXISTS search_run
-    ( id                INTEGER PRIMARY KEY
-    , run_id            INTEGER
-    , flips             INT
-    , single_entropy    REAL
-    , joint_entropy     REAL
-    , start_assgn       TEXT
-    , end_assgn         TEXT
+    ( id                    INTEGER PRIMARY KEY
+    , run_id                INTEGER
+    , flips                 INT
+    , single_entropy        REAL
+    , joint_entropy         REAL
+    , mutual_information    REAL
+    , start_assgn           TEXT
+    , end_assgn             TEXT
+    , success               BOOL
     , FOREIGN KEY(run_id) REFERENCES algorithm_rum(id)
     )
 """
@@ -101,10 +103,12 @@ INSERT INTO search_run
     , flips
     , single_entropy
     , joint_entropy
+    , mutual_information
     , start_assgn
     , end_assgn
+    , success
     )
-VALUES (?,?,?,?,?,?)
+VALUES (?,?,?,?,?,?,?,?)
 """
 
 class Experiment:
@@ -115,7 +119,6 @@ class Experiment:
             solver,                 # the solver to be used
             max_tries, max_flips,   # generic solver parameters
             measurement_constructor,
-            evaluation = identity,  # function to transform Measurement instances
             poolsize = 1,           # number of parallel processes
             database = 'experiments.db',
             **solver_params):       # special parameters of the solver
@@ -150,12 +153,6 @@ class Experiment:
             # checks for 'measurement_constructor'
             value_check('measurement_constructor',measurement_constructor,
                         is_callable = callable)
-            # checks for 'solver_params'
-            pass
-            # checks for 'evaluation'
-            value_check('evaluation',evaluation,
-                        is_callable = callable,
-                        arity_1 = has_arity(1))
             # checks for 'poolsize'
             type_check('poolsize',poolsize,int)
             value_check('poolsize',poolsize,strict_pos = strict_positive)
@@ -176,25 +173,26 @@ class Experiment:
             buffsize = poolsize * 10
         )
 
+        solver_generic_params = dict(
+            max_tries = max_tries,
+            max_flips = max_flips,
+        )
 
         self.setup = dict(
             solver = solver,
             solver_specific = solver_params,
-            solver_generic  = dict(
-                max_tries = max_tries,
-                max_flips = max_flips,
-            ),
+            solver_generic  = solver_generic_params,
             meta = (
                 measurement_constructor,
             )
         )
 
-        self.evaluate = evaluation
         self.poolsize = poolsize
         self.results = None
         self.database = database
 
-        with sqlite3.connect(self.database) as conn:
+        with sqlite3.connect(self.database, timeout = 60) as conn:
+            # init database, if not already done
             c = conn.cursor()
             c.execute(create_experiment)
             c.execute(create_parameter)
@@ -202,14 +200,47 @@ class Experiment:
             c.execute(create_search_run)
             conn.commit()
 
+            # save this experiment
+            c.execute(
+                save_experiment,
+                (
+                    solver,
+                    input_dir,
+                    sample_size
+                )
+            )
+            self.experiment_id = c.lastrowid
+
+            for k, v in dict(**solver_generic_params, **solver_params).items():
+                c.execute(
+                    save_parameter,
+                    (
+                        self.experiment_id,
+                        k,
+                        str(v),
+                        type(v).__name__,
+                    )
+                )
+            conn.commit()
 
 
-    def _run_solver(self, formula):
-        return solvers[self.setup['solver']](
+    def _run_solver(self, fp_and_formula):
+        fp, formula = fp_and_formula
+        assgn, measurement = solvers[self.setup['solver']](
             *self.setup['solver_specific'].values(),
             formula,
             *self.setup['solver_generic'].values(),
-            *self.setup['meta']
+            *self.setup['meta'],
+        )
+
+        return dict(
+            formula_file = fp,
+            sat_assgn    = formula.satisfying_assignment,
+            num_clauses  = formula.num_clauses,
+            num_vars     = formula.num_vars,
+            sat          = True if assgn else False,
+            tms_entropy  = measurement.get_tms_entropy(),
+            runs         = measurement.run_measurements,
         )
 
 
@@ -219,14 +250,8 @@ class Experiment:
 
         self.run = True
         with mp.Pool(processes = self.poolsize) as pool:
-            results = pool.map(self._run_solver,self.formulae)
+            self.results = pool.map(self._run_solver,self.formulae)
 
-        self.results = list(
-            map(
-                lambda result: (result[0], self.evaluate(result[1])),
-                results
-            )
-        )
         return self.results
 
 
@@ -235,7 +260,40 @@ class Experiment:
 
 
     def save_results(self):
-        pass
+        with sqlite3.connect(self.database, timeout = 60) as conn:
+            c = conn.cursor()
+            for result in self.results:
+                c.execute(
+                    save_algorithm_run,
+                    (
+                        self.experiment_id,
+                        result['formula_file'],
+                        str(result['sat_assgn']),
+                        result['num_clauses'],
+                        result['num_vars'],
+                        result['sat'],
+                        result['tms_entropy'],
+                    )
+                )
+                run_id = c.lastrowid
+                for run in result['runs']:
+                    c.execute(
+                        save_search_run,
+                        (
+                            run_id,
+                            run['flips'],
+                            run['single_entropy'],
+                            run['joint_entropy'],
+                            run['mututal_information'],
+                            run['start_assgn'],
+                            run['final_assgn'],
+                            run['success'],
+                        )
+                    )
+                c.commit()
+
+
+
 
 
 
