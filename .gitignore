@@ -1,3 +1,4 @@
+*.db
 *.swp
 # generated tex files
 *.gen.tex
