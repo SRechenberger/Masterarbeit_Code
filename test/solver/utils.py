@@ -119,20 +119,20 @@ class TestScores(unittest.TestCase):
                 )
 
 
-        for formula in FormulaSupply(self.paths, self.buffsize):
+        for _, formula in FormulaSupply(self.paths, self.buffsize):
             n = formula.num_vars
             falselist = Falselist()
             assgn = formula.satisfying_assignment
             # may crash
             scores = Scores(formula, assgn, falselist)
 
-            check_consistency(scores, formula, falselist, assgn, 50)
+            check_consistency(scores, formula, falselist, assgn, formula.num_vars // 4)
 
             # may crash
             for to_flip in random.sample(range(1,n+1), 3):
                 scores.flip(to_flip, formula, assgn, falselist)
 
-            check_consistency(scores, formula, falselist, assgn, 50)
+            check_consistency(scores, formula, falselist, assgn, formula.num_vars // 4)
 
 
 class TestFormula(unittest.TestCase):
