@@ -60,7 +60,7 @@ def probsat_heuristic(max_occ,c_make,c_break,func_lbl = 'poly'):
 
     return heur
 
-def probsat(formula,max_tries,max_flips,measurement,c_make = 0, c_break = 2.3, phi = 'poly'):
+def probsat(formula,measurement,max_tries,max_flips,c_make = 0, c_break = 2.3, phi = 'poly'):
     return generic_sls(
         probsat_heuristic(formula.max_occs,c_make,c_break,phi),
         formula,
