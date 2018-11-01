@@ -77,6 +77,7 @@ def generic_sls(
                     t_end = time.time()
                     t_diff = t_end-t_begin
                     print('Avg time per flip: {} seconds'.format(t_diff/(f+t*max_flips)))
+                measurement.end_run(success = True)
                 return current_assignment, measurement
 
             # choose variable to flip
@@ -101,4 +102,5 @@ def generic_sls(
         t_end = time.time()
         t_diff = t_end-t_begin
         print('Avg time per flip: {} seconds'.format(t_diff/(max_tries*max_flips)))
+    measurement.end_run(success = False)
     return None, measurement
