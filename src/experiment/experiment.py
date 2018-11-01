@@ -227,10 +227,10 @@ class Experiment:
     def _run_solver(self, fp_and_formula):
         fp, formula = fp_and_formula
         assgn, measurement = solvers[self.setup['solver']](
-            *self.setup['solver_specific'].values(),
             formula,
             *self.setup['solver_generic'].values(),
             *self.setup['meta'],
+            **self.setup['solver_specific'],
         )
 
         return dict(
