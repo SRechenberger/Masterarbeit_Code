@@ -1,7 +1,10 @@
 import src.solver.utils as s_utils
 import math
 import numpy as np
+import sys
 from scipy.special import binom
+from src.utils import *
+from src.solver.utils import Formula, Assignment
 
 def eta(p):
     if p == 0:
@@ -22,8 +25,11 @@ def entropy(distr):
     return h
 
 
+def mutual_information(distr):
+    return 0
+
 def binomial_vec(length):
-    return np.array([binom(length,x)/pow(length,2) for x in range(0,length+1)])
+    return np.array([binom(length-1,x)/pow(2,length-1) for x in range(0,length)])
 
 
 class Measurement:
@@ -36,7 +42,7 @@ class Measurement:
     def init_run(self, assgn):
         pass
 
-    def end_run(self):
+    def end_run(self, success = False):
         pass
 
     def count(self, flipped_var):
@@ -61,7 +67,6 @@ class EntropyMeasurement(Measurement):
         self.run_measurement = []
         self.tms_steps = {}
 
-
     def init_run(self, assgn):
         if __debug__:
             instance_check('assgn',assgn,Assignment)
@@ -81,14 +86,16 @@ class EntropyMeasurement(Measurement):
         self.curr_assgn = assgn
         self.curr_hamming_dist = self.sat_assgn.hamming_dist(assgn)
         self.tms_steps = {}
+        self.run_measurements = []
 
 
     def end_run(self, success = False):
         self.run_measurements.append(
             dict(
-                single_steps = self.single_steps,
-                joint_steps  = self.joint_steps,
                 flips        = self.steps,
+                single_steps = entropy(self.single_steps),
+                joint_steps  = entropy(self.joint_steps),
+                mututal_information = mutual_information(self.joint_steps),
                 start_assgn  = self.start_assgn,
                 final_assgn  = str(self.curr_assgn),
                 success      = success,
@@ -96,9 +103,9 @@ class EntropyMeasurement(Measurement):
         )
 
 
-    def get_tms_entropy(self, eps = 0.001, max_loops = 1000):
+    def get_tms_entropy(self, eps = 0.001, max_loops = 10000):
         # get number of states
-        tms_states = self.sat_assgn.num_vars
+        tms_states = self.sat_assgn.num_vars + 1
 
         # initiate initial distribution
         T_0 = binomial_vec(tms_states)
@@ -107,27 +114,53 @@ class EntropyMeasurement(Measurement):
         Pi = np.zeros((tms_states,tms_states))
 
         ## absolute probability
-        for (s,t),count in self.tms_steps:
+        for (s,t),count in self.tms_steps.items():
             Pi[s][t] = count
+
 
         ## relative probability
         for i,row in enumerate(Pi):
             s = sum(row)
+            if s == 0:
+                if i == 0:
+                    Pi[0][0] = 1
+                    Pi[0][1] = 1
+                    s = 2
+                elif i == tms_states-1:
+                    Pi[i][i] = 1
+                    Pi[i][i-1] = 1
+                    s = 2
+                else:
+                    Pi[i][i+1] = 1
+                    Pi[i][i-1] = 1
+                    s = 2
+
             for j,cell in enumerate(row):
                 Pi[i][j] = cell/s
 
+        for row in Pi:
+            test = 0
+            for cell in row:
+                if cell > 0:
+                    test += 1
+
+
+
         # approximate stationary distribution
         distr = T_0.copy()
-        qdiff = float('inf')
-        loops = 0
-        while qdiff > eps and loops < max_loops:
-            # calculate new tmp
-            tmp = np.dot(Pi,tmp)
 
-            # calculate quadratic distance
-            qdiff = 0
+        s = sum(distr)
+
+        loops = 0
+        converging = 0
+        while loops < 100 or (converging < len(distr) and loops < max_loops):
+            # calculate new tmp
+            tmp = distr @ Pi
+
+            converging = 0
             for (d,t) in zip(distr,tmp):
-                qdiff += pow(abs(d-t),2)
+                if abs(d-t) <= eps:
+                    converging += 1
 
             # save new tmp
             distr = tmp
@@ -136,10 +169,11 @@ class EntropyMeasurement(Measurement):
             loops += 1
 
         # calculate state entropy
-        state_entropy = [sum(map(eta,row)) for row in Pi]
+        state_entropy = np.array([sum(map(eta,row)) for row in Pi])
 
         # calculate entropy rate
-        return sum([h*p for (h,p) in zip(distr,state_entropy)])
+        h = np.inner(state_entropy, distr)
+        return h
 
 
     def count(self, flipped_var):
@@ -173,11 +207,12 @@ class EntropyMeasurement(Measurement):
         #  there are no sideway-steps considering hamming distance!
         tmp = self.curr_hamming_dist
         if self.curr_assgn[flipped_var] == self.sat_assgn[flipped_var]:
-            self.curr_hamming_dist += 1
-        else:
             self.curr_hamming_dist -= 1
+        else:
+            self.curr_hamming_dist += 1
 
-        tpl = (tmp, self.curr_hamming_dist)
+        n = self.formula.num_vars
+        tpl = (n - tmp, n - self.curr_hamming_dist)
         if tpl in self.tms_steps:
             self.tms_steps[tpl] += 1
         else:
@@ -198,8 +233,9 @@ class FormulaSupply:
   def __fill_buffer(self):
     i = self.buffsize
     while i > 0 and self.file_paths:
-        with open(self.file_paths.pop()) as f:
-            self.buffer.append(s_utils.Formula(f.read()))
+        fp = self.file_paths.pop()
+        with open(fp, 'r') as f:
+            self.buffer.append((fp,s_utils.Formula(f.read())))
         i -= 1
 
   def __iter__(self):
