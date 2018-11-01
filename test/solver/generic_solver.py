@@ -49,9 +49,9 @@ class TestSolver(unittest.TestCase):
         for formula in self.solver_setup['formulae']:
             assgn, measurement = solver(
                 formula,
+                TestMeasurement,
                 self.solver_setup['max_tries'],
                 self.solver_setup['max_flips'],
-                TestMeasurement
             )
             if assgn:
                 self.assertTrue(measurement.flips > 0)
