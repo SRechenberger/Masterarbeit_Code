@@ -92,6 +92,7 @@ def generic_sls(
             # increment flip counter
             f += 1
 
+        measurement.end_run(success = False)
         # increment try counter
         t += 1
 
@@ -102,5 +103,5 @@ def generic_sls(
         t_end = time.time()
         t_diff = t_end-t_begin
         print('Avg time per flip: {} seconds'.format(t_diff/(max_tries*max_flips)))
-    measurement.end_run(success = False)
+    
     return None, measurement
