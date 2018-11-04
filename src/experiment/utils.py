@@ -26,7 +26,21 @@ def entropy(distr):
 
 
 def mutual_information(distr):
-    return 0
+    X = {}
+    Y = {}
+    for (x,y),v in distr.items():
+        if x in X:
+            X[x] += v
+        else:
+            X[x] = v
+
+        if y in Y:
+            Y[y] += v
+        else:
+            Y[y] = v
+
+    return entropy(X) + entropy(Y) - entropy(distr)
+
 
 def binomial_vec(length):
     return np.array([binom(length-1,x)/pow(2,length-1) for x in range(0,length)])
