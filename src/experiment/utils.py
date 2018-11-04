@@ -106,13 +106,13 @@ class EntropyMeasurement(Measurement):
     def end_run(self, success = False):
         self.run_measurements.append(
             dict(
-                flips        = self.steps,
-                single_steps = entropy(self.single_steps),
-                joint_steps  = entropy(self.joint_steps),
+                flips               = self.steps,
+                single_entropy      = entropy(self.single_steps),
+                joint_entropy       = entropy(self.joint_steps),
                 mututal_information = mutual_information(self.joint_steps),
-                start_assgn  = self.start_assgn,
-                final_assgn  = str(self.curr_assgn),
-                success      = success,
+                start_assgn         = self.start_assgn,
+                final_assgn         = str(self.curr_assgn),
+                success             = success,
             )
         )
 
