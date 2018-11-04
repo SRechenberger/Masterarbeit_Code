@@ -78,7 +78,7 @@ class EntropyMeasurement(Measurement):
         self.run_id = 0
         self.sat_assgn = formula.satisfying_assignment
         self.formula   = formula
-        self.run_measurement = []
+        self.run_measurements = []
         self.tms_steps = {}
 
     def init_run(self, assgn):
@@ -100,7 +100,6 @@ class EntropyMeasurement(Measurement):
         self.curr_assgn = assgn
         self.curr_hamming_dist = self.sat_assgn.hamming_dist(assgn)
         self.tms_steps = {}
-        self.run_measurements = []
 
 
     def end_run(self, success = False):
