@@ -19,9 +19,9 @@ solvers = dict(
 create_experiment = """
 CREATE TABLE IF NOT EXISTS experiment
     ( id            INTEGER PRIMARY KEY
-    , solver        TEXT
-    , source_folder TEXT
-    , sample_size   INT
+    , solver        TEXT NOT NULL
+    , source_folder TEXT NOT NULL
+    , sample_size   INT NOT NULL
     )
 """
 
@@ -37,10 +37,10 @@ VALUES (?,?,?)
 create_parameter = """
 CREATE TABLE IF NOT EXISTS parameter
     ( id                INTEGER PRIMARY KEY
-    , experiment_id     INTEGER
-    , name              TEXT
-    , val               TEXT
-    , type              TEXT
+    , experiment_id     INTEGER NOT NULL
+    , name              TEXT NOT NULL
+    , val               TEXT NOT NULL
+    , type              TEXT NOT NULL
     , FOREIGN KEY(experiment_id) REFERENCES experiment(id)
     )
 """
@@ -58,13 +58,13 @@ VALUES (?,?,?,?)
 create_algorithm_run = """
 CREATE TABLE IF NOT EXISTS algorithm_run
     ( id                INTEGER PRIMARY KEY
-    , experiment_id     INTEGER
-    , formula_file      TEXT
-    , sat_assgn         TEXT
-    , clauses           INT
-    , vars              INT
-    , sat               BOOL
-    , tms_entropy       REAL
+    , experiment_id     INTEGER NOT NULL
+    , formula_file      TEXT NOT NULL
+    , sat_assgn         TEXT NOT NULL
+    , clauses           INT NOT NULL
+    , vars              INT NOT NULL
+    , sat               BOOL NOT NULL
+    , tms_entropy       REAL NOT NULL
     , FOREIGN KEY(experiment_id) REFERENCES experiment(id)
     )
 """
@@ -85,14 +85,14 @@ VALUES (?,?,?,?,?,?,?)
 create_search_run = """
 CREATE TABLE IF NOT EXISTS search_run
     ( id                    INTEGER PRIMARY KEY
-    , run_id                INTEGER
-    , flips                 INT
-    , single_entropy        REAL
-    , joint_entropy         REAL
-    , mutual_information    REAL
-    , start_assgn           TEXT
-    , end_assgn             TEXT
-    , success               BOOL
+    , run_id                INTEGER NOT NULL
+    , flips                 INT NOT NULL
+    , single_entropy        REAL NOT NULL
+    , joint_entropy         REAL NOT NULL
+    , mutual_information    REAL NOT NULL
+    , start_assgn           TEXT NOT NULL
+    , end_assgn             TEXT NOT NULL
+    , success               BOOL NOT NULL
     , FOREIGN KEY(run_id) REFERENCES algorithm_rum(id)
     )
 """
