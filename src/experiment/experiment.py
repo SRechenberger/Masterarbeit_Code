@@ -290,7 +290,7 @@ class Experiment:
                             run['success'],
                         )
                     )
-                c.commit()
+                conn.commit()
 
 
 
