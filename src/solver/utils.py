@@ -206,7 +206,7 @@ class Formula:
             seed = None,
             poolsize = 1,
             verbose = False):
-        assert type(directoy) == str, "directory is no str"
+        assert type(directory) == str, "directory is no str"
         assert type(number) == int, "number is no int"
         assert number > 0, "number <= 0"
         assert type(num_vars) == int, "num_vars is no int"
