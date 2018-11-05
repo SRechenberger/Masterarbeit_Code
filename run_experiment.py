@@ -1,4 +1,5 @@
 import argparse
+import time
 
 from src.experiment.experiment import Experiment
 from src.experiment.utils import EntropyMeasurement
@@ -73,6 +74,19 @@ parser.add_argument(
     default = 1,
 )
 
+parser.add_argument(
+    '--verbose',
+    help = 'measure and print time taken by each experiment',
+    action = 'store_true',
+)
+
+
+def calc_time(seconds):
+    s = seconds % 60
+    m = (seconds // 60) % 60
+    h = seconds // (60*60)
+    return h, m, s
+
 
 if __name__ == '__main__':
     args = parser.parse_args()
@@ -94,6 +108,10 @@ if __name__ == '__main__':
 
     count = 0
     while count < args.repeat:
+        # setup
+        if args.verbose:
+            print('Experiment #{} setup... '.format(count+1), end = '')
+
         e = Experiment(
             args.input_dir,
             args.sample_size,
@@ -105,7 +123,23 @@ if __name__ == '__main__':
             database = args.database_file,
             **setup,
         )
+
+        # running
+        if args.verbose:
+            print('running... ',end='')
+            begin_time = time.time()
+
         e.run_experiment()
+
+        #saving
+        if args.verbose:
+            time_taken = time.time() - begin_time
+            print(
+                'finished in {}h {}m {}s...'.format(*calc_time(int(time_taken))),
+                end = ''
+            )
         e.save_results()
+        if args.verbose:
+            print('saved.')
         count += 1
 
