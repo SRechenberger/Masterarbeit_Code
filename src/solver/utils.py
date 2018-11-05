@@ -208,13 +208,13 @@ class Formula:
             verbose = False):
         assert type(directoy) == str, "directory is no str"
         assert type(number) == int, "number is no int"
-        assert strict_positive(number), "number <= 0"
+        assert number > 0, "number <= 0"
         assert type(num_vars) == int, "num_vars is no int"
-        assert strict_positive(num_vars), "num_vars <= 0"
+        assert num_vars > 0, "num_vars <= 0"
         assert type(ratio) == float, "ratio is no float"
-        assert strict_positive(ratio), "ratio <= 0"
+        assert ratio > 0, "ratio <= 0"
         assert type(clause_length) == int, "clause_length is no int"
-        assert strict_positive(clause_length), "clause_length <= 0"
+        assert clause_length > 0, "clause_length <= 0"
 
         if seed:
             random.seed(seed)
