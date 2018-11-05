@@ -126,8 +126,7 @@ class Formula:
 
 
     def is_satisfied_by(self, assignment):
-        if __debug__:
-            instance_check('assignment',assignment,Assignment)
+        assert isinstance(assignment, Assignment), "assignment is no Assignment"
 
         for clause in self.clauses:
             true_clause = False
@@ -142,26 +141,20 @@ class Formula:
 
 
     def get_occurrences(self, literal):
+        assert type(literal) == int, "literal is no int"
+        assert literal != 0, "literal == 0"
+
         return self.occurrences[self.num_vars + literal]
 
 
     def generate_satisfiable_formula(num_vars, ratio, clause_length = 3, seed=None):
-        if __debug__:
-            # type check
-            type_check('clause_length',clause_length,int)
-            type_check('num_vars',num_vars,int)
-            type_check('ratio',ratio,float)
-
-            # value check
-            value_check('clause_length', clause_length, strict_positive=strict_positive)
-            value_check('num_vars', num_vars, strict_positive=strict_positive)
-            value_check('ratio', ratio, strict_positive=strict_positive)
-
-            if clause_length != 3:
-                raise RuntimeError(
-                    'Method \'generate_satisfiable_formula\' only implemented for 3CNF yet.'
-                )
-
+        assert type(clause_length) == int, "clause_length is no int"
+        assert clause_length > 0, "clause_length <= 0"
+        assert type(num_vars) == int, "num_vars is no int"
+        assert num_vars > 0, "num_vars <= 0"
+        assert type(ratio) == float, "ratio is no float"
+        assert ratio > 0, "ratio <= 0"
+        assert clause_length == 3, 'Method \'generate_satisfiable_formula\' only implemented for 3CNF yet.'
 
         # optional arguments
         if seed:
@@ -213,16 +206,15 @@ class Formula:
             seed = None,
             poolsize = 1,
             verbose = False):
-        if __debug__:
-            type_check('directory',directory,str)
-            type_check('number',number,int)
-            value_check('number',number,strict_pos = strict_positive)
-            type_check('num_vars',num_vars,int)
-            value_check('num_vars',num_vars,strict_pos = strict_positive)
-            type_check('ratio',ratio,float)
-            value_check('ratio',ratio,strict_pos = strict_positive)
-            type_check('clause_length',clause_length,int)
-            value_check('clause_length',clause_length,strict_pos = strict_positive)
+        assert type(directoy) == str, "directory is no str"
+        assert type(number) == int, "number is no int"
+        assert strict_positive(number), "number <= 0"
+        assert type(num_vars) == int, "num_vars is no int"
+        assert strict_positive(num_vars), "num_vars <= 0"
+        assert type(ratio) == float, "ratio is no float"
+        assert strict_positive(ratio), "ratio <= 0"
+        assert type(clause_length) == int, "clause_length is no int"
+        assert strict_positive(clause_length), "clause_length <= 0"
 
         if seed:
             random.seed(seed)
