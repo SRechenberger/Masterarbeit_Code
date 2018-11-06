@@ -15,10 +15,22 @@ def walksat_heuristic(rho):
         clause = context.formula.clauses[clause_idx]
         dice = random.random()
 
+        best_score = -context.formula.max_occs
+        clause_best = []
+
+        for c in clause:
+            v = abs(c)
+            s = context.score.get_score_of_var(v)
+            if s > best_score:
+                best_score = s
+                clause_best = [v]
+            elif s == best_score:
+                clause_best.append(v)
+
+
         # Greedy
-        if dice < rho:
-            best = context.score.get_best_bucket()
-            return random.choice(list(best))
+        if dice > rho:
+            return random.choice(list(clause_best))
 
         # Noisy
         else:
