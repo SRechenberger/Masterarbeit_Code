@@ -523,6 +523,8 @@ class Scores:
     def get_best_bucket(self):
         return self.diff_buckets[self.best_score]
 
+    def get_score_of_var(self, var):
+        return self.bucket_mapping[var]
 
     def increment_break_score(self, variable):
         if __debug__:
