@@ -2,5 +2,4 @@
 
 
  ## TODO
- 
-  - include hamming distance at start in each run
+  - run some experiments
