@@ -96,7 +96,7 @@ class EntropyMeasurement(Measurement):
         self.last_step = None
 
         # TMS entropy
-        self.start_assgn = str(assgn)
+        self.start_assgn = assgn
         self.curr_assgn = assgn
         self.curr_hamming_dist = self.sat_assgn.hamming_dist(assgn)
         self.tms_steps = {}
@@ -109,7 +109,8 @@ class EntropyMeasurement(Measurement):
                 single_entropy      = entropy(self.single_steps),
                 joint_entropy       = entropy(self.joint_steps),
                 mututal_information = mutual_information(self.joint_steps),
-                start_assgn         = self.start_assgn,
+                hamming_dist        = self.formula.satisfying_assignment.hamming_dist(self.start_assgn),
+                start_assgn         = str(self.start_assgn),
                 final_assgn         = str(self.curr_assgn),
                 success             = success,
             )
