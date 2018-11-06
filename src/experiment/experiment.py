@@ -90,6 +90,7 @@ CREATE TABLE IF NOT EXISTS search_run
     , single_entropy        REAL NOT NULL
     , joint_entropy         REAL NOT NULL
     , mutual_information    REAL NOT NULL
+    , hamming_dist          INT NOT NULL
     , start_assgn           TEXT NOT NULL
     , end_assgn             TEXT NOT NULL
     , success               BOOL NOT NULL
@@ -103,12 +104,13 @@ INSERT INTO search_run
     , flips
     , single_entropy
     , joint_entropy
+    , hamming_dist
     , mutual_information
     , start_assgn
     , end_assgn
     , success
     )
-VALUES (?,?,?,?,?,?,?,?)
+VALUES (?,?,?,?,?,?,?,?,?)
 """
 
 class Experiment:
@@ -285,6 +287,7 @@ class Experiment:
                             run['single_entropy'],
                             run['joint_entropy'],
                             run['mututal_information'],
+                            run['hamming_dist'],
                             run['start_assgn'],
                             run['final_assgn'],
                             run['success'],
