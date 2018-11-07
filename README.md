@@ -40,6 +40,7 @@ Contains Experiment class.
 Contains experimentation utilities.
 
 ## TODO (ordered by priority)
+  0. *Check Score class concerning the diff score*
   1. minimum, maximum and average (?) *windowed* path entropy
      - minimum should be the most interesting (?)
      - all of them may be interesting, especially relative to d(a,a*)
