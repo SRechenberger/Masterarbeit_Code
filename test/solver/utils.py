@@ -71,7 +71,7 @@ class TestScores(unittest.TestCase):
         dirname = 'test_files'
         Formula.generate_formula_pool(
             dirname,
-            20,
+            100,
             256,
             4.2,
             poolsize=3
@@ -117,6 +117,7 @@ class TestScores(unittest.TestCase):
                     mk-br,
                     score.bucket_mapping[x]
                 )
+                self.assertTrue(abs(score.get_score_of_var(x)) <= formula.max_occs)
 
 
         for _, formula in FormulaSupply(self.paths, self.buffsize):
@@ -126,13 +127,13 @@ class TestScores(unittest.TestCase):
             # may crash
             scores = Scores(formula, assgn, falselist)
 
-            check_consistency(scores, formula, falselist, assgn, formula.num_vars // 4)
+            check_consistency(scores, formula, falselist, assgn, formula.num_vars // 2)
 
             # may crash
-            for to_flip in random.sample(range(1,n+1), 3):
+            for to_flip in random.sample(range(1,n+1), formula.num_vars // 2):
                 scores.flip(to_flip, formula, assgn, falselist)
 
-            check_consistency(scores, formula, falselist, assgn, formula.num_vars // 4)
+            check_consistency(scores, formula, falselist, assgn, formula.num_vars // 2)
 
 
 class TestFormula(unittest.TestCase):
