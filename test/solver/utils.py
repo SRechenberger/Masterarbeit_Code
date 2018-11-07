@@ -129,11 +129,11 @@ class TestScores(unittest.TestCase):
 
             check_consistency(scores, formula, falselist, assgn, formula.num_vars // 2)
 
-            # may crash
-            for to_flip in random.sample(range(1,n+1), formula.num_vars // 2):
+            # draw 100 times a sample of size n/2 from n variables for multiple flips of one variable
+            to_flips = [i for _ in range(0,100) for i in random.sample(range(1,n+1),formula.num_vars // 2)]
+            for to_flip in to_flips:
                 scores.flip(to_flip, formula, assgn, falselist)
-
-            check_consistency(scores, formula, falselist, assgn, formula.num_vars // 2)
+                check_consistency(scores, formula, falselist, assgn, formula.num_vars // 2)
 
 
 class TestFormula(unittest.TestCase):
