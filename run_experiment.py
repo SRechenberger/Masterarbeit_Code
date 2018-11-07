@@ -43,13 +43,13 @@ solver_group.add_argument(
 solver_group.add_argument(
     '--probsat_poly',
     help = 'run with ProbSAT algorithm with polynomial phi function',
-    nargs = 2,
+    nargs = 1,
     type = float,
 )
 solver_group.add_argument(
     '--probsat_exp',
     help = 'run with ProbSAT algorithm with exponential phi function',
-    nargs = 2,
+    nargs = 1,
     type = float,
 )
 
@@ -100,7 +100,6 @@ if __name__ == '__main__':
     elif args.probsat_poly:
         solver = 'probsat'
         setup = dict(
-            c_make = args.probsat_poly[0],
             c_break = args.probsat_poly[1],
             phi = 'poly'
         )
