@@ -7,7 +7,6 @@ class TestProbSAT(TestSolver):
         self.generic_test_solver(
             partial(
                 probsat,
-                c_make = 0.0,
                 c_break = 2.3,
                 phi = 'poly',
             )

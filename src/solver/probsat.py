@@ -6,14 +6,14 @@ from src.utils import *
 def poly1(x,c):
     return pow(x,c)
 
-def poly(mk_score,br_score):
-    return mk_score/(1+br_score)
+def poly(br_score):
+    return 1/(1+br_score)
 
 def exp1(x,c):
     return pow(c,x)
 
-def exp(mk_score,br_score):
-    return mk_score/br_score
+def exp(br_score):
+    return 1/br_score
 
 
 functions = dict(
@@ -21,28 +21,19 @@ functions = dict(
     exp = (exp1,exp)
 )
 
-def probsat_heuristic(max_occ,c_make,c_break,func_lbl = 'poly'):
-    if __debug__:
-        type_check('c_make',c_make,float)
-        type_check('c_break',c_break,float)
-        value_check(
-            'func_lbl',func_lbl,
-            either_poly_or_exp = lambda f: f == 'poly' or f == 'exp'
-        )
+def probsat_heuristic(max_occ, c_break, phi = 'poly'):
+    assert type(c_break) == float, "c_break = {} :: {} is no float".format(c_break, type(c_break))
+    assert type(phi) == str, "phi = {} :: {} is no str".format(phi, type(phi))
+    assert phi in functions, "phi = {} is not in {}".format(phi, list(functions.keys()))
 
-    func1, func = functions[func_lbl]
+    func1, func = functions[phi]
 
-    makes  = [func1(x,c_make)  for x in range(0,max_occ+1)]
     breaks = [func1(x,c_break) for x in range(0,max_occ+1)]
 
     def heur(context):
-        if __debug__:
-            instance_check('context',context,GSATContext)
+        assert isinstance(context,GSATContext), "context = {} :: {} is no GSATContext".format(context, type(context))
 
-        f = lambda i: func(
-            makes[context.score.get_make_score(i)],
-            breaks[context.score.get_break_score(i)]
-        )
+        f = lambda i: func(breaks[context.score.get_break_score(i)])
 
         clause_idx = random.choice(context.falselist.lst)
         clause_vars = map(abs,context.formula.clauses[clause_idx])
@@ -60,9 +51,9 @@ def probsat_heuristic(max_occ,c_make,c_break,func_lbl = 'poly'):
 
     return heur
 
-def probsat(formula,measurement,max_tries,max_flips,c_make = 0, c_break = 2.3, phi = 'poly'):
+def probsat(formula, measurement, max_tries, max_flips, c_break = 2.3, phi = 'poly'):
     return generic_sls(
-        probsat_heuristic(formula.max_occs,c_make,c_break,phi),
+        probsat_heuristic(formula.max_occs,c_break,phi),
         formula,
         max_tries,
         max_flips,
