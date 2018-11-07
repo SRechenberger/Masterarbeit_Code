@@ -13,23 +13,24 @@ def walksat_heuristic(rho):
 
         clause_idx = random.choice(context.falselist.lst)
         clause = context.formula.clauses[clause_idx]
-        dice = random.random()
 
-        best_score = -context.formula.max_occs
+        best_score = context.formula.max_occs
         clause_best = []
 
         for c in clause:
             v = abs(c)
-            s = context.score.get_score_of_var(v)
-            if s > best_score:
+            s = context.score.get_break_score(v)
+            if s < best_score:
                 best_score = s
                 clause_best = [v]
             elif s == best_score:
                 clause_best.append(v)
 
 
+        # get random number [0,1)
+        dice = random.random()
         # Greedy
-        if dice > rho:
+        if best_score == 0 or dice > rho:
             return random.choice(list(clause_best))
 
         # Noisy
