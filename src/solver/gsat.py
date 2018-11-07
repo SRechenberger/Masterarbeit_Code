@@ -4,6 +4,8 @@ from collections.abc import Sequence
 import random
 from src.utils import *
 
+import sys
+
 class GSATContext(Context):
     def __init__(self, formula, assgn):
         if __debug__:
@@ -54,9 +56,7 @@ def max_seq(seq, key=lambda x:x):
 
 
 def gsat_heuristic(context):
-    """ Sucks complexitywise; needs to be somehow constant in |Var(F)| """
-
-    best = context.score.get_best_bucket()
+    score, best = context.score.get_best_bucket()
 
     return random.choice(list(best))
 
