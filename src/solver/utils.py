@@ -428,25 +428,15 @@ class Assignment:
 
 class Scores:
     def __init__(self, formula, assignment, falselist):
-        if __debug__:
-            instance_check('formula',formula,Formula)
-            instance_check('assignment',assignment,Assignment)
-            instance_check('falselist',falselist,Falselist)
+        assert isinstance(formula,Formula), "formula = {} :: {} is no Formula".format(formula,type(formula))
+        assert isinstance(assignment,Assignment), "assignment = {} :: {} is no Assignment".format(formula,type(assignment))
+        assert isinstance(falselist,Falselist), "falselist = {} :: {} is no Falselist".format(formula,type(falselist))
 
         self.crit_var = []
         self.num_true_lit = []
         self.breaks = {}
-        self.makes = {}
 
-        self.diff_buckets = {
-            k: set() for k in range(-formula.max_occs, formula.max_occs+1)
-        }
-        self.bucket_mapping = [
-            None for _ in range(0,formula.num_vars+1)
-        ]
-
-        self.best_score = -formula.max_occs
-        self.minimum_score = -formula.max_occs
+        self.buckets = [set() for k in range(0, formula.max_occs+1)]
 
         # Begin at clause 0
         clause_idx = 0
@@ -479,179 +469,119 @@ class Scores:
             elif self.num_true_lit[-1] == 0:
                 # add the clause to the list of false clauses
                 falselist.add(clause_idx)
-                # a flip every literal in the clause will make it sat
-                for lit in clause:
-                    self.increment_make_score(abs(lit))
 
             # next clause
             clause_idx += 1
 
-        for var in range(1,formula.num_vars+1):
-            self.update_diff(var)
-
-
-    def update_diff(self, variable):
-        if __debug__:
-            type_check('variable',variable,int)
-            value_check('variable',variable,strict_positive=strict_positive)
-
-        # calculate the new score
-        new_score = self.get_make_score(variable) - self.get_break_score(variable)
-        # read the old score
-        old_score = self.bucket_mapping[variable]
-
-        # if there is an old score
-        if old_score:
-            # remove from old bucket
-            self.diff_buckets[old_score].remove(variable)
-
-        # add to new bucket
-        self.diff_buckets[new_score].add(variable)
-        self.bucket_mapping[variable] = new_score
-
-        old_score = old_score if old_score else -self.minimum_score
-
-        if new_score > self.best_score:
-            self.best_score = new_score
-        elif new_score < old_score and old_score == self.best_score:
-            for i in range(old_score, new_score-1, -1):
-                if self.diff_buckets[i]:
-                    self.best_score = i
-                    break
-
-
     def get_best_bucket(self):
-        return self.diff_buckets[self.best_score]
+        """ Returns the first non-empty bucket """
+        for score, bucket in enumerate(self.buckets):
+            if bucket:
+                return score, bucket
 
-    def get_score_of_var(self, var):
-        return self.bucket_mapping[var]
+        raise RuntimeError("all buckets are empty")
+
+    def get_break_score(self, var):
+        """ Returns the variable's break score """
+
+        assert type(var) == int, "var = {} :: {} is no int".format(var, type(var))
+        assert var > 0, "var = {} <= 0".format(var)
+
+        if var in self.breaks:
+            return self.breaks[var]
+        else:
+            return 0
 
     def increment_break_score(self, variable):
-        if __debug__:
-            type_check('variable',variable,int)
-            value_check('variable', variable, strict_positive = strict_positive)
+        """ Increments the Break score of the variable and lifts it into the next higher bucket """
+
+        assert type(variable) == int, "variable = {} is no int".format(variable)
+        assert variable > 0, "variable = {} <= 0".format(variable)
 
         if variable in self.breaks:
+            # remove variable from old bucket
+            self.buckets[self.breaks[variable]].remove(variable)
+            # increment break score
             self.breaks[variable] += 1
+            # add variable to new bucket
+            self.buckets[self.breaks[variable]].add(variable)
+
         else:
             self.breaks[variable] = 1
-
+            self.buckets[self.breaks[variable]].add(variable)
 
 
     def decrement_break_score(self, variable):
-        if __debug__:
-            type_check('variable',variable,int)
-            value_check('variable', variable, strict_positive = strict_positive)
+        """ Decrements the Break score of the variable and lowers it into the next lower bucket """
 
-        if variable in self.breaks:
-            self.breaks[variable] -= 1
-            if __debug__:
-                value_check(
-                    'self.breaks[{}]'.format(variable),self.breaks[variable],
-                    positive = positive
-                )
+        assert type(variable) == int, "variable = {} is no int".format(variable)
+        assert variable > 0, "variable = {} <= 0".format(variable)
+        assert variable in self.breaks, "variable = {} not listed in self.breaks".format(variable)
 
+        # remove variable from old bucket
+        self.buckets[self.breaks[variable]].remove(variable)
+        # decrement break score
+        self.breaks[variable] -= 1
+        # add variable to new bucket
+        self.buckets[self.breaks[variable]].add(variable)
 
-
-    def increment_make_score(self, variable):
-        if __debug__:
-            type_check('variable',variable,int)
-            value_check('variable', variable, strict_positive = strict_positive)
-
-        if variable in self.makes:
-            self.makes[variable] += 1
-        else:
-            self.makes[variable] = 1
-
-
-
-
-    def decrement_make_score(self, variable):
-        if __debug__:
-            type_check('variable',variable,int)
-            value_check('variable', variable, strict_positive = strict_positive)
-
-        if variable in self.makes:
-            self.makes[variable] -= 1
-            if __debug__:
-                value_check(
-                    'self.makes[{}]'.format(variable),self.makes[variable],
-                    positive = positive
-                )
-
-
-
-
-    def get_break_score(self, variable):
-        if __debug__:
-            type_check('variable',variable,int)
-
-        if variable in self.breaks:
-            return self.breaks[variable]
-        else:
-            return 0
-
-
-
-    def get_make_score(self, variable):
-        if __debug__:
-            type_check('variable',variable,int)
-
-        if variable in self.makes:
-            return self.makes[variable]
-        else:
-            return 0
-
+        assert self.breaks[variable] >= 0, "self.breaks[variable] = {} < 0".format(self.breaks[variable])
 
 
     def flip(self, variable, formula, assignment, falselist):
-        if __debug__:
-            type_check('variable',variable,int)
-            instance_check('formula',formula,Formula)
-            instance_check('assignment',assignment,Assignment)
-            instance_check('falselist',falselist,Falselist)
-
+        assert type(variable) == int, "variable = {} :: {} is no int".format(variable, type(variable))
+        assert variable > 0, "variable = {} <= 0".format(variable)
+        assert isinstance(formula,Formula), "formula = {} :: {} is no Formula".format(formula,type(formula))
+        assert isinstance(assignment,Assignment), "assignment = {} :: {} is no Assignment".format(formula,type(assignment))
+        assert isinstance(falselist,Falselist), "falselist = {} :: {} is no Falselist".format(formula,type(falselist))
+     
         # a[v] = -a[v]
         assignment.flip(variable)
         # satisfyingLiteral = a[v] ? v : -v
         satisfying_literal = variable if assignment.is_true(variable) else -variable
         # falsifyingLiteral = a[v] ? -v : v
-        # isn't this just -satisfyingLiteral ?
-        falsifying_literal = -variable if assignment.is_true(variable) else variable
+        falsifying_literal = -satisfying_literal
         occs = formula.occurrences
+        # for each clause, 'satisfyingLiteral' occurs in
         for clause_idx in formula.get_occurrences(satisfying_literal):
+            # if the clause is unsat
             if self.num_true_lit[clause_idx] == 0:
+                # remove from falselist
                 falselist.remove(clause_idx)
+                # increment break score of 'variable' (for it is now the only satisfying variable)
                 self.increment_break_score(variable)
+                # make 'variable' critical (dito)
                 self.crit_var[clause_idx] = variable
 
-                # no variable in the clause will make it sat (because it already
-                # is)
-                for lit in formula.clauses[clause_idx]:
-                    self.decrement_make_score(abs(lit))
-                    self.update_diff(abs(lit))
+            # if the clause is sat by one literal
             elif self.num_true_lit[clause_idx] == 1:
+                # 'variable' does not break it
                 self.decrement_break_score(self.crit_var[clause_idx])
-                self.update_diff(self.crit_var[clause_idx])
+
+            # the clause has one more satisfying literal
             self.num_true_lit[clause_idx] += 1
 
+        # for each clause, 'falsifying_literal' occurs in
         for clause_idx in formula.get_occurrences(falsifying_literal):
+            # if the variable was critical
             if self.num_true_lit[clause_idx] == 1:
+                # add the clause to the falselist
                 falselist.add(clause_idx)
+                # decrement its break score (for the clause is already broken)
                 self.decrement_break_score(variable)
-                self.update_diff(variable)
+                # set variable as critical (for whatever reason)
                 self.crit_var[clause_idx] = variable
 
-                # every variable in the clause will make it sat (because it is
-                # no longer)
-                for lit in formula.clauses[clause_idx]:
-                    self.increment_make_score(abs(lit))
-                    self.update_diff(abs(lit))
-
+            # if the clause was satisfyed by a second variable
             elif self.num_true_lit[clause_idx] == 2:
+                # find the critical variable
                 for lit in formula.clauses[clause_idx]:
+                    # if the literal satisfies the clause
                     if assignment.is_true(lit):
+                        # make it the critical variable
                         self.crit_var[clause_idx] = abs(lit)
+                        # increment its break score
                         self.increment_break_score(abs(lit))
-                        self.update_diff(abs(lit))
+
+            # the clause is now satisfied by one fewer literal            
             self.num_true_lit[clause_idx] -= 1

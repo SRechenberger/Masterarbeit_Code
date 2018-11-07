@@ -94,12 +94,6 @@ class TestScores(unittest.TestCase):
                     self.assertFalse(assgn.is_true(lit))
 
             for x in random.sample(range(1,formula.num_vars+1), samplesize):
-                mk = 0
-                for cl_idx in falselist:
-                    if x in map(abs, formula.clauses[cl_idx]):
-                        mk += 1
-                self.assertEqual(mk, score.get_make_score(x))
-
                 br = 0
                 for clause in formula.clauses:
                     if x in map(abs,clause):
@@ -113,11 +107,10 @@ class TestScores(unittest.TestCase):
                         if x == critical:
                             br += 1
                 self.assertEqual(br, score.get_break_score(x))
-                self.assertEqual(
-                    mk-br,
-                    score.bucket_mapping[x]
-                )
-                self.assertTrue(abs(score.get_score_of_var(x)) <= formula.max_occs)
+                for break_score,bucket in score.diff_buckets.items():
+                    for i in bucket:
+                        self.assertEqual(score.get_break_score(i), diff_score)
+                self.assertTrue(abs(score.get_break_score(x)) <= formula.max_occs)
 
 
         for _, formula in FormulaSupply(self.paths, self.buffsize):
@@ -133,7 +126,8 @@ class TestScores(unittest.TestCase):
             to_flips = [i for _ in range(0,100) for i in random.sample(range(1,n+1),formula.num_vars // 2)]
             for to_flip in to_flips:
                 scores.flip(to_flip, formula, assgn, falselist)
-                check_consistency(scores, formula, falselist, assgn, formula.num_vars // 2)
+            
+            check_consistency(scores, formula, falselist, assgn, formula.num_vars//2)
 
 
 class TestFormula(unittest.TestCase):
