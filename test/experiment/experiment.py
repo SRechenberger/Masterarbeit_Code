@@ -57,7 +57,7 @@ class TestExperiment(unittest.TestCase):
             'probsat',
             10,self.n*3,EntropyMeasurement,
             poolsize = 3,
-            c_make = 0.0, c_break = 2.3, phi = 'poly'
+            c_break = 2.3, phi = 'poly'
         )
         results = experiment.run_experiment()
         self.assertTrue(len(results),self.sample_size)
