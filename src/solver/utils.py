@@ -672,13 +672,19 @@ class Scores:
             "falselist = {} :: {} is no Falselist".format(formula,type(falselist))
 
 
-        self.crit_var = []
-        self.num_true_lit = []
+        self.formula = formula
+        self.crit_var = [
+            0 for _ in formula.clauses
+        ]
+        self.num_true_lit = [
+            0 for _ in formula.clauses
+        ]
         self.breaks = {}
 
         self.buckets = [
-            set() for k in range(0, formula.max_occs+1)
+            set() for _ in range(0, formula.max_occs+1)
         ]
+
 
         # all variables have score 0 and are in the 0-bucket
         for v in range(1,formula.num_vars+1):
@@ -687,10 +693,6 @@ class Scores:
 
         # for each clause of the formula
         for clause_idx, clause in enumerate(formula.clauses):
-            # init the criticial variable
-            self.crit_var.append(None)
-            # init the number of true literals for this clause
-            self.num_true_lit.append(0)
             # a local variable to track the critical variable
             crit_var = 0
             # for each literal of the clause
@@ -700,18 +702,18 @@ class Scores:
                     # it MAY BE the critical variable of the clause
                     crit_var = abs(lit)
                     # there is one more true literal
-                    self.num_true_lit[-1] += 1
+                    self.num_true_lit[clause_idx] += 1
 
             # if after the traverse of the clause there is exactly one true
             # literal
-            if self.num_true_lit[-1] == 1:
+            if self.num_true_lit[clause_idx] == 1:
                 # it is the critical literal
-                self.crit_var[-1] = crit_var
+                self.crit_var[clause_idx] = crit_var
                 # thus it breaks the clause
                 self.increment_break_score(crit_var)
 
             # if there is no true literal
-            elif self.num_true_lit[-1] == 0:
+            elif self.num_true_lit[clause_idx] == 0:
                 # add the clause to the list of false clauses
                 falselist.add(clause_idx)
 
@@ -745,7 +747,29 @@ class Scores:
         # increment break score
         self.breaks[variable] += 1
         # add variable to new bucket
-        self.buckets[self.breaks[variable]].add(variable)
+        try:
+            self.buckets[self.breaks[variable]].add(variable)
+        except IndexError as ie:
+            print(
+                "len(self.buckets) == {} and self.breaks[{}] == {}".format(
+                    len(self.buckets), variable, self.breaks[variable]
+                ),
+                file = sys.stderr
+            )
+            breaks = 0
+            for clause_idx,_ in enumerate(self.formula.clauses):
+                if self.num_true_lit[clause_idx] == 1 and self.crit_var[clause_idx] == variable:
+                    breaks += 1
+
+            print(
+                "variable {} breaks {} clauses".format(
+                    variable, breaks
+                ),
+                file=sys.stderr
+            )
+            raise ie
+
+
 
 
     def decrement_break_score(self, variable):
@@ -789,7 +813,7 @@ class Scores:
                 # remove from falselist
                 falselist.remove(clause_idx)
                 # increment break score of 'variable'
-                self.increment_break_score(variable)
+                self.increment_break_score(variable)    # TODO this line triggers the error
                 # make 'variable' critical (dito)
                 self.crit_var[clause_idx] = variable
 
