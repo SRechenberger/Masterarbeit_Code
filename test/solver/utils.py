@@ -2,7 +2,7 @@ import unittest
 import random
 import os
 
-from src.solver.utils import Assignment, Falselist, Formula, Scores
+from src.solver.utils import Assignment, Falselist, Formula, Scores, DiffScores
 from src.experiment.utils import FormulaSupply
 
 class TestAssignment(unittest.TestCase):
@@ -71,7 +71,7 @@ class TestScores(unittest.TestCase):
         dirname = 'test_files'
         Formula.generate_formula_pool(
             dirname,
-            100,
+            5,
             256,
             4.2,
             poolsize=3
@@ -86,33 +86,28 @@ class TestScores(unittest.TestCase):
         self.buffsize = 5
 
 
-    def test_creation_and_flip(self):
-        def check_consistency(score, formula, falselist, assgn, samplesize):
-            # all clauses in the false list should be unsat
-            for cl_idx in falselist:
-                for lit in formula.clauses[cl_idx]:
-                    self.assertFalse(assgn.is_true(lit))
+    def test_diff_score(self):
+        for _, formula in FormulaSupply(self.paths, self.buffsize):
+            n = formula.num_vars
+            assgn = Assignment.generate_random_assignment(n)
+            falselist = Falselist()
+            diff_score = DiffScores(formula,assgn,falselist)
 
-            for x in random.sample(range(1,formula.num_vars+1), samplesize):
-                br = 0
-                for clause in formula.clauses:
-                    if x in map(abs,clause):
-                        critical = 0
-                        for lit in clause:
-                            if assgn.is_true(lit) and critical > 0:
-                                critical = 0
-                                break
-                            elif assgn.is_true(lit):
-                                critical = abs(lit)
-                        if x == critical:
-                            br += 1
-                self.assertEqual(br, score.get_break_score(x))
-                for break_score,bucket in score.diff_buckets.items():
-                    for i in bucket:
-                        self.assertEqual(score.get_break_score(i), diff_score)
-                self.assertTrue(abs(score.get_break_score(x)) <= formula.max_occs)
+            self.assertTrue(diff_score.self_test(formula, assgn, falselist))
+
+            to_flips = [
+                i
+                for _ in range(0,100)
+                for i in random.sample(range(1,n+1), n // 2)
+            ]
+
+            for to_flip in to_flips:
+                diff_score.flip(to_flip, formula, assgn, falselist)
+
+                self.assertTrue(diff_score.self_test(formula, assgn, falselist))
 
 
+    def test_score(self):
         for _, formula in FormulaSupply(self.paths, self.buffsize):
             n = formula.num_vars
             falselist = Falselist()
@@ -120,14 +115,18 @@ class TestScores(unittest.TestCase):
             # may crash
             scores = Scores(formula, assgn, falselist)
 
-            check_consistency(scores, formula, falselist, assgn, formula.num_vars // 2)
+            self.assertTrue(scores.self_test(formula, assgn, falselist))
 
             # draw 100 times a sample of size n/2 from n variables for multiple flips of one variable
-            to_flips = [i for _ in range(0,100) for i in random.sample(range(1,n+1),formula.num_vars // 2)]
+            to_flips = [
+                i
+                for _ in range(0,100)
+                for i in random.sample(range(1,n+1),formula.num_vars // 2)
+            ]
             for to_flip in to_flips:
                 scores.flip(to_flip, formula, assgn, falselist)
-            
-            check_consistency(scores, formula, falselist, assgn, formula.num_vars//2)
+                self.assertTrue(scores.self_test(formula, assgn, falselist))
+
 
 
 class TestFormula(unittest.TestCase):
@@ -139,6 +138,30 @@ class TestFormula(unittest.TestCase):
         for i in range(0,self.cases):
             f = Formula.generate_satisfiable_formula(500, 4.2)
             self.assertEqual(f, Formula(dimacs = str(f)))
+
+
+    def test_occurrence_counting(self):
+        for i in range(0,self.cases):
+            f = Formula.generate_satisfiable_formula(500, 4.2)
+            occ_count = {}
+            for clause in f.clauses:
+                for lit in clause:
+                    if lit in occ_count:
+                        occ_count[lit] += 1
+                    else:
+                        occ_count[lit] = 1
+
+            for k,v in occ_count.items():
+                self.assertEqual(
+                    len(f.get_occurrences(k)),
+                    v
+                )
+                self.assertTrue(
+                    v <= f.max_occs
+                )
+
+
+
 
     def test_random_creation(self):
         for i in range(0,self.cases):
