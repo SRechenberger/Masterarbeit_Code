@@ -71,7 +71,7 @@ class TestScores(unittest.TestCase):
         dirname = 'test_files'
         Formula.generate_formula_pool(
             dirname,
-            100,
+            10,
             256,
             4.2,
             poolsize=3
@@ -133,7 +133,8 @@ class TestScores(unittest.TestCase):
             to_flips = [i for _ in range(0,100) for i in random.sample(range(1,n+1),formula.num_vars // 2)]
             for to_flip in to_flips:
                 scores.flip(to_flip, formula, assgn, falselist)
-                check_consistency(scores, formula, falselist, assgn, formula.num_vars // 2)
+
+            check_consistency(scores, formula, falselist, assgn, formula.num_vars // 2)
 
 
 class TestFormula(unittest.TestCase):
