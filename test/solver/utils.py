@@ -143,6 +143,10 @@ class TestScores(unittest.TestCase):
                 self.assertTrue(
                     scores.self_test(formula,assgn,falselist)
                 )
+                self.assertNotEqual(
+                    old_breaks,
+                    scores.breaks
+                )
                 scores.flip(pos, formula, assgn, falselist)
                 self.assertEqual(
                     old_breaks,
