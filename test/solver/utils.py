@@ -10,12 +10,14 @@ class TestAssignment(unittest.TestCase):
         random.seed()
         self.maxDiff = None
 
+
     def test_creation(self):
         for i in range(1,1000):
             num_vars = random.randrange(1,i+1)
             assgn1 = Assignment.generate_random_assignment(num_vars)
             assgn2 = Assignment(int(str(assgn1),16),num_vars)
             self.assertEqual(str(assgn1),str(assgn2))
+
 
     def test_flip(self):
         for i in range(1,1000):
@@ -27,6 +29,7 @@ class TestAssignment(unittest.TestCase):
             assgn.flip(to_flip)
             number ^= 1 << (to_flip-1)
             self.assertEqual(hex(number), str(assgn))
+
 
     def test_index(self):
         for i in range(1,1000):
@@ -43,6 +46,7 @@ class TestFalselist(unittest.TestCase):
         random.seed()
         self.maxDiff = None
 
+
     def test_add(self):
         l = Falselist()
         t = set()
@@ -52,6 +56,7 @@ class TestFalselist(unittest.TestCase):
             l.add(x)
             t.add(x)
             self.assertEqual(set(l.lst),t)
+
 
     def test_remove(self):
         l = Falselist()
@@ -164,13 +169,11 @@ class TestScores(unittest.TestCase):
                 )
 
 
-
-
-
 class TestFormula(unittest.TestCase):
     def setUp(self):
         random.seed()
         self.cases = 10 if __debug__ else 500
+
 
     def test_random_creation_and_reading(self):
         for i in range(0,self.cases):
@@ -214,8 +217,6 @@ class TestFormula(unittest.TestCase):
                     self.assertTrue(-i in f.clauses[clause_idx])
 
 
-
-
     def test_random_creation(self):
         for i in range(0,self.cases):
             n = random.randrange(10,1001)
@@ -223,12 +224,14 @@ class TestFormula(unittest.TestCase):
             f = Formula.generate_satisfiable_formula(n, r)
             self.assertTrue(abs(f.num_clauses - n * r) < 2)
 
+
     def test_satisfiable_assignment(self):
         for i in range(0,self.cases):
             n = random.randrange(10,1001)
             r = random.randrange(20,42)/10
             f = Formula.generate_satisfiable_formula(n,r)
             self.assertTrue(f.is_satisfied_by(f.satisfying_assignment))
+
 
     def test_hardness(self):
         n = 500
