@@ -1,5 +1,6 @@
 from src.solver.generic_solver import Context, generic_sls
-from src.solver.utils import Formula, Assignment, Scores, Falselist
+from src.solver.utils import Scores, Falselist
+from src.formula import Formula, Assignment
 from collections.abc import Sequence
 import random
 from src.utils import *

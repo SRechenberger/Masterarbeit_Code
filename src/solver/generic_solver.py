@@ -1,4 +1,4 @@
-from src.solver.utils import Formula, Assignment
+from src.formula import Formula, Assignment
 from src.experiment.utils import Measurement
 from src.utils import *
 

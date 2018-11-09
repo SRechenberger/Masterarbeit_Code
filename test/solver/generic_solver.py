@@ -2,7 +2,7 @@ import unittest
 import random
 import time
 
-from src.solver.utils import Formula
+from src.formula import Formula
 from src.experiment.utils import Measurement
 
 
