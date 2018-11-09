@@ -61,7 +61,7 @@ class TestSolver(unittest.TestCase):
                 run_time_exceeded += 1
 
         #print(successes)
-        #self.assertTrue(successes >= self.solver_setup['min_successes'])
+        self.assertTrue(successes >= self.solver_setup['min_successes'])
 
         #self.assertTrue(
         #    run_time_exceeded < self.solver_setup['cases'] - self.solver_setup['min_successes']
