@@ -24,8 +24,8 @@ class TestSolver(unittest.TestCase):
 
         cases = 1 if __debug__ else 100
 
-        n = 64
-        r = 4.0
+        n = 128 
+        r = 4.2
 
         formulae = [
             Formula.generate_satisfiable_formula(n,r)
@@ -60,7 +60,7 @@ class TestSolver(unittest.TestCase):
             if measurement.get_run_time() >= self.solver_setup['max_run_time']:
                 run_time_exceeded += 1
 
-        #print(successes)
+        print("{} successes".format(successes), end=' ')
         self.assertTrue(successes >= self.solver_setup['min_successes'])
 
         #self.assertTrue(
