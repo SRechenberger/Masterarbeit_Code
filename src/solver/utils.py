@@ -105,6 +105,7 @@ class DiffScores:
         self.crit_var = []
         self.num_true_lit = []
         self.score = {}
+        self.best_score = 0
 
 
         self.buckets = {
@@ -154,12 +155,8 @@ class DiffScores:
 
     def get_best_bucket(self):
         """ Returns the first non-empty bucket """
-        best_score = -self.max_score
-        for score, bucket in self.buckets.items():
-            if bucket and score > best_score:
-                best_score = score
 
-        return best_score, self.buckets[best_score]
+        return self.best_score, self.buckets[self.best_score]
 
 
 
@@ -177,11 +174,16 @@ class DiffScores:
         assert type(variable) == int, "variable = {} is no int".format(variable)
         assert variable > 0, "variable = {} <= 0".format(variable)
 
+        # if the flipped variable has the best score,
+        # and is lifted, then the best score is to be incremented
+        if self.best_score == self.score[variable]:
+            self.best_score += 1
         # lift variable to next higher bucket
         self.buckets[self.score[variable]].remove(variable)
         self.buckets[self.score[variable]+1].add(variable)
         # increment break score
         self.score[variable] += 1
+
 
 
     def decrement_score(self, variable):
@@ -190,8 +192,13 @@ class DiffScores:
         assert type(variable) == int, "variable = {} is no int".format(variable)
         assert variable > 0, "variable = {} <= 0".format(variable)
 
+
         # lower variable to next lower bucket
         self.buckets[self.score[variable]].remove(variable)
+        # if the flipped variable was the only variable with best score, and is lowered
+        # then the best score is lowered
+        if self.best_score == self.score[variable] and not self.buckets[self.score[variable]]:
+            self.best_score -= 1
         self.buckets[self.score[variable]-1].add(variable)
         # decrement break score
         self.score[variable] -= 1
