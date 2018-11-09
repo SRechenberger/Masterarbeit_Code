@@ -339,8 +339,9 @@ class Scores:
         self.breaks = {}
 
         self.buckets = [
-            set() for _ in range(0, formula.num_clauses) # formula.max_occs+1)
+            set() for _ in range(0, formula.max_occs+1) # formula.max_occs+1)
         ]
+        self.best_score = 0
 
 
         # all variables have score 0 and are in the 0-bucket
@@ -401,32 +402,12 @@ class Scores:
 
         # remove variable from old bucket
         self.buckets[self.breaks[variable]].remove(variable)
+        if self.best_score == self.breaks[variable] and not self.buckets[self.breaks[variable]]:
+            self.best_score += 1
         # increment break score
         self.breaks[variable] += 1
         # add variable to new bucket
-        try:
-            self.buckets[self.breaks[variable]].add(variable)
-        except IndexError as ie:
-            print(
-                "len(self.buckets) == {} and self.breaks[{}] == {}".format(
-                    len(self.buckets), variable, self.breaks[variable]
-                ),
-                file = sys.stderr
-            )
-            breaks = 0
-            for clause_idx,_ in enumerate(self.formula.clauses):
-                if self.num_true_lit[clause_idx] == 1 and self.crit_var[clause_idx] == variable:
-                    breaks += 1
-
-            print(
-                "variable {} breaks {} clauses (score is {})".format(
-                    variable, breaks, self.breaks[variable]
-                ),
-                file=sys.stderr
-            )
-            raise ie
-
-
+        self.buckets[self.breaks[variable]].add(variable)
 
 
     def decrement_break_score(self, variable):
@@ -436,6 +417,8 @@ class Scores:
         assert variable > 0, "variable = {} <= 0".format(variable)
         assert variable in self.breaks, "variable = {} not listed in self.breaks".format(variable)
 
+        if self.best_score == self.breaks[variable]:
+            self.best_score -= 1
         # remove variable from old bucket
         self.buckets[self.breaks[variable]].remove(variable)
         # decrement break score
