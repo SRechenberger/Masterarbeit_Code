@@ -1,5 +1,5 @@
 from src.solver.generic_solver import Context, generic_sls
-from src.solver.utils import Scores, Falselist
+from src.solver.utils import DiffScores, Scores, Falselist
 from src.formula import Formula, Assignment
 from collections.abc import Sequence
 import random
@@ -17,7 +17,7 @@ class GSATContext(Context):
         self.variables = list(range(1,formula.num_vars+1))
         self.assgn = assgn
         self.falselist = Falselist()
-        self.score = Scores(formula, assgn, self.falselist)
+        self.score = DiffScores(formula, assgn, self.falselist)
 
     def update(self, flipped_var):
         if __debug__:
