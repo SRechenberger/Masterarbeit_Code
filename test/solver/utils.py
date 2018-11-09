@@ -77,12 +77,8 @@ class TestScores(unittest.TestCase):
                 for i in random.sample(range(1,n+1), n // 10)
             ]
 
-            print("score({}) = {}".format(1,diff_score.get_score(1)))
-            diff_score.flip(1, formula, assgn, falselist)
-            #for to_flip in to_flips:
-            #    diff_score.flip(to_flip, formula, assgn, falselist)
-            #    print(to_flip)
-            print("score({}) = {}".format(1,diff_score.get_score(1)))
+            for to_flip in to_flips:
+                diff_score.flip(to_flip, formula, assgn, falselist)
 
             self.assertTrue(diff_score.self_test(formula, assgn, falselist))
 
