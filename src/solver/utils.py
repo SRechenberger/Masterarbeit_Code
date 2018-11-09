@@ -101,7 +101,7 @@ class DiffScores:
         assert isinstance(falselist,Falselist), \
             "falselist = {} :: {} is no Falselist".format(formula,type(falselist))
 
-
+        self.max_score = formula.max_occs
         self.crit_var = []
         self.num_true_lit = []
         self.score = {}
@@ -154,11 +154,13 @@ class DiffScores:
 
     def get_best_bucket(self):
         """ Returns the first non-empty bucket """
+        best_score = -self.max_score
         for score, bucket in self.buckets.items():
-            if bucket:
-                return score, bucket
+            if bucket and score > best_score:
+                best_score = score
 
-        raise RuntimeError("all buckets are empty")
+        return best_score, self.buckets[best_score]
+
 
 
     def get_score(self, var):
