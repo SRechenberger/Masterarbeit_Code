@@ -24,9 +24,9 @@ if platform.sys.version_info.minor < 6:
             if acc > dice:
                 return [x]
 
-
-
     random.choices = choices
+
+
 
 class Formula:
     """ CNF formulae in DIMACS format """
@@ -287,11 +287,7 @@ class Falselist:
 
 
     def remove(self, elem):
-        if __debug__:
-            value_check(
-                'elem', elem, error=IndexError,
-                registered = lambda e: e in self.mapping
-            )
+        assert elem in self.mapping
 
         idx = self.mapping[elem]
         tmp = self.lst[idx]
@@ -430,6 +426,21 @@ class DiffScores:
     def self_test(self, formula, assignment, falselist):
         """ Consistency test """
 
+        # test num_true_lit
+        for clause_idx, clause in enumerate(formula.clauses):
+            true_lits = 0
+            for lit in clause:
+                true_lits += 1 if assignment.is_true(lit) else 0
+
+            if true_lits != self.num_true_lit[clause_idx]:
+                print(
+                    "Clause {}: true_lits {} desired {}".format(
+                        clause_idx, true_lits, self.num_true_lit[clause_idx]
+                    )
+                )
+                return False
+
+        # test variable scores
         for var in range(1,formula.num_vars+1):
             makes = 0
             breaks = 0
@@ -458,7 +469,8 @@ class DiffScores:
             if var not in self.buckets[self.get_score(var)]:
                 return False
 
-            return True
+        # all good
+        return True
 
 
     def __init__(self, formula, assignment, falselist):
@@ -638,6 +650,21 @@ class Scores:
     def self_test(self, formula, assignment, falselist):
         """ Consistency test """
 
+        # test num_true_lit
+        for clause_idx, clause in enumerate(formula.clauses):
+            true_lits = 0
+            for lit in clause:
+                true_lits += 1 if assignment.is_true(lit) else 0
+
+            if true_lits != self.num_true_lit[clause_idx]:
+                print(
+                    "Clause {}: true_lits {} desired {}".format(
+                        clause_idx, true_lits, self.num_true_lit[clause_idx]
+                    )
+                )
+                return False
+
+        # test variable scores
         for var in range(1,formula.num_vars+1):
             breaks = 0
             sat_lit = var if assignment.get_value(var) else -var
@@ -660,7 +687,8 @@ class Scores:
             if var not in self.buckets[self.get_break_score(var)]:
                 return False
 
-            return True
+        # all good
+        return True
 
 
     def __init__(self, formula, assignment, falselist):
@@ -682,7 +710,7 @@ class Scores:
         self.breaks = {}
 
         self.buckets = [
-            set() for _ in range(0, formula.max_occs+1)
+            set() for _ in range(0, formula.num_clauses) # formula.max_occs+1)
         ]
 
 
@@ -762,8 +790,8 @@ class Scores:
                     breaks += 1
 
             print(
-                "variable {} breaks {} clauses".format(
-                    variable, breaks
+                "variable {} breaks {} clauses (score is {})".format(
+                    variable, breaks, self.breaks[variable]
                 ),
                 file=sys.stderr
             )
@@ -808,6 +836,10 @@ class Scores:
         falsifying_literal = -variable if assignment.is_true(variable) else variable
         # for each clause, 'satisfyingLiteral' occurs in
         for clause_idx in formula.get_occurrences(satisfying_literal):
+            assert satisfying_literal in formula.clauses[clause_idx], \
+                "literal {} not in clause {}#{}".format(
+                    satisfying_literal, clause_idx, formula.clauses[clause_idx]
+                )
             # if the clause is unsat
             if self.num_true_lit[clause_idx] == 0:
                 # remove from falselist
@@ -827,6 +859,10 @@ class Scores:
 
         # for each clause, 'falsifying_literal' occurs in
         for clause_idx in formula.get_occurrences(falsifying_literal):
+            assert falsifying_literal in formula.clauses[clause_idx], \
+                "literal {} not in clause {}#{}".format(
+                    falsifying_literal, clause_idx, formula.clauses[clause_idx]
+                )
             # if the variable was critical
             if self.num_true_lit[clause_idx] == 1:
                 # add the clause to the falselist

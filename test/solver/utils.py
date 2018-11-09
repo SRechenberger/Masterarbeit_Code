@@ -111,21 +111,59 @@ class TestScores(unittest.TestCase):
         for _, formula in FormulaSupply(self.paths, self.buffsize):
             n = formula.num_vars
             falselist = Falselist()
-            assgn = formula.satisfying_assignment
-            # may crash
+            assgn = Assignment.generate_random_assignment(n)
+
+            per_side = 5
+            to_flips = random.sample(range(1,n+1), per_side * 2)
+            pos_flips = to_flips[0:per_side]
+            neg_flips = to_flips[per_side:]
+
+            for pos in pos_flips:
+                assgn[pos-1] = True
+
+            for neg in neg_flips:
+                assgn[neg-1] = False
+
             scores = Scores(formula, assgn, falselist)
 
+            # first check after creation
             self.assertTrue(scores.self_test(formula, assgn, falselist))
 
-            # draw 100 times a sample of size n/2 from n variables for multiple flips of one variable
-            to_flips = [
-                i
-                for _ in range(0,100)
-                for i in random.sample(range(1,n+1),formula.num_vars // 2)
-            ]
-            for to_flip in to_flips:
-                scores.flip(to_flip, formula, assgn, falselist)
-                self.assertTrue(scores.self_test(formula, assgn, falselist))
+            # flipping back and forth leave everything as is
+
+            ## from True to False and back
+            for pos in pos_flips:
+                old_breaks = scores.breaks.copy()
+                scores.flip(pos, formula, assgn, falselist)
+                self.assertTrue(
+                    scores.self_test(formula,assgn,falselist)
+                )
+                scores.flip(pos, formula, assgn, falselist)
+                self.assertEqual(
+                    old_breaks,
+                    scores.breaks
+                )
+                self.assertTrue(
+                    scores.self_test(formula,assgn,falselist)
+                )
+
+            ## from False to True and back
+            for neg in neg_flips:
+                old_breaks = scores.breaks.copy()
+                scores.flip(neg, formula, assgn, falselist)
+                self.assertTrue(
+                    scores.self_test(formula,assgn,falselist)
+                )
+                scores.flip(neg, formula, assgn, falselist)
+                self.assertEqual(
+                    old_breaks,
+                    scores.breaks
+                )
+                self.assertTrue(
+                    scores.self_test(formula,assgn,falselist)
+                )
+
+
 
 
 
@@ -159,6 +197,21 @@ class TestFormula(unittest.TestCase):
                 self.assertTrue(
                     v <= f.max_occs
                 )
+
+    def test_occurrences(self):
+        for i in range(0,self.cases):
+            f = Formula.generate_satisfiable_formula(500,4.2)
+            for i in range(1,501):
+                pos_occs = f.get_occurrences(i)
+                neg_occs = f.get_occurrences(-i)
+
+                # validate positive occurrences
+                for clause_idx in pos_occs:
+                    self.assertTrue(i in f.clauses[clause_idx])
+
+                # validate negative occurrences
+                for clause_idx in neg_occs:
+                    self.assertTrue(-i in f.clauses[clause_idx])
 
 
 
