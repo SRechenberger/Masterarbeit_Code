@@ -6,5 +6,5 @@ install:
   - pip install -r req.txt
 
 script:
-  - travis_wait 100 python -m unittest discover -v -s test -p "*.py"
-  - travis_wait 100 python -O -m unittest discover -v -s test -p "*.py"
+  - python -m unittest discover -v -s test -p "*.py"
+  - python -O -m unittest discover -v -s test -p "*.py"
