@@ -1,5 +1,5 @@
 from src.solver.generic_solver import Context, generic_sls
-from src.solver.gsat import GSATContext
+from src.solver.walksat import DefensiveContext
 import random
 from src.utils import *
 
@@ -31,7 +31,7 @@ def probsat_heuristic(max_occ, c_break, phi = 'poly'):
     breaks = [func1(x,c_break) for x in range(0,max_occ+1)]
 
     def heur(context):
-        assert isinstance(context,GSATContext), "context = {} :: {} is no GSATContext".format(context, type(context))
+        assert isinstance(context,DefensiveContext), "context = {} :: {} is no GSATContext".format(context, type(context))
 
         f = lambda i: func(breaks[context.score.get_break_score(i)])
 
@@ -51,13 +51,14 @@ def probsat_heuristic(max_occ, c_break, phi = 'poly'):
 
     return heur
 
+
 def probsat(formula, measurement, max_tries, max_flips, c_break = 2.3, phi = 'poly'):
     return generic_sls(
         probsat_heuristic(formula.max_occs,c_break,phi),
         formula,
         max_tries,
         max_flips,
-        GSATContext,
+        DefensiveContext,
         measurement
     )
 

@@ -1,7 +1,38 @@
-from src.solver.gsat import GSATContext, max_seq
-from src.solver.generic_solver import generic_sls
 import random
 from src.utils import *
+from src.formula import Formula, Assignment
+from src.solver.utils import Falselist, Scores
+from src.solver.generic_solver import generic_sls, Context
+
+class DefensiveContext(Context):
+    def __init__(self, formula, assgn):
+        assert isinstance(formula, Formula),\
+            "formula = {} :: {} is no Formula".format(formula,type(formula))
+        assert isinstance(assgn,Assignment),\
+            "assgn = {} :: {} is no Assignment".format(assgn,type(assgn))
+
+        self.formula = formula
+        self.assgn = assgn
+        self.variables = list(range(1,formula.num_vars+1))
+        self.falselist = Falselist()
+        self.score = Scores(self.formula, self.assgn, self.falselist)
+
+    def update(self, flipped_var):
+        assert type(flipped_var) == int,\
+            "flipped_var = {} :: {} is no int".format(flipped_var, type(flipped_var))
+        assert flipped_var > 0,\
+            "flipped_var = {} <= 0".format(flipped_var)
+
+        self.score.flip(
+            flipped_var,
+            self.formula,
+            self.assgn,
+            self.falselist
+        )
+
+    def is_sat(self):
+        return len(self.falselist) == 0
+
 
 def walksat_heuristic(rho):
     if __debug__:
@@ -9,7 +40,7 @@ def walksat_heuristic(rho):
 
     def heur(context):
         if __debug__:
-            instance_check('context',context,GSATContext)
+            instance_check('context',context,DefensiveContext)
 
         clause_idx = random.choice(context.falselist.lst)
         clause = context.formula.clauses[clause_idx]
@@ -39,13 +70,14 @@ def walksat_heuristic(rho):
 
     return heur
 
+
 def walksat(formula, measurement, max_tries, max_flips, rho = 0.57):
     return generic_sls(
         walksat_heuristic(rho),
         formula,
         max_tries,
         max_flips,
-        GSATContext,
+        DefensiveContext,
         measurement
     )
 
