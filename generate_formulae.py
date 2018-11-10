@@ -1,6 +1,6 @@
 import sys
 import os
-from src.solver.utils import Formula
+from src.formula import Formula
 
 def usage():
     print('Usage: python generate_formulae.py [--usage | DIR NUM NUM_VARS RATIO [--seed SEED] [--poolsize POOLSIZE]] [--verbose]')
