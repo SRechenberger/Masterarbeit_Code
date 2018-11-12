@@ -2,7 +2,7 @@ import unittest
 import random
 
 from src.experiment.experiment import Experiment
-from src.experiment.utils import EntropyMeasurement
+from src.experiment.measurement import EntropyMeasurement
 from src.solver.generic_solver import Context
 from src.solver.gsat import gsat
 from src.solver.walksat import walksat

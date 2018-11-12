@@ -1,5 +1,5 @@
 from src.formula import Formula, Assignment
-from src.experiment.utils import Measurement
+from src.experiment.measurement import Measurement
 from src.utils import *
 
 import time

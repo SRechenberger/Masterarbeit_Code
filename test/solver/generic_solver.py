@@ -3,7 +3,7 @@ import random
 import time
 
 from src.formula import Formula
-from src.experiment.utils import Measurement
+from src.experiment.measurement import Measurement
 
 
 class TestMeasurement(Measurement):
