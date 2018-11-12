@@ -55,14 +55,22 @@ class Queue:
         self.begin = 0
 
 
-    def push(x):
-        ret = self.buffer[self.begin] if self.length == self.buffsize else self.default
-        self.buffer[(self.begin + self.length) % self.buffsize] = x
-        self.length += 1
-        return ret
+    def push(self, x):
+        assert self.length >= 0,\
+            "self.length = {} < 0".format(self.length)
+
+        if self.length < self.buffsize:
+            self.buffer[(self.begin + self.length) % self.buffsize] = x
+            self.length += 1
+            return self.default
+        else:
+            ret = self.buffer[self.begin]
+            self.buffer[(self.begin + self.length) % self.buffsize] = x
+            self.begin += 1
+            return ret
 
 
-    def peek():
+    def top(self):
         if self.length <= 0:
             raise IndexError('Empty Queue')
 
@@ -70,21 +78,21 @@ class Queue:
             return self.buffer[self.begin]
 
 
-    def pop():
+    def pop(self):
         if self.length <= 0:
             raise IndexError('Empty Queue')
 
         else:
-            ret = self.buffer[(self.begin + self.length) % self.buffsize]
+            ret = self.buffer[self.begin]
             self.begin += 1
             self.length -= 1
             return ret
 
-    def is_full():
+    def is_full(self):
         return self.length == self.buffsize
 
 
-    def is_empty():
+    def is_empty(self):
         return self.length == 0
 
 
