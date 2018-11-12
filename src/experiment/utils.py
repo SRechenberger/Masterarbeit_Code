@@ -46,6 +46,41 @@ def binomial_vec(length):
     return np.array([binom(length-1,x)/pow(2,length-1) for x in range(0,length)])
 
 
+class Queue:
+    def __init__(buffsize, default = None):
+        self.buffsize = buffsize
+        self.default = default
+        self.queue = [self.default for _ in range(0,self.buffsize)]
+        self.length = 0
+        self.begin = 0
+
+
+    def push(x):
+        ret = self.queue[self.begin] if self.length == self.buffsize else self.default
+        self.queue[(self.begin + self.length) % self.buffsize] = x
+        self.length += 1
+        return ret
+
+
+    def peek():
+        if self.length <= 0:
+            raise IndexError('Empty Queue')
+
+        else:
+            return self.queue[self.begin]
+
+
+    def pop():
+        if self.length <= 0:
+            raise IndexError('Empty Queue')
+
+        else:
+            ret = self.queue[(self.begin + self.length) % self.buffsize]
+            self.begin += 1
+            self.length -= 1
+            return ret
+
+
 class Measurement:
     """ Abstract Measurement Class;
     the generic SLS solver needs the given measurement object
