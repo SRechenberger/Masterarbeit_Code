@@ -5,6 +5,7 @@ import sys
 from scipy.special import binom
 from src.solver.utils import Formula, Assignment
 
+
 def eta(p):
     if p == 0:
         return 0
