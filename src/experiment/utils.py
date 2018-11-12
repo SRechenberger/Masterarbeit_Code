@@ -47,17 +47,17 @@ def binomial_vec(length):
 
 
 class Queue:
-    def __init__(buffsize, default = None):
+    def __init__(self, buffsize, default = None):
         self.buffsize = buffsize
         self.default = default
-        self.queue = [self.default for _ in range(0,self.buffsize)]
+        self.buffer = [self.default for _ in range(0,self.buffsize)]
         self.length = 0
         self.begin = 0
 
 
     def push(x):
-        ret = self.queue[self.begin] if self.length == self.buffsize else self.default
-        self.queue[(self.begin + self.length) % self.buffsize] = x
+        ret = self.buffer[self.begin] if self.length == self.buffsize else self.default
+        self.buffer[(self.begin + self.length) % self.buffsize] = x
         self.length += 1
         return ret
 
@@ -67,7 +67,7 @@ class Queue:
             raise IndexError('Empty Queue')
 
         else:
-            return self.queue[self.begin]
+            return self.buffer[self.begin]
 
 
     def pop():
@@ -75,10 +75,75 @@ class Queue:
             raise IndexError('Empty Queue')
 
         else:
-            ret = self.queue[(self.begin + self.length) % self.buffsize]
+            ret = self.buffer[(self.begin + self.length) % self.buffsize]
             self.begin += 1
             self.length -= 1
             return ret
+
+    def is_full():
+        return self.length == self.buffsize
+
+
+    def is_empty():
+        return self.length == 0
+
+
+class WindowEntropy:
+    def __init__(self, window_width, blank = None):
+        self.queue = Queue(window_width, default = blank)
+        self.symbol_count = {}
+        self.current_entropy = 0
+        self.blank = None
+
+
+    def count(x):
+        # push the symbol in the queue,
+        # and catch what may be dropped out of it.
+        dropped = self.queue.push(x)
+
+        # if the dropped and the new symbol are the same,
+        # the entropy does not change
+        if dropped == x:
+            return
+
+        # if a symbol was dropped
+        if dropped != self.blank:
+            assert dropped in self.symbol_count[dropped],\
+                "symbol {} never counted".format(dropped)
+            assert self.symbol_count[dropped] > 0,\
+                "self.symbol_count[{}] = {} <= 0".format(dropped,self.symbol_count[dropped])
+
+            # the old share of the dropped symbol
+            h_old = eta(self.symbol_count[dropped] / self.window_width)
+
+            # the new share of the dropped symbol
+            h_new = eta((self.symbol_count[dropped] - 1) / self.window_width)
+
+            # update the counter
+            self.symbol_count[dropped] -= 1
+
+            # update the current entropy
+            self.current_entropy += h_new - h_old
+
+        # init the count for the new symbol,
+        # if not already done
+        if x not in self.count_symbols:
+            self.count_symbols[x] = 0
+
+        # calculate new and old share of the new symbol
+        h_old = eta(self.count_symbols[x]/self.window_width)
+        h_new = eta((self.count_symbols[x]+1)/self.window_width)
+
+        # update counter and entropy
+        self.symbol_count[x] += 1
+        self.current_entropy += h_new - h_old
+
+
+    def get_entropy(if_not_ready = None):
+        if not self.queue.is_full():
+            return if_not_ready
+        else:
+            return self.current_entropy
 
 
 class Measurement:
