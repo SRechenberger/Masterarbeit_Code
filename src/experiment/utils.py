@@ -165,9 +165,10 @@ class Measurement:
 
 class EntropyMeasurement(Measurement):
 
-    """ Counts probability distribution ofr
+    """ Counts probability distribution of
         - Single steps
         - Joint steps
+        - Mutual Information
         - TMS steps
     """
 
