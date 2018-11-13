@@ -67,6 +67,7 @@ class Queue:
             ret = self.buffer[self.begin]
             self.buffer[(self.begin + self.length) % self.buffsize] = x
             self.begin += 1
+            self.begin %= self.buffsize
             return ret
 
 
@@ -85,6 +86,7 @@ class Queue:
         else:
             ret = self.buffer[self.begin]
             self.begin += 1
+            self.begin %= self.buffsize
             self.length -= 1
             return ret
 
@@ -99,12 +101,13 @@ class Queue:
 class WindowEntropy:
     def __init__(self, window_width, blank = None):
         self.queue = Queue(window_width, default = blank)
+        self.window_width = window_width
         self.symbol_count = {}
         self.current_entropy = 0
         self.blank = None
 
 
-    def count(x):
+    def count(self, x):
         # push the symbol in the queue,
         # and catch what may be dropped out of it.
         dropped = self.queue.push(x)
@@ -116,7 +119,7 @@ class WindowEntropy:
 
         # if a symbol was dropped
         if dropped != self.blank:
-            assert dropped in self.symbol_count[dropped],\
+            assert dropped in self.symbol_count,\
                 "symbol {} never counted".format(dropped)
             assert self.symbol_count[dropped] > 0,\
                 "self.symbol_count[{}] = {} <= 0".format(dropped,self.symbol_count[dropped])
@@ -135,19 +138,19 @@ class WindowEntropy:
 
         # init the count for the new symbol,
         # if not already done
-        if x not in self.count_symbols:
-            self.count_symbols[x] = 0
+        if x not in self.symbol_count:
+            self.symbol_count[x] = 0
 
         # calculate new and old share of the new symbol
-        h_old = eta(self.count_symbols[x]/self.window_width)
-        h_new = eta((self.count_symbols[x]+1)/self.window_width)
+        h_old = eta(self.symbol_count[x]/self.window_width)
+        h_new = eta((self.symbol_count[x]+1)/self.window_width)
 
         # update counter and entropy
         self.symbol_count[x] += 1
         self.current_entropy += h_new - h_old
 
 
-    def get_entropy(if_not_ready = None):
+    def get_entropy(self, if_not_ready = None):
         if not self.queue.is_full():
             return if_not_ready
         else:

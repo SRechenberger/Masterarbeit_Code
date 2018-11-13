@@ -7,7 +7,7 @@ from src.experiment.measurement import Measurement
 
 
 class TestMeasurement(Measurement):
-    def __init__(self, formula):
+    def __init__(self, formula, *more_args):
         self.flips = 0
         self.begin_time = time.time()
 

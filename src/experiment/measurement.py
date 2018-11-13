@@ -1,6 +1,7 @@
 import numpy as np
+import math
 from src.solver.utils import Formula, Assignment
-from src.experiment.utils import entropy, mutual_information, binomial_vec, eta
+from src.experiment.utils import entropy, mutual_information, binomial_vec, eta, WindowEntropy
 
 
 class Measurement:
@@ -8,7 +9,7 @@ class Measurement:
     the generic SLS solver needs the given measurement object
     to be an instance of this class or a subclass.
     """
-    def __init__(self, formula):
+    def __init__(self, formula, *more_args):
         pass
     def init_run(self, assgn):
         pass
@@ -30,13 +31,13 @@ def entropy_data(window_width):
         count=0,
     )
 
-def update_entropy_data(data, curr_entropy, curr_assgn):
-    if entropy < data['minimum']:
+def update_entropy_data(data, curr_entropy, curr_hamming_dist):
+    if curr_entropy < data['minimum']:
         data['minimum'] = curr_entropy
-        data['minimum_at'] = curr_assgn
-    if entropy > data['maximum']:
+        data['minimum_at'] = curr_hamming_dist
+    if curr_entropy > data['maximum']:
         data['maximum'] = curr_entropy
-        data['maximum_at'] = curr_assgn
+        data['maximum_at'] = curr_hamming_dist
     data['accum'] += curr_entropy
     data['count'] += 1
 
@@ -65,7 +66,9 @@ class EntropyMeasurement(Measurement):
 
         self.simple_entropy_data = entropy_data(window_width)
         self.joint_entropy_data = entropy_data(window_width-1)
-        self.mututal_information_data = entropy_data(window_width-1)
+        self.mutual_information_data = entropy_data(window_width-1)
+
+        self.run_measurements = []
 
         self.sat_assgn = formula.satisfying_assignment
         self.formula   = formula
@@ -83,23 +86,33 @@ class EntropyMeasurement(Measurement):
         self.simple_entropy_tracker.count(flip)
         h_tmp = self.simple_entropy_tracker.get_entropy()
         if h_tmp:
-            update_entropy_data(self.simple_entropy_data, h_tmp, self.curr_assgn)
+            update_entropy_data(
+                self.simple_entropy_data,
+                h_tmp,
+                self.curr_hamming_dist
+            )
 
         if self.last_step:
             self.joint_entropy_tracker.count((self.last_step,flip))
-            self.left_entropy_tracker(self.last_step)
-            self.right_entropy_tracker(flip)
+            self.left_entropy_tracker.count(self.last_step)
+            self.right_entropy_tracker.count(flip)
+
 
             h_tmp = self.joint_entropy_tracker.get_entropy()
             if h_tmp:
-                update_entropy_data(self.joint_entropy_data, h_tmp, self.curr_assgn)
+                update_entropy_data(
+                    self.joint_entropy_data,
+                    h_tmp,
+                    self.curr_hamming_dist
+                )
                 l_tmp = self.left_entropy_tracker.get_entropy()
                 r_tmp = self.right_entropy_tracker.get_entropy()
                 update_entropy_data(
                     self.mutual_information_data,
                     l_tmp + r_tmp - h_tmp,
-                    self.curr_assgn
+                    self.curr_hamming_dist
                 )
+        self.last_step = flip
 
         # TMS entropy
         #  there are no sideway-steps considering hamming distance!
@@ -144,7 +157,7 @@ class EntropyMeasurement(Measurement):
                 flips=self.steps,
                 single_entropy=self.simple_entropy_data,
                 joint_entropy=self.joint_entropy_data,
-                mututal_information=self.mututal_information_data,
+                mutual_information=self.mutual_information_data,
                 hamming_dist=self.formula.satisfying_assignment.hamming_dist(self.start_assgn),
                 start_assgn=str(self.start_assgn),
                 final_assgn=str(self.curr_assgn),

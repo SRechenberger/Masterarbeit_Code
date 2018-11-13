@@ -89,14 +89,17 @@ CREATE TABLE IF NOT EXISTS search_run
     ( id                    INTEGER PRIMARY KEY
     , run_id                INTEGER NOT NULL
     , flips                 INT NOT NULL
-    , single_entropy        REAL NOT NULL
-    , joint_entropy         REAL NOT NULL
-    , mutual_information    REAL NOT NULL
+    , single_entropy        INTEGER
+    , joint_entropy         INTEGER
+    , mutual_information    INTEGER
     , hamming_dist          INT NOT NULL
     , start_assgn           TEXT NOT NULL
     , end_assgn             TEXT NOT NULL
     , success               BOOL NOT NULL
     , FOREIGN KEY(run_id) REFERENCES algorithm_rum(id)
+    , FOREIGN KEY(single_entropy) REFERENCES entropy_data(id)
+    , FOREIGN KEY(joint_entropy) REFERENCES entropy_data(id)
+    , FOREIGN KEY(mutual_information) REFERENCES entropy_data(id)
     )
 """
 
@@ -106,14 +109,70 @@ INSERT INTO search_run
     , flips
     , single_entropy
     , joint_entropy
-    , hamming_dist
     , mutual_information
+    , hamming_dist
     , start_assgn
     , end_assgn
     , success
     )
 VALUES (?,?,?,?,?,?,?,?,?)
 """
+
+CREATE_ENTROPY_DATA = """
+CREATE TABLE IF NOT EXISTS entropy_data
+    ( id            INTEGER PRIMARY KEY
+    , minimum       REAL
+    , minimum_at    INTEGER
+    , maximum       REAL
+    , maximum_at    INTEGER
+    , average       REAL
+    )
+"""
+
+SAVE_ENTROPY_DATA = """
+INSERT INTO entropy_data
+    ( minimum
+    , minimum_at
+    , maximum
+    , maximum_at
+    , average
+    )
+VALUES (?,?,?,?,?)
+"""
+
+def save_entropy_data(cursor, data):
+    assert isinstance(data,dict),\
+        "data = {} :: {} is no dict".format(data, type(data))
+    assert 'minimum' in data,\
+        "minimum not in data = {}".format(data)
+    assert 'minimum_at' in data,\
+        "mimimum_at not in data = {}".format(data)
+    assert 'maximum' in data,\
+        "maximum not in data = {}".format(data)
+    assert 'maximum_at' in data,\
+        "maximum_at not in data = {}".format(data)
+    assert 'accum' in data,\
+        "accum not in data = {}".format(data)
+    assert 'count' in data,\
+        "count not in data = {}".format(data)
+
+
+    if data['accum'] <= 0:
+        return None
+
+    cursor.execute(
+        SAVE_ENTROPY_DATA,
+        (
+            data['minimum'],
+            data['minimum_at'],
+            data['maximum'],
+            data['maximum_at'],
+            data['accum']/data['count']
+        )
+    )
+
+    return cursor.lastrowid
+
 
 class Experiment:
     """ Random experiment on a set of input formulae """
@@ -197,6 +256,7 @@ class Experiment:
             c.execute(CREATE_PARAMETER)
             c.execute(CREATE_ALGORITHM_RUN)
             c.execute(CREATE_SEARCH_RUN)
+            c.execute(CREATE_ENTROPY_DATA)
             conn.commit()
 
             # save this experiment
@@ -279,14 +339,19 @@ class Experiment:
                 )
                 run_id = c.lastrowid
                 for run in result['runs']:
+
+                    single_entropy_id = save_entropy_data(c, run['single_entropy'])
+                    joint_entropy_id = save_entropy_data(c, run['joint_entropy'])
+                    mutual_information_id = save_entropy_data(c, run['mutual_information'])
+
                     c.execute(
                         SAVE_SEARCH_RUN,
                         (
                             run_id,
                             run['flips'],
-                            run['single_entropy'],
-                            run['joint_entropy'],
-                            run['mututal_information'],
+                            single_entropy_id,
+                            joint_entropy_id,
+                            mutual_information_id,
                             run['hamming_dist'],
                             run['start_assgn'],
                             run['final_assgn'],

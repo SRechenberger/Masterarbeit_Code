@@ -36,7 +36,7 @@ class TestEntropyMeasurement(unittest.TestCase):
 
     def test_measure_tms_count(self):
         for _,f in FormulaSupply(self.dirs):
-            m = EntropyMeasurement(f)
+            m = EntropyMeasurement(f,f.num_vars)
             m.init_run(f.satisfying_assignment)
             d = m.tms_steps
             for i in range(1,f.num_vars+1):

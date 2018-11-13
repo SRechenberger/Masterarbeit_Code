@@ -39,18 +39,13 @@ def generic_sls(
         type_check('max_tries',max_tries,int)
         type_check('max_flips',max_flips,int)
         value_check(
-            'measurement_constructor',measurement_constructor,
-            is_callable = callable,
-            arity_1 = has_arity(1)
-        )
-        value_check(
             'context_constructor', context_constructor,
             is_callable = callable,
             arity_2 = has_arity(2)
         )
 
     #initialize measurement object
-    measurement = measurement_constructor(formula)
+    measurement = measurement_constructor(formula, formula.num_vars // 2)
 
     t = 0
     while t < max_tries:

@@ -37,6 +37,8 @@ class TestExperiment(unittest.TestCase):
         )
         results = experiment.run_experiment()
         self.assertTrue(len(results),self.sample_size)
+        experiment.save_results()
+
 
     def test_experiment_with_walksat(self):
         experiment = Experiment(
@@ -49,6 +51,8 @@ class TestExperiment(unittest.TestCase):
         )
         results = experiment.run_experiment()
         self.assertTrue(len(results),self.sample_size)
+        experiment.save_results()
+
 
     def test_experiment_with_probsat(self):
         experiment = Experiment(
@@ -61,4 +65,5 @@ class TestExperiment(unittest.TestCase):
         )
         results = experiment.run_experiment()
         self.assertTrue(len(results),self.sample_size)
+        experiment.save_results()
 
