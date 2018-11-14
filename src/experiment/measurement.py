@@ -58,15 +58,8 @@ class EntropyMeasurement(Measurement):
             "window_width = {} :: {} is no int".format(window_width, type(window_width))
 
         self.run_id = 0
+        self.window_width = window_width
 
-        self.simple_entropy_tracker = WindowEntropy(window_width)
-        self.joint_entropy_tracker = WindowEntropy(window_width)
-        self.left_entropy_tracker = WindowEntropy(window_width)
-        self.right_entropy_tracker = WindowEntropy(window_width)
-
-        self.simple_entropy_data = entropy_data(window_width)
-        self.joint_entropy_data = entropy_data(window_width-1)
-        self.mutual_information_data = entropy_data(window_width-1)
 
         self.run_measurements = []
 
@@ -138,10 +131,15 @@ class EntropyMeasurement(Measurement):
 
         self.steps = 0
         # path entropy
-        self.single_steps = {}
+        self.simple_entropy_tracker = WindowEntropy(self.window_width)
+        self.simple_entropy_data = entropy_data(self.window_width)
 
         # joint path entropy
-        self.joint_steps = {}
+        self.joint_entropy_tracker = WindowEntropy(self.window_width)
+        self.left_entropy_tracker = WindowEntropy(self.window_width)
+        self.right_entropy_tracker = WindowEntropy(self.window_width)
+        self.joint_entropy_data = entropy_data(self.window_width-1)
+        self.mutual_information_data = entropy_data(self.window_width-1)
         self.last_step = None
 
         # TMS entropy
