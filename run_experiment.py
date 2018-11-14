@@ -2,7 +2,7 @@ import argparse
 import time
 
 from src.experiment.experiment import Experiment
-from src.experiment.utils import EntropyMeasurement
+from src.experiment.measurement import EntropyMeasurement
 
 parser = argparse.ArgumentParser()
 
