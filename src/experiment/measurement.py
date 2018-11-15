@@ -175,8 +175,6 @@ class EntropyMeasurement(Measurement):
         assert max_loops > 0,\
             "max_loops = {} <= 0".format(max_loops)
 
-        print(sum(self.tms_steps.values()))
-
 
         # get number of states
         tms_states = self.sat_assgn.num_vars + 1
