@@ -70,6 +70,7 @@ class EntropyMeasurement(Measurement):
         self.last_step = None
 
 
+
     def count(self, flip):
         assert isinstance(flip,int),\
             "flip = {} :: {} is no int".format(flip, type(flip))
@@ -146,7 +147,7 @@ class EntropyMeasurement(Measurement):
         self.start_assgn = assgn
         self.curr_assgn = assgn
         self.curr_hamming_dist = self.sat_assgn.hamming_dist(assgn)
-        self.tms_steps = {}
+        # self.tms_steps = {}
 
 
     def end_run(self, success = False):
@@ -174,6 +175,8 @@ class EntropyMeasurement(Measurement):
         assert max_loops > 0,\
             "max_loops = {} <= 0".format(max_loops)
 
+        print(sum(self.tms_steps.values()))
+
 
         # get number of states
         tms_states = self.sat_assgn.num_vars + 1
@@ -190,21 +193,23 @@ class EntropyMeasurement(Measurement):
 
 
         ## relative probability
+        cnt = 0
         for i,row in enumerate(Pi):
             s = sum(row)
             if s == 0:
+                cnt += 1
                 if i == 0:
-                    Pi[0][0] = 1
+                    Pi[0][0] = 0
                     Pi[0][1] = 1
-                    s = 2
+                    s = 1
                 elif i == tms_states-1:
-                    Pi[i][i] = 1
                     Pi[i][i-1] = 1
-                    s = 2
+                    Pi[i][i] = 0
+                    s = 1
                 else:
-                    Pi[i][i+1] = 1
-                    Pi[i][i-1] = 1
-                    s = 2
+                    Pi[i][i+1] = tms_states - i - 1
+                    Pi[i][i-1] = i
+                    s = tms_states - 1
 
             for j,cell in enumerate(row):
                 Pi[i][j] = cell/s
@@ -214,6 +219,7 @@ class EntropyMeasurement(Measurement):
             for cell in row:
                 if cell > 0:
                     test += 1
+
 
 
         # approximate stationary distribution
