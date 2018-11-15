@@ -109,7 +109,7 @@ if __name__ == '__main__':
     while count < args.repeat:
         # setup
         if args.verbose:
-            print('Experiment #{} setup... '.format(count+1), end = '')
+            print('Experiment #{} setup... '.format(count+1), end = '', flush=True)
 
         e = Experiment(
             args.input_dir,
@@ -125,7 +125,7 @@ if __name__ == '__main__':
 
         # running
         if args.verbose:
-            print('running... ',end='')
+            print('running... ',end='', flush=True)
             begin_time = time.time()
 
         e.run_experiment()
@@ -135,10 +135,11 @@ if __name__ == '__main__':
             time_taken = time.time() - begin_time
             print(
                 'finished in {}h {}m {}s...'.format(*calc_time(int(time_taken))),
-                end = ''
+                end = '',
+                flush=True
             )
         e.save_results()
         if args.verbose:
-            print('saved.')
+            print('saved.', flush=True)
         count += 1
 
