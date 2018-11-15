@@ -66,7 +66,6 @@ CREATE TABLE IF NOT EXISTS algorithm_run
     , clauses           INT NOT NULL
     , vars              INT NOT NULL
     , sat               BOOL NOT NULL
-    , tms_entropy       REAL NOT NULL
     , FOREIGN KEY(experiment_id) REFERENCES experiment(id)
     )
 """
@@ -79,9 +78,8 @@ INSERT INTO algorithm_run
     , clauses
     , vars
     , sat
-    , tms_entropy
     )
-VALUES (?,?,?,?,?,?,?)
+VALUES (?,?,?,?,?,?)
 """
 
 CREATE_SEARCH_RUN = """
@@ -298,7 +296,6 @@ class Experiment:
             num_clauses=formula.num_clauses,
             num_vars=formula.num_vars,
             sat=True if assgn else False,
-            tms_entropy=measurement.get_tms_entropy(),
             runs=measurement.run_measurements,
         )
 
@@ -334,7 +331,6 @@ class Experiment:
                         result['num_clauses'],
                         result['num_vars'],
                         result['sat'],
-                        result['tms_entropy'],
                     )
                 )
                 run_id = c.lastrowid
