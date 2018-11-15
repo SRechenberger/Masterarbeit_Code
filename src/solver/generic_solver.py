@@ -52,6 +52,7 @@ def generic_sls(
         if debug:
             print('*',end='',flush=True)
             t_begin = time.time()
+
         # generate random assingnment
         current_assignment = Assignment.generate_random_assignment(
             formula.num_vars
