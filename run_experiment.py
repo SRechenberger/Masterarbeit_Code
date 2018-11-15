@@ -100,7 +100,7 @@ if __name__ == '__main__':
     elif args.probsat_poly:
         solver = 'probsat'
         setup = dict(
-            c_break = args.probsat_poly[1],
+            c_break = args.probsat_poly[0],
             phi = 'poly'
         )
 
