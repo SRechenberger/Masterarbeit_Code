@@ -156,7 +156,9 @@ class TestSolver(unittest.TestCase):
             if measurement.get_run_time() >= self.solver_setup['max_run_time']:
                 run_time_exceeded += 1
 
-        print("{} successes".format(successes), end=' ')
+        if __debug__:
+            print("{} successes".format(successes), end=' ')
+
         self.assertTrue(successes >= self.solver_setup['min_successes'])
 
         #self.assertTrue(
