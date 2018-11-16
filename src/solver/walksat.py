@@ -68,11 +68,12 @@ def walksat_distribution(rho, context):
         else:
             for var in map(abs,clause):
                 # greedy and noisy step
-                tmp = rho * 1/len(clause_best) + (1-rho) * 1/len(clause)
+                greedy = (1-rho)/len(clause_best) if var in clause_best else 0
+                noisy = rho/len(clause)
                 # weighting
-                distr[var] = tmp * 1/false_clauses
+                distr[var] += (greedy + noisy)/false_clauses
 
-    assert sum(distr) == 1,\
+    assert abs(sum(distr) - 1) < 0.001,\
         "sum(distr) = {} != 1".format(sum(distr))
 
     return distr
