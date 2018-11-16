@@ -35,48 +35,51 @@ class DefensiveContext(Context):
         return len(self.falselist) == 0
 
 
-def walksat_distribution(rho, context):
+def walksat_distribution(rho):
     assert isinstance(rho, float),\
         "rho = {} :: {} is not a float".format(rho, type(rho))
 
-    # empty distribution
-    distr = np.zeros(context.formula.num_vars + 1)
+    def walksat_distr(context):
+        # empty distribution
+        distr = np.zeros(context.formula.num_vars + 1)
 
-    # get number of false clauses to weight probabilities
-    false_clauses = len(context.falselist)
+        # get number of false clauses to weight probabilities
+        false_clauses = len(context.falselist)
 
-    if false_clauses <= 0:
-        distr[0] = 1
+        if false_clauses <= 0:
+            distr[0] = 1
 
-    for clause_idx in context.falselist:
-        clause = context.formula.clauses[clause_idx]
-        best_score = context.formula.max_occs
-        clause_best = []
+        for clause_idx in context.falselist:
+            clause = context.formula.clauses[clause_idx]
+            best_score = context.formula.max_occs
+            clause_best = []
 
-        for c in clause:
-            v = abs(c)
-            s = context.score.get_break_score(v)
-            if s < best_score:
-                best_score = s
-                clause_best = [v]
-            elif s == best_score:
-                clause_best.append(v)
+            for c in clause:
+                v = abs(c)
+                s = context.score.get_break_score(v)
+                if s < best_score:
+                    best_score = s
+                    clause_best = [v]
+                elif s == best_score:
+                    clause_best.append(v)
 
-        if best_score == 0:
-            for var in clause_best:
-                distr[var] += 1/len(clause_best) * 1/false_clauses
-        else:
-            for var in map(abs,clause):
-                # greedy and noisy step
-                greedy = (1-rho)/len(clause_best) if var in clause_best else 0
-                noisy = rho/len(clause)
-                # weighting
-                distr[var] += (greedy + noisy)/false_clauses
+            if best_score == 0:
+                for var in clause_best:
+                    distr[var] += 1/len(clause_best) * 1/false_clauses
+            else:
+                for var in map(abs,clause):
+                    # greedy and noisy step
+                    greedy = (1-rho)/len(clause_best) if var in clause_best else 0
+                    noisy = rho/len(clause)
+                    # weighting
+                    distr[var] += (greedy + noisy)/false_clauses
 
-    assert abs(sum(distr) - 1) < 0.001,\
-        "sum(distr) = {} != 1".format(sum(distr))
+        assert abs(sum(distr) - 1) < 0.001,\
+            "sum(distr) = {} != 1".format(sum(distr))
 
-    return distr
+        return distr
+
+    return walksat_distr
 
 
 def walksat_heuristic(rho):

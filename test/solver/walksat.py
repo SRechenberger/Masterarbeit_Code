@@ -7,7 +7,7 @@ class TestWalkSATDistr(TestDistribution):
         self.generic_test_distribution_against_heuristic(
             DefensiveContext,
             walksat_heuristic(rho = 0.57),
-            partial(walksat_distribution, 0.57)
+            walksat_distribution(rho = 0.57)
         )
 
 
