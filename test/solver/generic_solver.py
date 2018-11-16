@@ -27,17 +27,17 @@ class TestDistribution(unittest.TestCase):
         random.seed()
 
         cases = 10
-        n = 128
-        r = 4.2
+        self.n = 128
+        self.r = 4.2
 
-        self.significance_level = 0.05
-        self.sample_size = 100
+        self.significance_level = 0.01 if __debug__ else 0.05
+        self.sample_size = 1000 if __debug__ else 10000
         self.repeat = 10 if __debug__ else 100
-        self.max_failure = self.repeat * 0.1
-        self.jump_range = n // 10
+        self.max_failure = self.repeat * 0.2
+        self.jump_range = self.n // 10
 
         self.formulae = [
-            Formula.generate_satisfiable_formula(n,r)
+            Formula.generate_satisfiable_formula(self.n,self.r)
             for _ in range(0,cases)
         ]
 
@@ -55,41 +55,62 @@ class TestDistribution(unittest.TestCase):
                 # measure empirical distribution
                 for _ in range(0,self.sample_size):
                     x = heuristik(ctx)
-                    observed_distr[x] += 1/self.sample_size
+                    observed_distr[x] += 1
 
-                self.assertTrue(abs(sum(observed_distr) - 1) < 0.00001)
 
                 # calculate expected distribution
                 expected_distr = distribution(ctx)
+                for i,_ in enumerate(expected_distr):
+                    expected_distr[i] *= self.sample_size
+
 
                 # simple length check
                 self.assertEqual(len(observed_distr),len(expected_distr))
 
-                # clean distributions of zeros (including a check)
-                obs_distr = []
-                exp_distr = []
-                for o, e in zip(observed_distr, expected_distr):
-                    if e == 0:
-                        self.assertEqual(o,0)
-                    else:
-                        obs_distr.append(o)
-                        exp_distr.append(e)
 
-                observed_distr = np.array(obs_distr)
-                expected_distr = np.array(exp_distr)
+                # make buckets with at least 5 observed values in every one
+                obs_buckets = [0]
+                exp_buckets = [0]
+                for o,e in zip(observed_distr, expected_distr):
+                    obs_buckets[-1] += o
+                    exp_buckets[-1] += e
+                    if obs_buckets[-1] >= 5:
+                        obs_buckets.append(0)
+                        exp_buckets.append(0)
+
+                #print(obs_buckets,exp_buckets,sep='\n')
+                o_last = obs_buckets.pop()
+                e_last = exp_buckets.pop()
+                obs_buckets[-1] += o_last
+                exp_buckets[-1] += e_last
+                # print(obs_buckets,exp_buckets,sep='\n')
+
+                observed_distr = np.array(obs_buckets)
+                expected_distr = np.array(exp_buckets)
+
+                self.assertEqual(len(observed_distr),len(expected_distr))
 
                 # Chi-Square-Test
-                chi_s, p_val = chisquare(observed_distr, f_exp=expected_distr)
-                # print("chi_s = {}, p_val = {}".format(chi_s, p_val))
 
-                if p_val < self.significance_level:
-                    rejections += 1
+                if len(observed_distr) > 1:
+                    chi_s, p_val = chisquare(observed_distr, f_exp=expected_distr, axis = None)
+                    if p_val < self.significance_level:
+                        rejections += 1
+
+                        if __debug__:
+                            print("X² = {}; p = {}".format(chi_s, p_val))
+                            print("observed:\n{}".format(observed_distr))
+                            print("expected:\n{}".format(expected_distr))
+
+                else:
+                    self.assertEqual(observed_distr[0], expected_distr[0])
+
 
             # go to another assignment
             for flip in random.sample(range(1,n),self.jump_range):
                 ctx.update(flip)
 
-            print("rejections = {}".format(rejections))
+            # print("rejections = {}".format(rejections))
             self.assertTrue(rejections <= self.max_failure)
 
 
