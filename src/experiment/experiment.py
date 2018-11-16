@@ -138,6 +138,80 @@ INSERT INTO entropy_data
 VALUES (?,?,?,?,?)
 """
 
+
+CREATE_STATIC_EXPERIMENT = """
+CREATE TABLE IF NOT EXISTS static_experiment
+    ( id            INTEGER PRIMARY KEY
+    , solver        TEXT NOT NULL
+    , source_folder TEXT NOT NULL
+    , sample_size   TEXT NOT NULL
+    )
+"""
+
+SAVE_STATIC_EXPERIMENT = """
+INSERT INTO static_experiment
+    ( solver
+    , source_folder
+    , sample_size
+    )
+VALUES (?,?,?)
+"""
+
+CREATE_MEASUREMENT_SERIES = """
+CREATE TABLE IF NOT EXISTS measurement_series
+    ( id            INTEGER PRIMARY KEY
+    , experiment_id INTEGER NOT NULL
+    , formula_file  TEXT NOT NULL
+    , FOREIGN KEY(experiment_id) REFERENCES static_experiment(id)
+    )
+"""
+
+SAVE_MEASUREMENT_SERIES = """
+INSERT INTO measurement_series
+    ( experiment_id
+    , formula_file
+    )
+VALUES (?,?)
+"""
+
+CREATE_IMPROVEMENT_PROB = """
+CREATE TABLE IF NOT EXISTS improvement_probability
+    ( id            INTEGER PRIMARY KEY
+    , series_id     INTEGER NOT NULL
+    , hamming_dist  INTEGER NOT NULL
+    , prob          REAL
+    , FOREIGN KEY(series_id) REFERENCES measurement_series(id)
+    )
+"""
+
+SAVE_IMPROVEMENT_PROB = """
+INSERT INTO TABLE improvement_probability
+    ( series_id
+    , hamming_dist
+    , prob
+    )
+VALUE (?,?,?)
+"""
+
+CREATE_AVG_STATE_ENTROPY = """
+CREATE TABLE IF NOT EXISTS avg_state_entropy
+    ( id            INTEGER PRIMARY KEY
+    , series_id     INTEGER NOT NULL
+    , hamming_dist  INTEGER NOT NULL
+    , entropy       REAL
+    , FOREIGN KEY(series_id) REFERENCES measurement_series(id)
+    )
+"""
+
+SAVE_AVG_STATE_ENTROPY = """
+INSERT INTO TABLE improvement_probability
+    ( series_id
+    , hamming_dist
+    , entropy
+    )
+VALUE (?,?,?)
+"""
+
 def save_entropy_data(cursor, data):
     assert isinstance(data,dict),\
         "data = {} :: {} is no dict".format(data, type(data))
@@ -355,3 +429,140 @@ class Experiment:
                         )
                     )
                 conn.commit()
+
+
+class StaticExperiment:
+
+    def __init__(
+            self,
+            input_dir,              # directory of input files
+            sample_size,            # number of files to draw
+            solver,                 # the solver to be used
+            poolsize=1,             # number of parallel processes
+            database='experiments.db',
+            **solver_params):       # special parameters of the solver
+
+        # TODO assertions
+        self.formulae = FormulaSupply(
+            random.sample(
+                list(
+                    map(
+                        partial(os.path.join, input_dir),
+                        filter(
+                            lambda s: s.endswith('.cnf'),
+                            os.listdir(input_dir),
+                        )
+                    )
+                ),
+                sample_size
+            ),
+            buffsize=poolsize * 10
+        )
+
+        solver_generic_params = dict(
+            max_tries=max_tries,
+            max_flips=max_flips,
+        )
+
+        self.setup = dict(
+            solver=solver,
+            solver_specific=solver_params,
+        )
+
+        self.poolsize = poolsize
+        self.results = None
+        self.database = database
+        self.run = False
+
+        with sqlite3.connect(self.database, timeout=60) as conn:
+            # init database, if not already done
+            c = conn.cursor()
+            c.execute(CREATE_STATIC_EXPERIMENT)
+            c.execute(CREATE_MEASUREMENT_SERIES)
+            c.execute(CREATE_IMPROVEMENT_PROB)
+            c.execute(CREATE_AVG_STATE_ENTROPY)
+            conn.commit()
+
+            # save this experiment
+            c.execute(
+                SAVE_STATIC_EXPERIMENT,
+                (
+                    solver,
+                    input_dir,
+                    sample_size
+                )
+            )
+            self.experiment_id = c.lastrowid
+
+            for k, v in solver_params.items():
+                c.execute(
+                    SAVE_PARAMETER,
+                    (
+                        self.experiment_id,
+                        k,
+                        str(v),
+                        type(v).__name__,
+                    )
+                )
+            conn.commit()
+
+
+    def _run_measurement(self, fp_and_formula):
+        fp, formula = fp_and_formula
+        # TODO
+        raise RuntimError("Not Implemented Yet")
+
+        return None
+
+
+    def run_experiment(self):
+        """ Runs the prepared experiment """
+        if self.results:
+            raise RuntimeError('Experiment already performed')
+
+        self.run = True
+        with mp.Pool(processes=self.poolsize) as pool:
+            self.results = pool.map(self._run_measurement, self.formulae)
+
+        return self.results
+
+
+    def __hash__(self):
+        return hash(id(self)) % pow(2, 32)
+
+
+    def save_results(self):
+        """ Saves the results of the experiment """
+        assert self.run, "experiment not run"
+        with sqlite3.connect(self.database, timeout=60) as conn:
+            c = conn.cursor()
+            for result in self.results:
+                c.execute(
+                    SAVE_MEASUREMENT_SERIES,
+                    (
+                        self.experiment_id,
+                        result['formula_file'],
+                    )
+                )
+                run_id = c.lastrowid
+                for series in result['improvement_prob']:
+                    c.execute(
+                        SAVE_IMPROVEMENT_PROB,
+                        (
+                            run_id,
+                            series['hamming_dist'],
+                            series['prob'],
+                        )
+                    )
+
+                for series in result['avg_state_entropy']:
+                    c.execute(
+                        SAVE_AVG_STATE_ENTROPY,
+                        (
+                            run_id,
+                            series['hamming_dist'],
+                            series['entropy'],
+                        )
+                    )
+                conn.commit()
+
