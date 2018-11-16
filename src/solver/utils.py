@@ -216,7 +216,7 @@ class DiffScores:
             "falselist = {} :: {} is no Falselist".format(formula,type(falselist))
 
         # a[v] = -a[v]
-        assignment.flip(variable)
+        assignment.flip(variable) # TODO this does not really belong here
         # satisfyingLiteral = a[v] ? v : -v
         satisfying_literal = variable if assignment.is_true(variable) else -variable
         # falsifyingLiteral = a[v] ? -v : v
