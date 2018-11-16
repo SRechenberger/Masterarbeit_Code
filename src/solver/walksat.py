@@ -80,8 +80,8 @@ def walksat_distribution(rho, context):
 
 
 def walksat_heuristic(rho):
-    if __debug__:
-        type_check('rho',rho,float)
+    assert isinstance(rho, float),\
+        "rho = {} :: {} is not a float".format(rho, type(rho))
 
     def heur(context):
         if __debug__:
