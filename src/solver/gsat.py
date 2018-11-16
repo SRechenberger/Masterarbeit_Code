@@ -65,7 +65,7 @@ def gsat_distribution(context):
     for i in best:
         distr[i] = 1/len(best)
 
-    assert sum(distr) == 1,\
+    assert abs(sum(distr) - 1) < 0.001,\
         "sub(distr) = {} != 1".format(sum(distr))
 
     return distr
