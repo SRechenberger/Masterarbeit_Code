@@ -23,29 +23,33 @@ functions = dict(
 )
 
 
-def probsat_distribution(max_occ, c_break, phi, context):
+def probsat_distribution(max_occ, c_break, phi = 'poly'):
     func1, func = functions[phi]
     breaks = [func1(x,c_break) for x in range(0,max_occ+1)]
-    f = lambda i: func(breaks[context.score.get_break_score(i)])
+    def probsat_distr(context):
+        f = lambda i: func(breaks[context.score.get_break_score(i)])
+        distr = np.zeros(context.formula.num_vars + 1)
 
-    distr = np.zeros(context.formula.num_vars + 1)
+        false_clauses = len(context.falselist)
 
-    false_clauses = len(context.falselist)
+        if false_clauses <= 0:
+            distr[0] = 1
 
-    if false_clauses <= 0:
-        distr[0] = 1
+        for clause_idx in context.falselist:
+            clause = context.formula.clauses[clause_idx]
+            score_sum = sum(map(f,map(abs,clause)))
+            for var in map(abs, clause):
+                # probability
+                tmp = f(var)/score_sum
+                # weighting
+                distr[var] += tmp/false_clauses
 
-    for clause_idx in context.falselist:
-        clause = context.formula.clauses[clause_idx]
-        score_sum = sum(map(f,map(abs,clause)))
-        for var in map(abs, clause):
-            # probability
-            tmp += f(var)/score_sum
-            # weighting
-            distr[var] += tmp * 1/false_clauses
+        assert abs(sum(distr) - 1) < 0.0001,\
+            "sum(distr) = {} != 1".format(sum(distr))
 
-    assert sum(distr) == 1,\
-        "sum(distr) = {} != 1".format(sum(distr))
+        return distr
+
+    return probsat_distr
 
 
 def probsat_heuristic(max_occ, c_break, phi = 'poly'):
