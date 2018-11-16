@@ -1,3 +1,4 @@
+import numpy as np
 from src.solver.generic_solver import Context, generic_sls
 from src.solver.utils import DiffScores, Scores, Falselist
 from src.formula import Formula, Assignment
@@ -56,10 +57,25 @@ def max_seq(seq, key=lambda x:x):
     return max_seq
 
 
+def gsat_distribution(context):
+    # begin with an empty distribution
+    distr = np.zeros(context.formula.num_vars + 1)
+
+    _, best = context.score.get_best_bucket()
+    for i in best:
+        distr[i] = 1/len(best)
+
+    assert sum(distr) == 1,\
+        "sub(distr) = {} != 1".format(sum(distr))
+
+    return distr
+
+
 def gsat_heuristic(context):
     score, best = context.score.get_best_bucket()
 
     return random.choice(list(best))
+
 
 def gsat(formula, measurement, max_tries, max_flips):
     return generic_sls(

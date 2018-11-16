@@ -1,6 +1,7 @@
+import numpy as np
+import random
 from src.solver.generic_solver import Context, generic_sls
 from src.solver.walksat import DefensiveContext
-import random
 from src.utils import *
 
 def poly1(x,c):
@@ -21,17 +22,47 @@ functions = dict(
     exp = (exp1,exp)
 )
 
+
+def probsat_distribution(max_occ, c_break, phi, context):
+    func1, func = functions[phi]
+    breaks = [func1(x,c_break) for x in range(0,max_occ+1)]
+    f = lambda i: func(breaks[context.score.get_break_score(i)])
+
+    distr = np.zeros(context.formula.num_vars + 1)
+
+    false_clauses = len(context.falselist)
+
+    if false_clauses <= 0:
+        distr[0] = 1
+
+    for clause_idx in context.falselist:
+        clause = context.formula.clauses[clause_idx]
+        score_sum = sum(map(f,map(abs,clause)))
+        for var in map(abs, clause):
+            # probability
+            tmp += f(var)/score_sum
+            # weighting
+            distr[var] += tmp * 1/false_clauses
+
+    assert sum(distr) == 1,\
+        "sum(distr) = {} != 1".format(sum(distr))
+
+
 def probsat_heuristic(max_occ, c_break, phi = 'poly'):
-    assert type(c_break) == float, "c_break = {} :: {} is no float".format(c_break, type(c_break))
-    assert type(phi) == str, "phi = {} :: {} is no str".format(phi, type(phi))
-    assert phi in functions, "phi = {} is not in {}".format(phi, list(functions.keys()))
+    assert type(c_break) == float,\
+        "c_break = {} :: {} is no float".format(c_break, type(c_break))
+    assert type(phi) == str,\
+        "phi = {} :: {} is no str".format(phi, type(phi))
+    assert phi in functions,\
+        "phi = {} is not in {}".format(phi, list(functions.keys()))
 
     func1, func = functions[phi]
 
     breaks = [func1(x,c_break) for x in range(0,max_occ+1)]
 
     def heur(context):
-        assert isinstance(context,DefensiveContext), "context = {} :: {} is no GSATContext".format(context, type(context))
+        assert isinstance(context,DefensiveContext),\
+            "context = {} :: {} is no GSATContext".format(context, type(context))
 
         f = lambda i: func(breaks[context.score.get_break_score(i)])
 

@@ -1,4 +1,5 @@
 import random
+import numpy as np
 from src.utils import *
 from src.formula import Formula, Assignment
 from src.solver.utils import Falselist, Scores
@@ -32,6 +33,49 @@ class DefensiveContext(Context):
 
     def is_sat(self):
         return len(self.falselist) == 0
+
+
+def walksat_distribution(rho, context):
+    assert isinstance(rho, float),\
+        "rho = {} :: {} is not a float".format(rho, type(rho))
+
+    # empty distribution
+    distr = np.zeros(context.formula.num_vars + 1)
+
+    # get number of false clauses to weight probabilities
+    false_clauses = len(context.falselist)
+
+    if false_clauses <= 0:
+        distr[0] = 1
+
+    for clause_idx in context.falselist:
+        clause = context.formula.clauses[clause_idx]
+        best_score = context.formula.max_occs
+        clause_best = []
+
+        for c in clause:
+            v = abs(c)
+            s = context.score.get_break_score(v)
+            if s < best_score:
+                best_score = s
+                clause_best = [v]
+            elif s == best_score:
+                clause_best.append(v)
+
+        if best_score == 0:
+            for var in clause_best:
+                distr[var] += 1/len(clause_best) * 1/false_clauses
+        else:
+            for var in map(abs,clause):
+                # greedy and noisy step
+                tmp = rho * 1/len(clause_best) + (1-rho) * 1/len(clause)
+                # weighting
+                distr[var] = tmp * 1/false_clauses
+
+    assert sum(distr) == 1,\
+        "sum(distr) = {} != 1".format(sum(distr))
+
+    return distr
 
 
 def walksat_heuristic(rho):
