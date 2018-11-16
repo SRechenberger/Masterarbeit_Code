@@ -191,11 +191,9 @@ class EntropyMeasurement(Measurement):
 
 
         ## relative probability
-        cnt = 0
         for i,row in enumerate(Pi):
             s = sum(row)
             if s == 0:
-                cnt += 1
                 if i == 0:
                     Pi[0][0] = 0
                     Pi[0][1] = 1
@@ -218,8 +216,6 @@ class EntropyMeasurement(Measurement):
                 if cell > 0:
                     test += 1
 
-
-
         # approximate stationary distribution
         distr = T_0.copy()
 
@@ -241,6 +237,7 @@ class EntropyMeasurement(Measurement):
 
             # next loop
             loops += 1
+
 
         # calculate state entropy
         state_entropy = np.array([sum(map(eta,row)) for row in Pi])
