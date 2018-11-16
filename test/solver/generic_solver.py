@@ -1,9 +1,13 @@
 import unittest
 import random
 import time
+import numpy as np
 
-from src.formula import Formula
+from src.formula import Formula, Assignment
+from src.solver.utils import Falselist
 from src.experiment.measurement import Measurement
+
+from scipy.stats import chisquare
 
 
 class TestMeasurement(Measurement):
@@ -16,6 +20,77 @@ class TestMeasurement(Measurement):
 
     def get_run_time(self):
         return time.time() - self.begin_time
+
+
+class TestDistribution(unittest.TestCase):
+    def setUp(self):
+        random.seed()
+
+        cases = 10
+        n = 128
+        r = 4.2
+
+        self.significance_level = 0.05
+        self.sample_size = 100
+        self.repeat = 10 if __debug__ else 100
+        self.max_failure = self.repeat * 0.1
+        self.jump_range = n // 10
+
+        self.formulae = [
+            Formula.generate_satisfiable_formula(n,r)
+            for _ in range(0,cases)
+        ]
+
+
+    def generic_test_distribution_against_heuristic(self, context_constr, heuristik, distribution):
+        for f in self.formulae:
+            n = f.num_vars
+            assgn = Assignment.generate_random_assignment(n)
+            ctx = context_constr(f,assgn)
+
+            rejections = 0
+            for r in range(0,self.repeat):
+                observed_distr = np.zeros(n+1)
+
+                # measure empirical distribution
+                for _ in range(0,self.sample_size):
+                    x = heuristik(ctx)
+                    observed_distr[x] += 1/self.sample_size
+
+                self.assertTrue(abs(sum(observed_distr) - 1) < 0.00001)
+
+                # calculate expected distribution
+                expected_distr = distribution(ctx)
+
+                # simple length check
+                self.assertEqual(len(observed_distr),len(expected_distr))
+
+                # clean distributions of zeros (including a check)
+                obs_distr = []
+                exp_distr = []
+                for o, e in zip(observed_distr, expected_distr):
+                    if e == 0:
+                        self.assertEqual(o,0)
+                    else:
+                        obs_distr.append(o)
+                        exp_distr.append(e)
+
+                observed_distr = np.array(obs_distr)
+                expected_distr = np.array(exp_distr)
+
+                # Chi-Square-Test
+                chi_s, p_val = chisquare(observed_distr, f_exp=expected_distr)
+                # print("chi_s = {}, p_val = {}".format(chi_s, p_val))
+
+                if p_val < self.significance_level:
+                    rejections += 1
+
+            # go to another assignment
+            for flip in random.sample(range(1,n),self.jump_range):
+                ctx.update(flip)
+
+            print("rejections = {}".format(rejections))
+            self.assertTrue(rejections <= self.max_failure)
 
 
 class TestSolver(unittest.TestCase):
