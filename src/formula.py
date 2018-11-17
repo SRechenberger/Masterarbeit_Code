@@ -356,14 +356,25 @@ class Assignment:
         return t if literal > 0 else not t
 
 
-    def __init__(self, number, num_vars):
-        """ Generate an assignment from an integer """
-        if __debug__:
-            type_check('number',number,int)
+    def __init__(self, atoms, num_vars):
+        """ Generate an assignment from an integer or a list of booleans """
+        assert isinstance(atoms, int) or isinstance(atoms, list),\
+            "atoms = {} :: {} is neither int nor list".format(atoms, type(atoms))
+        assert not isinstance(atoms, list) or len(atoms) == num_vars,\
+            "len(atoms) = {} != {} = num_vars".format(len(atoms), num_vars)
 
-        self.atoms = Assignment.atoms_from_integer(number)
-        self.atoms += [False]*(num_vars-len(self.atoms))
+        if isinstance(atoms, list):
+            self.atoms = atoms
+
+        else:
+            self.atoms = Assignment.atoms_from_integer(atoms)
+            self.atoms += [False]*(num_vars-len(self.atoms))
+
         self.num_vars = num_vars
+
+
+    def __iter__(self):
+        return iter(self.atoms)
 
 
     def __str__(self):
@@ -384,3 +395,43 @@ class Assignment:
             dist += 1 if self[i] != assgn[i] else 0
 
         return dist
+
+    def hamming_sets(self, assgn):
+        """ Calculate the set of variables, in which both assignments differ or are equal """
+        assert isinstance(assgn, Assignment),\
+            "assgn = {} :: {} is no Assignment".format(assgn, type(assgn))
+        assert self.num_vars == assgn.num_vars,\
+            "self.num_vars = {} != {} = assgn.num_vars".format(self.num_vars, assgn.num_vars)
+
+        different = []
+        same = []
+
+        for i, x, y in zip(range(1,self.num_vars+1), iter(self), iter(assgn)):
+            if x == y:
+                same.append(i)
+
+            else:
+                different.append(i)
+
+        return different, same
+
+
+    def negation(self):
+        """ Returns the bitwise negation of the assignment """
+
+        atoms = self.atoms.copy()
+        for i in range(0,len(atoms)):
+            atoms[i] = not atoms[i]
+
+        return Assignment(
+            atoms,
+            self.num_vars,
+        )
+
+
+    def copy(self):
+        return type(self)(self.atoms.copy(), self.num_vars)
+
+
+
+
