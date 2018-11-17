@@ -1,31 +1,34 @@
 import argparse
 import time
 
-from src.experiment.experiment import Experiment
+from src.experiment.experiment import Experiment, StaticExperiment
 from src.experiment.measurement import EntropyMeasurement
 
 parser = argparse.ArgumentParser()
 
 parser.add_argument(
     'input_dir',
-    help = 'folder of input formulae',
-    type = str,
+    help='folder of input formulae',
+    type=str,
 )
 parser.add_argument(
     'sample_size',
-    help = 'number of formulae to draw',
-    type = int,
+    help='number of formulae to draw',
+    type=int,
 )
 
-parser.add_argument(
-    'max_tries',
-    help = 'maximum number of tries',
-    type = int,
+experiment_type_group = parser.add_mutually_exclusive_group(required = True)
+experiment_type_group.add_argument(
+    '--dynamic',
+    help='run dynamic experiment; needs max_flips and max_tries',
+    nargs=2,
+    type=int,
 )
-parser.add_argument(
-    'max_flips',
-    help = 'maximum number of flips per try',
-    type = int,
+
+experiment_type_group.add_argument(
+    '--static',
+    help='run static experiment',
+    action='store_true'
 )
 
 solver_group = parser.add_mutually_exclusive_group(required = True)
@@ -103,7 +106,12 @@ if __name__ == '__main__':
             c_break = args.probsat_poly[0],
             phi = 'poly'
         )
-
+    elif args.probsat_exp:
+        solver = 'probsat'
+        setup = dict(
+            c_break = args.probsat_poly[0],
+            phi = 'exp'
+        )
 
     count = 0
     while count < args.repeat:
@@ -111,17 +119,28 @@ if __name__ == '__main__':
         if args.verbose:
             print('Experiment #{} setup... '.format(count+1), end = '', flush=True)
 
-        e = Experiment(
-            args.input_dir,
-            args.sample_size,
-            solver,
-            args.max_tries,
-            args.max_flips,
-            EntropyMeasurement,
-            poolsize = args.poolsize,
-            database = args.database_file,
-            **setup,
-        )
+        if args.dynamic:
+            e = Experiment(
+                args.input_dir,
+                args.sample_size,
+                solver,
+                args.dynamic[0],
+                args.dynamic[1],
+                EntropyMeasurement,
+                poolsize=args.poolsize,
+                database=args.database_file,
+                **setup,
+            )
+        elif args.static:
+            e = StaticExperiment(
+                args.input_dir,
+                args.sample_size,
+                solver,
+                poolsize=args.poolsize,
+                database=args.database_file,
+                **setup,
+            )
+
 
         # running
         if args.verbose:
