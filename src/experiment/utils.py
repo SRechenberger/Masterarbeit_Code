@@ -12,6 +12,8 @@ def eta(p):
     else:
         return -p * math.log(p,2)
 
+def arr_entropy(distr):
+    return sum(map(eta,distr))
 
 def entropy(distr):
     total = 0
