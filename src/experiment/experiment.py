@@ -29,9 +29,9 @@ SOLVER_CONTEXT = dict(
 )
 
 SOLVER_DISTR_F = dict(
-    gsat = lambda: gsat_distribution,
-    walksat = walksat_distribution,
-    probsat = probsat_distribution,
+    gsat = lambda f: lambda: gsat_distribution,
+    walksat = lambda f: walksat_distribution,
+    probsat = lambda f: partial(probsat_distribution, f.max_occs),
 )
 
 CREATE_EXPERIMENT = """
@@ -214,7 +214,9 @@ CREATE TABLE IF NOT EXISTS avg_state_entropy
     ( id            INTEGER PRIMARY KEY
     , series_id     INTEGER NOT NULL
     , hamming_dist  INTEGER NOT NULL
-    , entropy       REAL
+    , entropy_avg   REAL
+    , entropy_min   REAL
+    , entropy_max   REAL
     , FOREIGN KEY(series_id) REFERENCES measurement_series(id)
     )
 """
@@ -223,9 +225,11 @@ SAVE_AVG_STATE_ENTROPY = """
 INSERT INTO avg_state_entropy
     ( series_id
     , hamming_dist
-    , entropy
+    , entropy_avg
+    , entropy_min
+    , entropy_max
     )
-VALUES (?,?,?)
+VALUES (?,?,?,?,?)
 """
 
 def save_entropy_data(cursor, data):
@@ -490,6 +494,7 @@ class StaticExperiment:
         with sqlite3.connect(self.database, timeout=60) as conn:
             # init database, if not already done
             c = conn.cursor()
+            c.execute(CREATE_PARAMETER)
             c.execute(CREATE_STATIC_EXPERIMENT)
             c.execute(CREATE_MEASUREMENT_SERIES)
             c.execute(CREATE_IMPROVEMENT_PROB)
@@ -528,11 +533,13 @@ class StaticExperiment:
         sat_assgn = formula.satisfying_assignment
         # calculate the assignment with maximum hamming distance to the satisfying one
         furthest_assgn = sat_assgn.negation()
+        # init distribution function
+        distr_f = SOLVER_DISTR_F[self.setup['solver']](formula)(**self.setup['solver_specific'])
 
         # calculate the total number of measured states
         total_num_states = sum(
             map(
-                lambda i: int(math.log(i)+1) * (n - 2*i + 1),
+                lambda i: int(.5 * math.log(i)+1) * (n - 2*i + 1),
                 range(1, n // 2 + 1)
             )
         )
@@ -542,12 +549,18 @@ class StaticExperiment:
         # initialize three array:
         #   state_count[i] counts the number of states at distance i
         #   state_entropy[i] accumulates the state_entropy at distance i
+        #   state_entropy_min[i] holds the minimum state entropy found at distance i
+        #   state_entropy_max[i] holds the maximum state entropy found at distance i
         #   increment_prob[i] accumuluates the probability of incrementation at distance i
         # indices 0 and n are known
         state_count = np.zeros(n+1)
         # one state at each end
         state_count[0], state_count[n] = 1, 1
         state_entropy = np.zeros(n+1)
+        state_entropy_min = np.ones(n+1) * math.log(n,2)
+        state_entropy_max = np.zeros(n+1)
+        state_entropy_min[0], state_entropy_max[0] = 0, 0
+        state_entropy_min[n], state_entropy_max[n] = 0, 0
         # entropy at the ends is 0, because there are no uncertainties
         increment_prob = np.zeros(n+1)
         # at the negated assignment every flip is good; on the other end, every flip is bad
@@ -555,10 +568,8 @@ class StaticExperiment:
 
         # for each hamming distance beginning with 1
         for distance in range(1,n // 2 + 1):
-            if True or __debug__:
-                print("distance: {}/{}".format(distance, n // 2))
             # calculate number of paths to run from this distance
-            num_paths = int(math.log(distance) + 1) # min((distance + 1)**2, binom(n, distance))
+            num_paths = int(math.log(distance) + 1)
             # for each path
             for i in range(0,num_paths):
                 # copy the left end assignment
@@ -571,8 +582,6 @@ class StaticExperiment:
 
                 # init context
                 ctx = SOLVER_CONTEXT[self.setup['solver']](formula, current_assgn)
-                # init distribution function
-                distr_f = SOLVER_DISTR_F[self.setup['solver']](**self.setup['solver_specific'])
                 # variables for measured path
                 differ, _ = current_assgn.hamming_sets(sat_assgn)
                 path = random.sample(differ, n - distance)
@@ -595,7 +604,10 @@ class StaticExperiment:
                         increment_prob[hamming_dist] += prob / len(path_set)
 
                         # calculate state entropy
-                        state_entropy[hamming_dist] += arr_entropy(distr)
+                        h = arr_entropy(distr)
+                        state_entropy[hamming_dist] += h
+                        state_entropy_max[hamming_dist] = max(state_entropy_max[hamming_dist],h)
+                        state_entropy_min[hamming_dist] = min(state_entropy_min[hamming_dist],h)
 
                         # add this assignment to the set of measured states
                         measured_states.add(assgn_str)
@@ -617,8 +629,10 @@ class StaticExperiment:
                 for d,p in enumerate(increment_prob)
             ],
             avg_state_entropy=[
-                dict(hamming_dist=d, entropy=h)
-                for d,h in enumerate(state_entropy)
+                dict(hamming_dist=d, entropy_avg=h, entropy_max=h_max, entropy_min=h_min)
+                for d,(h,h_min,h_max) in enumerate(
+                    zip(state_entropy,state_entropy_min,state_entropy_max)
+                )
             ],
         )
 
@@ -664,13 +678,14 @@ class StaticExperiment:
                     )
 
                 for series in result['avg_state_entropy']:
-                    print(series)
                     c.execute(
                         SAVE_AVG_STATE_ENTROPY,
                         (
                             run_id,
                             series['hamming_dist'],
-                            series['entropy'],
+                            series['entropy_avg'],
+                            series['entropy_min'],
+                            series['entropy_max'],
                         )
                     )
                 conn.commit()
