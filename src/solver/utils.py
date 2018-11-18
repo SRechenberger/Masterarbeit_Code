@@ -300,7 +300,7 @@ class Scores:
 
             ## count make and break score
             # satisfying occurrences
-            for clause_idx in formula.get_occurrences(sat_lit):
+            for clause_idx, _ in enumerate(formula.clauses):
                 if self.num_true_lit[clause_idx] == 1 and self.crit_var[clause_idx] == var:
                     breaks += 1
 
@@ -339,7 +339,7 @@ class Scores:
         self.breaks = {}
 
         self.buckets = [
-            set() for _ in range(0, formula.max_occs+1) # formula.max_occs+1)
+            set() for _ in range(0, formula.max_occs+1)
         ]
         self.best_score = 0
 
@@ -407,7 +407,14 @@ class Scores:
         # increment break score
         self.breaks[variable] += 1
         # add variable to new bucket
-        self.buckets[self.breaks[variable]].add(variable)
+        try:
+            self.buckets[self.breaks[variable]].add(variable)
+        except Exception as e:
+            print(
+                "buckets = {}, breaks[{}] = {}".format(
+                    self.buckets, variable, self.breaks[variable]
+                )
+            )
 
 
     def decrement_break_score(self, variable):
@@ -426,7 +433,8 @@ class Scores:
         # add variable to new bucket
         self.buckets[self.breaks[variable]].add(variable)
 
-        assert self.breaks[variable] >= 0, "self.breaks[variable] = {} < 0".format(self.breaks[variable])
+        assert self.breaks[variable] >= 0,\
+            "self.breaks[variable] = {} < 0".format(self.breaks[variable])
 
 
     def flip(self, variable, formula, assignment, falselist):
@@ -456,14 +464,14 @@ class Scores:
             if self.num_true_lit[clause_idx] == 0:
                 # remove from falselist
                 falselist.remove(clause_idx)
-                # increment break score of 'variable'
+                # 'variable' now breaks this clause
                 self.increment_break_score(variable)    # TODO this line triggers the error
-                # make 'variable' critical (dito)
+                # make 'variable' critical
                 self.crit_var[clause_idx] = variable
 
             # if the clause is sat by one literal
             elif self.num_true_lit[clause_idx] == 1:
-                # 'variable' does not break it
+                # its critical variable does not break it anymore
                 self.decrement_break_score(self.crit_var[clause_idx])
 
             # the clause has one more satisfying literal
