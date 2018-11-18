@@ -146,7 +146,7 @@ class Formula:
         return self.occurrences[self.num_vars + literal]
 
 
-    def generate_satisfiable_formula(num_vars, ratio, clause_length = 3, seed=None):
+    def generate_satisfiable_formula(num_vars, ratio, clause_length = 3):
         assert type(clause_length) == int, "clause_length is no int"
         assert clause_length > 0, "clause_length <= 0"
         assert type(num_vars) == int, "num_vars is no int"
@@ -156,12 +156,8 @@ class Formula:
         assert clause_length == 3, 'Method \'generate_satisfiable_formula\' only implemented for 3CNF yet.'
 
         # optional arguments
-        if seed:
-            random.seed(seed)
-
         satisfying_assignment = Assignment.generate_random_assignment(
             num_vars,
-            seed = seed
         )
 
 
@@ -202,7 +198,6 @@ class Formula:
             num_vars,
             ratio,
             clause_length = 3,
-            seed = None,
             poolsize = 1,
             verbose = False):
         assert type(directory) == str, "directory is no str"
@@ -214,9 +209,6 @@ class Formula:
         assert ratio > 0, "ratio <= 0"
         assert type(clause_length) == int, "clause_length is no int"
         assert clause_length > 0, "clause_length <= 0"
-
-        if seed:
-            random.seed(seed)
 
         try:
             os.mkdir(directory)
@@ -277,7 +269,7 @@ class Formula:
 class Assignment:
     """ Assignment modelled as an array of bits """
 
-    def generate_random_assignment(num_vars, seed = None):
+    def generate_random_assignment(num_vars):
         """ Randomly generating a number between
         0 and 2^num_vars, converting it into an assignment,
         and returning it
@@ -285,9 +277,6 @@ class Assignment:
         if __debug__:
             type_check('num_vars',num_vars,int)
             value_check('num_vars',num_vars,strict_positive=strict_positive)
-
-        if seed:
-            random.seed(seed)
 
         return Assignment(
             random.randrange(0,pow(2,num_vars)),
