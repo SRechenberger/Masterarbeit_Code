@@ -400,8 +400,11 @@ class Experiment:
             raise RuntimeError('Experiment already performed')
 
         self.run = True
-        with mp.Pool(processes=self.poolsize) as pool:
-            self.results = pool.map(self._run_solver, self.formulae)
+        if self.poolsize > 1:
+            with mp.Pool(processes=self.poolsize) as pool:
+                self.results = pool.map(self._run_solver, self.formulae)
+        else:
+            self.results = map(self._run_solver, self.formulae)
 
         return self.results
 
@@ -462,8 +465,6 @@ class StaticExperiment:
             database='experiments.db',
             **solver_params):       # special parameters of the solver
 
-        random.seed()
-
         # TODO assertions
         self.formulae = FormulaSupply(
             random.sample(
@@ -478,7 +479,7 @@ class StaticExperiment:
                 ),
                 sample_size
             ),
-            buffsize=poolsize * 10
+            buffsize=min(poolsize * 10, sample_size)
         )
 
         self.setup = dict(
@@ -563,8 +564,10 @@ class StaticExperiment:
         state_entropy_min[n], state_entropy_max[n] = 0, 0
         # entropy at the ends is 0, because there are no uncertainties
         increment_prob = np.zeros(n+1)
+        decrement_prob = np.zeros(n+1)
         # at the negated assignment every flip is good; on the other end, every flip is bad
         increment_prob[0] = 1
+        decrement_prob[n] = 1
 
         # for each hamming distance beginning with 1
         for distance in range(1,n // 2 + 1):
@@ -583,15 +586,16 @@ class StaticExperiment:
                 # init context
                 ctx = SOLVER_CONTEXT[self.setup['solver']](formula, current_assgn)
                 # variables for measured path
-                differ, _ = current_assgn.hamming_sets(sat_assgn)
+                differ, same = current_assgn.hamming_sets(sat_assgn)
                 path = random.sample(differ, n - distance)
-                path_set = set(path)
+                path_set = set(differ)
+                check_set = set(same)
 
+                hamming_dist = distance
                 for step in path:
                     # calculate distribution
                     distr = distr_f(ctx)
                     # current hamming distance
-                    hamming_dist = current_assgn.hamming_dist(sat_assgn)
                     assgn_str = str(current_assgn)
                     # if this state was not already measured
                     if assgn_str not in measured_states:
@@ -601,7 +605,14 @@ class StaticExperiment:
                         prob = 0
                         for i in path_set:
                             prob += distr[i]
-                        increment_prob[hamming_dist] += prob / len(path_set)
+
+                        co_prob = 0
+                        for i in check_set:
+                            co_prob += distr[i]
+
+                        increment_prob[hamming_dist] += prob
+                        decrement_prob[hamming_dist] += co_prob
+
 
                         # calculate state entropy
                         h = arr_entropy(distr)
@@ -614,13 +625,16 @@ class StaticExperiment:
 
                     # remove walked step form differ
                     path_set.remove(step)
+                    check_set.add(step)
                     # make the step
+                    hamming_dist -= 1
                     ctx.update(step)
 
         # postprocessing
         divide = np.vectorize(lambda v, c: v / c if c != 0 else 0)
         state_entropy = divide(state_entropy, state_count)
-        increment_prob = divide(increment_prob, state_count)
+        calc_prob = np.vectorize(lambda inc, dec: inc/(inc+dec))
+        increment_prob = calc_prob(increment_prob, state_count)
 
         return dict(
             formula_file=fp,
@@ -643,8 +657,11 @@ class StaticExperiment:
             raise RuntimeError('Experiment already performed')
 
         self.run = True
-        with mp.Pool(processes=self.poolsize) as pool:
-            self.results = pool.map(self._run_measurement, self.formulae)
+        if self.poolsize > 1:
+            with mp.Pool(processes=self.poolsize) as pool:
+                self.results = pool.map(self._run_measurement, self.formulae)
+        else:
+            self.results = list(map(self._run_measurement, self.formulae))
 
         return self.results
 
@@ -668,6 +685,7 @@ class StaticExperiment:
                 )
                 run_id = c.lastrowid
                 for series in result['improvement_prob']:
+                    print(series)
                     c.execute(
                         SAVE_IMPROVEMENT_PROB,
                         (
