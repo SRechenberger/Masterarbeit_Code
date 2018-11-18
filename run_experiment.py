@@ -1,5 +1,6 @@
 import argparse
 import time
+import random
 
 from src.experiment.experiment import Experiment, StaticExperiment
 from src.experiment.measurement import EntropyMeasurement
@@ -83,6 +84,12 @@ parser.add_argument(
     action = 'store_true',
 )
 
+parser.add_argument(
+    '--seeds',
+    help='random seeds for the experiments',
+    type=int,
+    nargs='+'
+)
 
 def calc_time(seconds):
     s = seconds % 60
@@ -113,6 +120,8 @@ if __name__ == '__main__':
             phi = 'exp'
         )
 
+    seedtest = {}
+
     count = 0
     while count < args.repeat:
         # setup
@@ -141,6 +150,16 @@ if __name__ == '__main__':
                 **setup,
             )
 
+        # setting seed
+        if args.seeds:
+            seed = args.seeds[count % len(args.seeds)]
+        else:
+            seed = int(time.time())
+
+        random.seed(seed)
+
+        if args.verbose:
+            print('seed is {}... '.format(seed), end='', flush=True)
 
         # running
         if args.verbose:
@@ -148,6 +167,12 @@ if __name__ == '__main__':
             begin_time = time.time()
 
         e.run_experiment()
+
+        r = random.random()
+        assert not seed in seedtest or seedtest[seed] == r,\
+            "r = {} != {} = seedtest[{}]".format(r,seedtest[seed],seed)
+        seedtest[seed] = r
+        print(seedtest, seed, r)
 
         #saving
         if args.verbose:
