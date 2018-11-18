@@ -5,6 +5,7 @@ import os
 from src.formula import Formula, Assignment
 from src.solver.utils import Falselist, Scores, DiffScores
 from src.experiment.utils import FormulaSupply
+from src.solver.walksat import DefensiveContext
 
 
 class TestFalselist(unittest.TestCase):
@@ -40,10 +41,11 @@ class TestScores(unittest.TestCase):
     def setUp(self):
         random.seed()
         dirname = 'test_files'
+        num_vars = random.randrange(10,512)
         Formula.generate_formula_pool(
             dirname,
             5,
-            256,
+            num_vars,
             4.2,
             poolsize=3,
         )
@@ -57,7 +59,7 @@ class TestScores(unittest.TestCase):
                     )
                 )
             ),
-            10
+            100
         )
         self.buffsize = 5
 
@@ -82,7 +84,6 @@ class TestScores(unittest.TestCase):
 
             self.assertTrue(diff_score.self_test(formula, assgn, falselist))
 
-    # @unittest.skip("takes too long")
     def test_score(self):
         for _, formula in FormulaSupply(self.paths, self.buffsize):
             n = formula.num_vars
@@ -105,14 +106,25 @@ class TestScores(unittest.TestCase):
             # first check after creation
             self.assertTrue(scores.self_test(formula, assgn, falselist))
 
-            to_flips = [
-                i
-                for _ in range(0,10)
-                for i in random.sample(range(1,n+1), max(1,n // 100))
-            ]
 
             for to_flip in to_flips:
                 scores.flip(to_flip, formula, assgn, falselist)
 
                 self.assertTrue(scores.self_test(formula, assgn, falselist))
+
+
+    def test_worst_score_flips(self):
+        for _, formula in FormulaSupply(self.paths, self.buffsize):
+            n = formula.num_vars
+            max_occ = formula.max_occs
+            assgn = Assignment.generate_random_assignment(n)
+            ctx = DefensiveContext(formula, assgn)
+            for i in range(0,1000):
+                if ctx.score.worst_score == max_occ:
+                    print("worst_score = {}".format(max_occ))
+                    worst = list(ctx.score.get_worst_bucket())
+                    flip = random.choice(worst)
+                else:
+                    flip = random.randrange(1,n+1)
+            self.assertTrue(ctx.score.self_test(formula, assgn, ctx.falselist))
 

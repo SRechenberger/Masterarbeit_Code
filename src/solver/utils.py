@@ -180,9 +180,14 @@ class DiffScores:
             self.best_score += 1
         # lift variable to next higher bucket
         self.buckets[self.score[variable]].remove(variable)
-        self.buckets[self.score[variable]+1].add(variable)
         # increment break score
         self.score[variable] += 1
+        # while updating, the break score may temporarily be greater than normally possible;
+        # in this case, add a new bucket as buffer
+        if self.score[variable] not in self.buckets:
+            self.buckets[self.score[variable]] = {variable}
+        else:
+            self.buckets[self.score[variable]].add(variable)
 
 
 
@@ -199,9 +204,14 @@ class DiffScores:
         # then the best score is lowered
         if self.best_score == self.score[variable] and not self.buckets[self.score[variable]]:
             self.best_score -= 1
-        self.buckets[self.score[variable]-1].add(variable)
         # decrement break score
         self.score[variable] -= 1
+        # while updating, the break score may temporarily be greater than normally possible;
+        # in this case, add a new bucket as buffer
+        if self.score[variable] not in self.buckets:
+            self.buckets[self.score[variable]] = {variable}
+        else:
+            self.buckets[self.score[variable]].add(variable)
 
 
     def flip(self, variable, formula, assignment, falselist):
@@ -338,10 +348,11 @@ class Scores:
         ]
         self.breaks = {}
 
-        self.buckets = [
-            set() for _ in range(0, formula.max_occs+1)
-        ]
+        self.buckets = {
+            score: set() for score in range(0, formula.max_occs+1)
+        }
         self.best_score = 0
+        self.worst_score = 0
 
 
         # all variables have score 0 and are in the 0-bucket
@@ -378,11 +389,16 @@ class Scores:
 
     def get_best_bucket(self):
         """ Returns the first non-empty bucket """
-        for score, bucket in enumerate(self.buckets):
-            if bucket:
-                return score, bucket
+        return self.buckets[self.best_score]
 
         raise RuntimeError("all buckets are empty")
+
+    def get_worst_bucket(self):
+        """ Returns the worst non-empty bucket (for debug purposes) """
+        #print(self.worst_score)
+        #for score, bucket in enumerate(self.buckets):
+        #    print(score, bucket)
+        return self.buckets[self.worst_score]
 
 
     def get_break_score(self, var):
@@ -404,17 +420,17 @@ class Scores:
         self.buckets[self.breaks[variable]].remove(variable)
         if self.best_score == self.breaks[variable] and not self.buckets[self.breaks[variable]]:
             self.best_score += 1
+        if self.worst_score == self.breaks[variable]:
+            self.worst_score += 1
         # increment break score
         self.breaks[variable] += 1
         # add variable to new bucket
-        try:
+        # while updating, the break score may temporarily be greater than normally possible;
+        # in this case, add a new bucket as buffer
+        if self.breaks[variable] not in self.buckets:
+            self.buckets[self.breaks[variable]] = {variable}
+        else:
             self.buckets[self.breaks[variable]].add(variable)
-        except Exception as e:
-            print(
-                "buckets = {}, breaks[{}] = {}".format(
-                    self.buckets, variable, self.breaks[variable]
-                )
-            )
 
 
     def decrement_break_score(self, variable):
@@ -424,17 +440,20 @@ class Scores:
         assert variable > 0, "variable = {} <= 0".format(variable)
         assert variable in self.breaks, "variable = {} not listed in self.breaks".format(variable)
 
-        if self.best_score == self.breaks[variable]:
-            self.best_score -= 1
         # remove variable from old bucket
         self.buckets[self.breaks[variable]].remove(variable)
+        if self.best_score == self.breaks[variable]:
+            self.best_score -= 1
+        if self.worst_score == self.breaks[variable] and not self.buckets[self.breaks[variable]]:
+            self.worst_score -= 1
         # decrement break score
         self.breaks[variable] -= 1
-        # add variable to new bucket
-        self.buckets[self.breaks[variable]].add(variable)
-
-        assert self.breaks[variable] >= 0,\
-            "self.breaks[variable] = {} < 0".format(self.breaks[variable])
+        # while updating, the break score may temporarily be greater than normally possible;
+        # in this case, add a new bucket as buffer
+        if self.breaks[variable] not in self.buckets:
+            self.buckets[self.breaks[variable]] = {variable}
+        else:
+            self.buckets[self.breaks[variable]].add(variable)
 
 
     def flip(self, variable, formula, assignment, falselist):
