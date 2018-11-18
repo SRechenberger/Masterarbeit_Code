@@ -111,7 +111,6 @@ if __name__ == '__main__':
             num,
             num_vars,
             ratio,
-            seed=seed,
             poolsize=poolsize,
             verbose=verbose
         )
