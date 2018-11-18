@@ -40,6 +40,19 @@ class TestAssignment(unittest.TestCase):
             assgn.flip(to_flip)
             self.assertNotEqual(old, assgn[to_flip])
 
+    def test_hamming_sets(self):
+        for i in range(1,1000):
+            n = 500
+            assgn = Assignment.generate_random_assignment(n)
+            assgn_2 = assgn.copy()
+            sample_size = random.randrange(1,n+1)
+            sample = set(random.sample(range(1,n+1), sample_size))
+            for flip in sample:
+                assgn_2.flip(flip)
+            different, same = assgn.hamming_sets(assgn_2)
+            self.assertEqual(sample, set(different))
+            self.assertEqual(set(range(1,n+1)) - set(different), set(same))
+
 
 class TestFormula(unittest.TestCase):
     def setUp(self):
