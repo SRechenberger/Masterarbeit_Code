@@ -277,6 +277,7 @@ class Experiment:
             measurement_constructor,
             poolsize=1,             # number of parallel processes
             database='experiments.db',
+            hamming_dist=0,         # start hamming distance
             **solver_params):       # special parameters of the solver
 
         # some checks in debug mode
@@ -327,6 +328,7 @@ class Experiment:
         solver_generic_params = dict(
             max_tries=max_tries,
             max_flips=max_flips,
+            hamming_dist=hamming_dist,
         )
 
         self.setup = dict(
@@ -685,7 +687,6 @@ class StaticExperiment:
                 )
                 run_id = c.lastrowid
                 for series in result['improvement_prob']:
-                    print(series)
                     c.execute(
                         SAVE_IMPROVEMENT_PROB,
                         (
