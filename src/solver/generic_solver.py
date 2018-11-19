@@ -24,7 +24,8 @@ def generic_sls(
         max_tries,
         max_flips,
         context_constructor,
-        measurement_constructor):
+        measurement_constructor,
+        hamming_dist=0):
     """ Generic SLS-Solver according to Algorithm 1,
     including measurement facilities.
     """
@@ -54,9 +55,17 @@ def generic_sls(
             t_begin = time.time()
 
         # generate random assingnment
-        current_assignment = Assignment.generate_random_assignment(
-            formula.num_vars
-        )
+        if hamming_dist > 0:
+            # if a hamming distance > 0 is given
+            # flip 'hamming_dist' steps away from the satisfying assignment
+            current_assignment = formula.satisfying_assignment
+            for flip in random.sample(range(1,formula.num_vars+1), hamming_dist):
+                current_assignment.flip(flip)
+        else:
+            # otherwise generate a random one
+            current_assignment = Assignment.generate_random_assignment(
+                formula.num_vars
+            )
         # setup measurement object for a search run
         measurement.init_run(current_assignment)
 
