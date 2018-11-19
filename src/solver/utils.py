@@ -352,7 +352,6 @@ class Scores:
             score: set() for score in range(0, formula.max_occs+1)
         }
         self.best_score = 0
-        self.worst_score = 0
 
 
         # all variables have score 0 and are in the 0-bucket
@@ -393,13 +392,6 @@ class Scores:
 
         raise RuntimeError("all buckets are empty")
 
-    def get_worst_bucket(self):
-        """ Returns the worst non-empty bucket (for debug purposes) """
-        #print(self.worst_score)
-        #for score, bucket in enumerate(self.buckets):
-        #    print(score, bucket)
-        return self.buckets[self.worst_score]
-
 
     def get_break_score(self, var):
         """ Returns the variable's break score """
@@ -420,8 +412,6 @@ class Scores:
         self.buckets[self.breaks[variable]].remove(variable)
         if self.best_score == self.breaks[variable] and not self.buckets[self.breaks[variable]]:
             self.best_score += 1
-        if self.worst_score == self.breaks[variable]:
-            self.worst_score += 1
         # increment break score
         self.breaks[variable] += 1
         # add variable to new bucket
@@ -444,8 +434,6 @@ class Scores:
         self.buckets[self.breaks[variable]].remove(variable)
         if self.best_score == self.breaks[variable]:
             self.best_score -= 1
-        if self.worst_score == self.breaks[variable] and not self.buckets[self.breaks[variable]]:
-            self.worst_score -= 1
         # decrement break score
         self.breaks[variable] -= 1
         # while updating, the break score may temporarily be greater than normally possible;

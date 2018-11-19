@@ -59,7 +59,7 @@ class TestScores(unittest.TestCase):
                     )
                 )
             ),
-            100
+            10
         )
         self.buffsize = 5
 
@@ -111,20 +111,3 @@ class TestScores(unittest.TestCase):
                 scores.flip(to_flip, formula, assgn, falselist)
 
                 self.assertTrue(scores.self_test(formula, assgn, falselist))
-
-
-    def test_worst_score_flips(self):
-        for _, formula in FormulaSupply(self.paths, self.buffsize):
-            n = formula.num_vars
-            max_occ = formula.max_occs
-            assgn = Assignment.generate_random_assignment(n)
-            ctx = DefensiveContext(formula, assgn)
-            for i in range(0,1000):
-                if ctx.score.worst_score == max_occ:
-                    print("worst_score = {}".format(max_occ))
-                    worst = list(ctx.score.get_worst_bucket())
-                    flip = random.choice(worst)
-                else:
-                    flip = random.randrange(1,n+1)
-            self.assertTrue(ctx.score.self_test(formula, assgn, ctx.falselist))
-
