@@ -22,7 +22,17 @@ experiment_type_group = parser.add_mutually_exclusive_group(required = True)
 experiment_type_group.add_argument(
     '--dynamic',
     help='run dynamic experiment; needs max_flips and max_tries',
+    metavar=('MAX_TRIES','MAX_FLIPS'),
     nargs=2,
+    type=int,
+)
+
+parser.add_argument(
+    '--hamming_dist',
+    help='if a value D > 0 is given, every random walk \
+    will start at an assignment a with d(a,a*) = D;\
+    has no effect for static experiments.',
+    metavar='D',
     type=int,
 )
 
@@ -40,19 +50,22 @@ solver_group.add_argument(
 )
 solver_group.add_argument(
     '--walksat',
-    help = 'run with WalkSAT algorithm',
+    help = 'run with WalkSAT algorithm with noise parameter RHO',
+    metavar='RHO',
     nargs = 1,
     type = float,
 )
 solver_group.add_argument(
     '--probsat_poly',
-    help = 'run with ProbSAT algorithm with polynomial phi function',
+    help = 'run with ProbSAT algorithm with polynomial phi function and break weight C_BREAK',
+    metavar='C_BREAK',
     nargs = 1,
     type = float,
 )
 solver_group.add_argument(
     '--probsat_exp',
-    help = 'run with ProbSAT algorithm with exponential phi function',
+    help = 'run with ProbSAT algorithm with exponential phi function and break weight C_BREAK',
+    metavar='C_BREAK',
     nargs = 1,
     type = float,
 )
@@ -172,7 +185,6 @@ if __name__ == '__main__':
         assert not seed in seedtest or seedtest[seed] == r,\
             "r = {} != {} = seedtest[{}]".format(r,seedtest[seed],seed)
         seedtest[seed] = r
-        print(seedtest, seed, r)
 
         #saving
         if args.verbose:
