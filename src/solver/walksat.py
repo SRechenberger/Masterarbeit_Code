@@ -87,8 +87,8 @@ def walksat_heuristic(rho):
         "rho = {} :: {} is not a float".format(rho, type(rho))
 
     def heur(context):
-        if __debug__:
-            instance_check('context',context,DefensiveContext)
+        assert isinstance(context, DefensiveContext),\
+            "context = {} :: {} is no DefensiveContext"
 
         clause_idx = random.choice(context.falselist.lst)
         clause = context.formula.clauses[clause_idx]
