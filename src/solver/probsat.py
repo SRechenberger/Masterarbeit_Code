@@ -87,14 +87,21 @@ def probsat_heuristic(max_occ, c_break, phi = 'poly'):
     return heur
 
 
-def probsat(formula, measurement, max_tries, max_flips, c_break = 2.3, phi = 'poly',hamming_dist=0):
+def probsat(
+        formula,
+        measurement_constructor,
+        max_tries,
+        max_flips,
+        c_break=2.3,
+        phi='poly',
+        hamming_dist=0):
     return generic_sls(
         probsat_heuristic(formula.max_occs,c_break,phi),
         formula,
         max_tries,
         max_flips,
         DefensiveContext,
-        measurement,
+        measurement_constructor,
         hamming_dist=hamming_dist,
     )
 

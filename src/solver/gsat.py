@@ -77,13 +77,13 @@ def gsat_heuristic(context):
     return random.choice(list(best))
 
 
-def gsat(formula, measurement, max_tries, max_flips, hamming_dist=0):
+def gsat(formula, measurement_constructor, max_tries, max_flips, hamming_dist=0):
     return generic_sls(
         gsat_heuristic,
         formula,
         max_tries,
         max_flips,
         GSATContext,
-        measurement,
+        measurement_constructor,
         hamming_dist=hamming_dist,
     )
