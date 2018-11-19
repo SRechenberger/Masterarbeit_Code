@@ -103,7 +103,7 @@ class TestDistribution(unittest.TestCase):
                             print("expected:\n{}".format(expected_distr))
 
                 else:
-                    self.assertEqual(observed_distr[0], expected_distr[0])
+                    self.assertTrue(abs(observed_distr[0] - expected_distr[0]) <= 0.0001)
 
 
             # go to another assignment

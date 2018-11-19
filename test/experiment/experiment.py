@@ -1,7 +1,7 @@
 import unittest
 import random
 
-from src.experiment.experiment import Experiment
+from src.experiment.experiment import DynamicExperiment
 from src.experiment.measurement import EntropyMeasurement
 from src.solver.generic_solver import Context
 from src.solver.gsat import gsat
@@ -28,42 +28,46 @@ class TestExperiment(unittest.TestCase):
 
 
     def test_experiment_with_gsat(self):
-        experiment = Experiment(
+        experiment = DynamicExperiment(
             self.pool_dir,
             self.sample_size,
             'gsat',
-            10,self.n*3,EntropyMeasurement,
+            dict(),
+            10,self.n*3,
+            EntropyMeasurement,
             poolsize = 3
         )
-        results = experiment.run_experiment()
+        results = experiment()
         self.assertTrue(len(results),self.sample_size)
         experiment.save_results()
 
 
     def test_experiment_with_walksat(self):
-        experiment = Experiment(
+        experiment = DynamicExperiment(
             self.pool_dir,
             self.sample_size,
             'walksat',
-            10,self.n*3,EntropyMeasurement,
+            dict(rho=0.57),
+            10,self.n*3,
+            EntropyMeasurement,
             poolsize = 3,
-            rho = 0.57
         )
-        results = experiment.run_experiment()
+        results = experiment()
         self.assertTrue(len(results),self.sample_size)
         experiment.save_results()
 
 
     def test_experiment_with_probsat(self):
-        experiment = Experiment(
+        experiment = DynamicExperiment(
             self.pool_dir,
             self.sample_size,
             'probsat',
-            10,self.n*3,EntropyMeasurement,
+            dict(c_break=2.3,phi='poly'),
+            10,self.n*3,
+            EntropyMeasurement,
             poolsize = 3,
-            c_break = 2.3, phi = 'poly'
         )
-        results = experiment.run_experiment()
+        results = experiment()
         self.assertTrue(len(results),self.sample_size)
         experiment.save_results()
 
