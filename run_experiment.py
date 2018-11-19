@@ -2,7 +2,7 @@ import argparse
 import time
 import random
 
-from src.experiment.experiment import Experiment, StaticExperiment
+from src.experiment.experiment import DynamicExperiment, StaticExperiment
 from src.experiment.measurement import EntropyMeasurement
 
 parser = argparse.ArgumentParser()
@@ -142,25 +142,25 @@ if __name__ == '__main__':
             print('Experiment #{} setup... '.format(count+1), end = '', flush=True)
 
         if args.dynamic:
-            e = Experiment(
+            e = DynamicExperiment(
                 args.input_dir,
                 args.sample_size,
                 solver,
+                setup,
                 args.dynamic[0],
                 args.dynamic[1],
                 EntropyMeasurement,
                 poolsize=args.poolsize,
                 database=args.database_file,
-                **setup,
             )
         elif args.static:
             e = StaticExperiment(
                 args.input_dir,
                 args.sample_size,
                 solver,
+                setup,
                 poolsize=args.poolsize,
                 database=args.database_file,
-                **setup,
             )
 
         # setting seed
@@ -179,7 +179,8 @@ if __name__ == '__main__':
             print('running... ',end='', flush=True)
             begin_time = time.time()
 
-        e.run_experiment()
+        # run experiment
+        e()
 
         r = random.random()
         assert not seed in seedtest or seedtest[seed] == r,\

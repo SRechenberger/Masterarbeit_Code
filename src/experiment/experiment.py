@@ -16,23 +16,6 @@ from src.solver.probsat import probsat, probsat_distribution
 
 from src.experiment.utils import FormulaSupply, arr_entropy
 
-SOLVERS = dict(
-    gsat=gsat,
-    walksat=walksat,
-    probsat=probsat
-)
-
-SOLVER_CONTEXT = dict(
-    gsat = GSATContext,
-    walksat = DefensiveContext,
-    probsat = DefensiveContext,
-)
-
-SOLVER_DISTR_F = dict(
-    gsat = lambda f: lambda: gsat_distribution,
-    walksat = lambda f: walksat_distribution,
-    probsat = lambda f: partial(probsat_distribution, f.max_occs),
-)
 
 CREATE_EXPERIMENT = """
 CREATE TABLE IF NOT EXISTS experiment
@@ -40,6 +23,7 @@ CREATE TABLE IF NOT EXISTS experiment
     , solver        TEXT NOT NULL
     , source_folder TEXT NOT NULL
     , sample_size   INT NOT NULL
+    , static        BOOL NOT NULL
     )
 """
 
@@ -48,8 +32,9 @@ INSERT INTO experiment
     ( solver
     , source_folder
     , sample_size
+    , static
     )
-VALUES (?,?,?)
+VALUES (?,?,?,?)
 """
 
 CREATE_PARAMETER = """
@@ -154,31 +139,12 @@ INSERT INTO entropy_data
 VALUES (?,?,?,?,?)
 """
 
-
-CREATE_STATIC_EXPERIMENT = """
-CREATE TABLE IF NOT EXISTS static_experiment
-    ( id            INTEGER PRIMARY KEY
-    , solver        TEXT NOT NULL
-    , source_folder TEXT NOT NULL
-    , sample_size   TEXT NOT NULL
-    )
-"""
-
-SAVE_STATIC_EXPERIMENT = """
-INSERT INTO static_experiment
-    ( solver
-    , source_folder
-    , sample_size
-    )
-VALUES (?,?,?)
-"""
-
 CREATE_MEASUREMENT_SERIES = """
 CREATE TABLE IF NOT EXISTS measurement_series
     ( id            INTEGER PRIMARY KEY
     , experiment_id INTEGER NOT NULL
     , formula_file  TEXT NOT NULL
-    , FOREIGN KEY(experiment_id) REFERENCES static_experiment(id)
+    , FOREIGN KEY(experiment_id) REFERENCES experiment(id)
     )
 """
 
@@ -209,8 +175,8 @@ INSERT INTO improvement_probability
 VALUES (?,?,?)
 """
 
-CREATE_AVG_STATE_ENTROPY = """
-CREATE TABLE IF NOT EXISTS avg_state_entropy
+CREATE_STATE_ENTROPY = """
+CREATE TABLE IF NOT EXISTS state_entropy
     ( id            INTEGER PRIMARY KEY
     , series_id     INTEGER NOT NULL
     , hamming_dist  INTEGER NOT NULL
@@ -221,8 +187,8 @@ CREATE TABLE IF NOT EXISTS avg_state_entropy
     )
 """
 
-SAVE_AVG_STATE_ENTROPY = """
-INSERT INTO avg_state_entropy
+SAVE_STATE_ENTROPY = """
+INSERT INTO state_entropy
     ( series_id
     , hamming_dist
     , entropy_avg
@@ -232,55 +198,38 @@ INSERT INTO avg_state_entropy
 VALUES (?,?,?,?,?)
 """
 
-def save_entropy_data(cursor, data):
-    assert isinstance(data,dict),\
-        "data = {} :: {} is no dict".format(data, type(data))
-    assert 'minimum' in data,\
-        "minimum not in data = {}".format(data)
-    assert 'minimum_at' in data,\
-        "mimimum_at not in data = {}".format(data)
-    assert 'maximum' in data,\
-        "maximum not in data = {}".format(data)
-    assert 'maximum_at' in data,\
-        "maximum_at not in data = {}".format(data)
-    assert 'accum' in data,\
-        "accum not in data = {}".format(data)
-    assert 'count' in data,\
-        "count not in data = {}".format(data)
-
-
-    if data['accum'] <= 0:
-        return None
-
-    cursor.execute(
-        SAVE_ENTROPY_DATA,
-        (
-            data['minimum'],
-            data['minimum_at'],
-            data['maximum'],
-            data['maximum_at'],
-            data['accum']/data['count']
-        )
+SOLVERS = dict(
+    gsat=dict(
+        dynamic=gsat,
+        static=lambda f: lambda: gsat_distribution,
+        context=GSATContext
+    ),
+    walksat=dict(
+        dynamic=walksat,
+        static=lambda f: walksat_distribution,
+        context=DefensiveContext
+    ),
+    probsat=dict(
+        dynamic=probsat,
+        static=lambda f: partial(probsat_distribution, f.max_occs),
+        context=DefensiveContext
     )
+)
 
-    return cursor.lastrowid
+class AbstractExperiment:
 
 
-class Experiment:
-    """ Random experiment on a set of input formulae """
     def __init__(
             self,
-            input_dir,              # directory of input files
-            sample_size,            # number of files to draw
-            solver,                 # the solver to be used
-            max_tries, max_flips,   # generic solver parameters
-            measurement_constructor,
-            poolsize=1,             # number of parallel processes
-            database='experiments.db',
-            hamming_dist=0,         # start hamming distance
-            **solver_params):       # special parameters of the solver
+            input_dir,
+            sample_size,
+            solver,
+            solver_params,
+            is_static,
+            *init_database,
+            poolsize=1,
+            database='experiments.db'):
 
-        # some checks in debug mode
         assert isinstance(input_dir, str),\
             "input_dir = {} :: {} is no str".format(input_dir, type(input_dir))
         assert os.path.isdir(input_dir),\
@@ -292,23 +241,22 @@ class Experiment:
         assert isinstance(solver, str),\
             "solver = {} :: {} is no str".format(solver, type(solver))
         assert solver in SOLVERS,\
-            "solver = {} not in {}".format(solver, SOLVERS)
-        assert isinstance(max_tries, int),\
-            "max_tries = {} :: {} is no int".format(max_tries, type(max_tries))
-        assert max_tries > 0,\
-            "max_tries = {} <= 0".format(max_tries)
-        assert isinstance(max_flips, int),\
-            "max_flips = {} :: {} is no int".format(max_flips, type(max_flips))
-        assert max_flips > 0,\
-            "max_flips = {} <= 0".format(max_flips)
-        assert callable(measurement_constructor),\
-            "measurement_constructor = {} is not callable".format(measurement_constructor)
+            "solver = {} not in {}".format(solver, solvers.keys())
+        assert isinstance(solver_params, dict),\
+            "solver_params = {} :: {} is no dict".format(solver_params, type(solver_params))
         assert isinstance(poolsize, int),\
             "poolsize = {} :: {} is no int".format(poolsize, type(poolsize))
         assert poolsize > 0,\
             "poolsize = {} <= 0".format(poolsize)
+        assert isinstance(database, str),\
+            "database = {} :: {} is no str"
+        assert all(isinstance(query,str) for query in init_database),\
+            "init_database = {} is not a list of str"
 
-
+        # get solver functions
+        self.solver = solver
+        self.solver_params = solver_params
+        # load formulae
         self.formulae = FormulaSupply(
             random.sample(
                 list(
@@ -325,46 +273,32 @@ class Experiment:
             buffsize=poolsize * 10
         )
 
-        solver_generic_params = dict(
-            max_tries=max_tries,
-            max_flips=max_flips,
-            hamming_dist=hamming_dist,
-        )
-
-        self.setup = dict(
-            solver=solver,
-            solver_specific=solver_params,
-            solver_generic=solver_generic_params,
-            meta=(measurement_constructor,)
-        )
-
+        # save poolsize
         self.poolsize = poolsize
-        self.results = None
+        # save database file
         self.database = database
-        self.run = False
-
+        # no results yet
+        self.results = None
         with sqlite3.connect(self.database, timeout=60) as conn:
             # init database, if not already done
             c = conn.cursor()
             c.execute(CREATE_EXPERIMENT)
             c.execute(CREATE_PARAMETER)
-            c.execute(CREATE_ALGORITHM_RUN)
-            c.execute(CREATE_SEARCH_RUN)
-            c.execute(CREATE_ENTROPY_DATA)
-            conn.commit()
+            for statement in init_database:
+                c.execute(statement)
 
-            # save this experiment
             c.execute(
                 SAVE_EXPERIMENT,
                 (
                     solver,
                     input_dir,
-                    sample_size
+                    sample_size,
+                    is_static
                 )
             )
             self.experiment_id = c.lastrowid
 
-            for k, v in dict(**solver_generic_params, **solver_params).items():
+            for k, v in dict(**self.solver_params).items():
                 c.execute(
                     SAVE_PARAMETER,
                     (
@@ -377,13 +311,97 @@ class Experiment:
             conn.commit()
 
 
-    def _run_solver(self, fp_and_formula):
+    def __hash__(self):
+        return hash(id(self)) % pow(2, 32)
+
+
+    def __call__(self):
+        """ Runs the prepared experiment """
+        if self.results:
+            raise RuntimeError('Experiment already performed')
+
+        if self.poolsize > 1:
+            with mp.Pool(processes=self.poolsize) as pool:
+                self.results = pool.map(self._run_experiment, self.formulae)
+        else:
+            self.results = list(map(self.run_experiment, self.formulae))
+
+        return self.results
+
+
+    def save_result(self, execute, result):
+        raise RuntimeError("Abstract Class!")
+
+
+    def save_results(self):
+        """ Saves the results of the experiment """
+        assert self.results, "experiment not run"
+        with sqlite3.connect(self.database, timeout=60) as conn:
+            c = conn.cursor()
+            def execute(query, *args):
+                c.execute(
+                    query,
+                    ( *args, )
+                )
+                return c.lastrowid
+            for result in self.results:
+                self.save_result(execute, result)
+            conn.commit()
+
+
+class DynamicExperiment(AbstractExperiment):
+    """ Random experiment on a set of input formulae """
+    def __init__(
+            self,
+            input_dir,              # directory of input files
+            sample_size,            # number of files to draw
+            solver,                 # the solver to be used
+            solver_params,          # special parameters of the solver
+            max_tries, max_flips,   # generic solver parameters
+            measurement_constructor,
+            poolsize=1,             # number of parallel processes
+            database='experiments.db',
+            hamming_dist=0):        # start hamming distance
+
+        super(DynamicExperiment, self).__init__(
+            input_dir,
+            sample_size,
+            solver,
+            dict(
+                max_tries=max_tries,
+                max_flips=max_flips,
+                **solver_params,
+            ),
+            False,
+            CREATE_ALGORITHM_RUN,
+            CREATE_SEARCH_RUN,
+            CREATE_ENTROPY_DATA,
+            poolsize=poolsize,
+            database=database,
+        )
+        assert isinstance(max_tries, int),\
+            "max_tries = {} :: {} is no int".format(max_tries, type(max_tries))
+        assert max_tries > 0,\
+            "max_tries = {} <= 0".format(max_tries)
+        assert isinstance(max_flips, int),\
+            "max_flips = {} :: {} is no int".format(max_flips, type(max_flips))
+        assert max_flips > 0,\
+            "max_flips = {} <= 0".format(max_flips)
+        assert callable(measurement_constructor),\
+            "measurement_constructor = {} is not callable".format(measurement_constructor)
+
+        self.meta = dict(
+            measurement_constructor = measurement_constructor,
+            hamming_dist = hamming_dist,
+        )
+
+
+    def _run_experiment(self, fp_and_formula):
         fp, formula = fp_and_formula
-        assgn, measurement = SOLVERS[self.setup['solver']](
+        assgn, measurement = SOLVERS[self.solver]['dynamic'](
             formula,
-            *self.setup['meta'],
-            **self.setup['solver_generic'],
-            **self.setup['solver_specific'],
+            **self.solver_params,
+            **self.meta,
         )
 
         return dict(
@@ -396,139 +414,120 @@ class Experiment:
         )
 
 
-    def run_experiment(self):
-        """ Runs the prepared experiment """
-        if self.results:
-            raise RuntimeError('Experiment already performed')
+    def save_result(self, execute, result):
+        run_id = execute(
+            SAVE_ALGORITHM_RUN,
+            self.experiment_id,
+            result['formula_file'],
+            str(result['sat_assgn']),
+            result['num_clauses'],
+            result['num_vars'],
+            result['sat'],
+        )
+        for run in result['runs']:
+            single_entropy_id = DynamicExperiment.__save_entropy_data(execute, run['single_entropy'])
+            joint_entropy_id = DynamicExperiment.__save_entropy_data(execute, run['joint_entropy'])
+            mutual_information_id = DynamicExperiment.__save_entropy_data(execute, run['mutual_information'])
 
-        self.run = True
-        if self.poolsize > 1:
-            with mp.Pool(processes=self.poolsize) as pool:
-                self.results = pool.map(self._run_solver, self.formulae)
-        else:
-            self.results = map(self._run_solver, self.formulae)
-
-        return self.results
-
-
-    def __hash__(self):
-        return hash(id(self)) % pow(2, 32)
-
-
-    def save_results(self):
-        """ Saves the results of the experiment """
-        assert self.run, "experiment not run"
-        with sqlite3.connect(self.database, timeout=60) as conn:
-            c = conn.cursor()
-            for result in self.results:
-                c.execute(
-                    SAVE_ALGORITHM_RUN,
-                    (
-                        self.experiment_id,
-                        result['formula_file'],
-                        str(result['sat_assgn']),
-                        result['num_clauses'],
-                        result['num_vars'],
-                        result['sat'],
-                    )
-                )
-                run_id = c.lastrowid
-                for run in result['runs']:
-
-                    single_entropy_id = save_entropy_data(c, run['single_entropy'])
-                    joint_entropy_id = save_entropy_data(c, run['joint_entropy'])
-                    mutual_information_id = save_entropy_data(c, run['mutual_information'])
-
-                    c.execute(
-                        SAVE_SEARCH_RUN,
-                        (
-                            run_id,
-                            run['flips'],
-                            single_entropy_id,
-                            joint_entropy_id,
-                            mutual_information_id,
-                            run['hamming_dist'],
-                            run['start_assgn'],
-                            run['final_assgn'],
-                            run['success'],
-                        )
-                    )
-                conn.commit()
+            execute(
+                SAVE_SEARCH_RUN,
+                run_id,
+                run['flips'],
+                single_entropy_id,
+                joint_entropy_id,
+                mutual_information_id,
+                run['hamming_dist'],
+                run['start_assgn'],
+                run['final_assgn'],
+                run['success'],
+            )
 
 
-class StaticExperiment:
+    def __save_entropy_data(execute, data):
+        assert isinstance(data,dict),\
+            "data = {} :: {} is no dict".format(data, type(data))
+        assert 'minimum' in data,\
+            "minimum not in data = {}".format(data)
+        assert 'minimum_at' in data,\
+            "mimimum_at not in data = {}".format(data)
+        assert 'maximum' in data,\
+            "maximum not in data = {}".format(data)
+        assert 'maximum_at' in data,\
+            "maximum_at not in data = {}".format(data)
+        assert 'accum' in data,\
+            "accum not in data = {}".format(data)
+        assert 'count' in data,\
+            "count not in data = {}".format(data)
+
+
+        if data['accum'] <= 0:
+            return None
+
+        return execute(
+            SAVE_ENTROPY_DATA,
+            data['minimum'],
+            data['minimum_at'],
+            data['maximum'],
+            data['maximum_at'],
+            data['accum']/data['count']
+        )
+
+
+class StaticExperiment(AbstractExperiment):
 
     def __init__(
             self,
             input_dir,              # directory of input files
             sample_size,            # number of files to draw
             solver,                 # the solver to be used
+            solver_params,          # solver specific parameters
             poolsize=1,             # number of parallel processes
-            database='experiments.db',
-            **solver_params):       # special parameters of the solver
+            database='experiments.db'):
 
-        # TODO assertions
-        self.formulae = FormulaSupply(
-            random.sample(
-                list(
-                    map(
-                        partial(os.path.join, input_dir),
-                        filter(
-                            lambda s: s.endswith('.cnf'),
-                            os.listdir(input_dir),
-                        )
-                    )
-                ),
-                sample_size
-            ),
-            buffsize=min(poolsize * 10, sample_size)
+        super(StaticExperiment,self).__init__(
+            input_dir,
+            sample_size,
+            solver,
+            solver_params,
+            True,
+            CREATE_MEASUREMENT_SERIES,
+            CREATE_IMPROVEMENT_PROB,
+            CREATE_STATE_ENTROPY,
+            poolsize=poolsize,
+            database=database,
         )
 
-        self.setup = dict(
-            solver=solver,
-            solver_specific=solver_params,
-        )
+        self.distr_function = SOLVERS[solver]['static']
+        self.context = SOLVERS[solver]['context']
 
-        self.poolsize = poolsize
-        self.results = None
-        self.database = database
-        self.run = False
 
-        with sqlite3.connect(self.database, timeout=60) as conn:
-            # init database, if not already done
-            c = conn.cursor()
-            c.execute(CREATE_PARAMETER)
-            c.execute(CREATE_STATIC_EXPERIMENT)
-            c.execute(CREATE_MEASUREMENT_SERIES)
-            c.execute(CREATE_IMPROVEMENT_PROB)
-            c.execute(CREATE_AVG_STATE_ENTROPY)
-            conn.commit()
-
-            # save this experiment
-            c.execute(
-                SAVE_STATIC_EXPERIMENT,
-                (
-                    solver,
-                    input_dir,
-                    sample_size
-                )
+    def save_result(self, execute, result):
+        for result in self.results:
+            run_id = execute(
+                SAVE_MEASUREMENT_SERIES,
+                self.experiment_id,
+                result['formula_file'],
             )
-            self.experiment_id = c.lastrowid
-
-            for k, v in solver_params.items():
-                c.execute(
-                    SAVE_PARAMETER,
-                    (
-                        self.experiment_id,
-                        k,
-                        str(v),
-                        type(v).__name__,
-                    )
+            for series in result['improvement_prob']:
+                execute(
+                    SAVE_IMPROVEMENT_PROB,
+                    run_id,
+                    series['hamming_dist'],
+                    series['prob'],
                 )
-            conn.commit()
+
+            for series in result['avg_state_entropy']:
+                execute(
+                    SAVE_STATE_ENTROPY,
+                    run_id,
+                    series['hamming_dist'],
+                    series['entropy_avg'],
+                    series['entropy_min'],
+                    series['entropy_max'],
+                )
 
 
-    def _run_measurement(self, fp_and_formula):
+    def _run_experiment(self, fp_and_formula):
         fp, formula = fp_and_formula
         # calculate the total number of measured states
         n = formula.num_vars
@@ -537,7 +536,7 @@ class StaticExperiment:
         # calculate the assignment with maximum hamming distance to the satisfying one
         furthest_assgn = sat_assgn.negation()
         # init distribution function
-        distr_f = SOLVER_DISTR_F[self.setup['solver']](formula)(**self.setup['solver_specific'])
+        distr_f = SOLVERS[self.solver]['static'](formula)(**self.solver_params)
 
         # calculate the total number of measured states
         total_num_states = sum(
@@ -586,7 +585,7 @@ class StaticExperiment:
                     current_assgn.flip(step)
 
                 # init context
-                ctx = SOLVER_CONTEXT[self.setup['solver']](formula, current_assgn)
+                ctx = SOLVER[self.solver]['context'](formula, current_assgn)
                 # variables for measured path
                 differ, same = current_assgn.hamming_sets(sat_assgn)
                 path = random.sample(differ, n - distance)
@@ -651,61 +650,3 @@ class StaticExperiment:
                 )
             ],
         )
-
-
-    def run_experiment(self):
-        """ Runs the prepared experiment """
-        if self.results:
-            raise RuntimeError('Experiment already performed')
-
-        self.run = True
-        if self.poolsize > 1:
-            with mp.Pool(processes=self.poolsize) as pool:
-                self.results = pool.map(self._run_measurement, self.formulae)
-        else:
-            self.results = list(map(self._run_measurement, self.formulae))
-
-        return self.results
-
-
-    def __hash__(self):
-        return hash(id(self)) % pow(2, 32)
-
-
-    def save_results(self):
-        """ Saves the results of the experiment """
-        assert self.run, "experiment not run"
-        with sqlite3.connect(self.database, timeout=60) as conn:
-            c = conn.cursor()
-            for result in self.results:
-                c.execute(
-                    SAVE_MEASUREMENT_SERIES,
-                    (
-                        self.experiment_id,
-                        result['formula_file'],
-                    )
-                )
-                run_id = c.lastrowid
-                for series in result['improvement_prob']:
-                    c.execute(
-                        SAVE_IMPROVEMENT_PROB,
-                        (
-                            run_id,
-                            series['hamming_dist'],
-                            series['prob'],
-                        )
-                    )
-
-                for series in result['avg_state_entropy']:
-                    c.execute(
-                        SAVE_AVG_STATE_ENTROPY,
-                        (
-                            run_id,
-                            series['hamming_dist'],
-                            series['entropy_avg'],
-                            series['entropy_min'],
-                            series['entropy_max'],
-                        )
-                    )
-                conn.commit()
-
