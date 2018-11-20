@@ -82,9 +82,7 @@ class TestFormula(unittest.TestCase):
                     len(f.get_occurrences(k)),
                     v
                 )
-                self.assertTrue(
-                    v <= f.max_occs
-                )
+                self.assertLessEqual(v, f.max_occs)
 
     def test_occurrences(self):
         for i in range(0,self.cases):
@@ -107,7 +105,7 @@ class TestFormula(unittest.TestCase):
             n = random.randrange(10,1001)
             r = random.randrange(20,42)/10
             f = Formula.generate_satisfiable_formula(n, r)
-            self.assertTrue(abs(f.num_clauses - n * r) < 2)
+            self.assertLess(f.num_clauses - n * r, 2)
 
 
     def test_satisfiable_assignment(self):
