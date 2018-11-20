@@ -199,22 +199,23 @@ VALUES (?,?,?,?,?)
 """
 
 SOLVERS = dict(
-    gsat=dict(
-        dynamic=gsat,
-        static=lambda f: lambda: gsat_distribution,
-        context=GSATContext
-    ),
-    walksat=dict(
-        dynamic=walksat,
-        static=lambda f: walksat_distribution,
-        context=DefensiveContext
-    ),
-    probsat=dict(
-        dynamic=probsat,
-        static=lambda f: partial(probsat_distribution, f.max_occs),
-        context=DefensiveContext
-    )
+  gsat=gsat,
+  walksat=walksat,
+  probsat=probsat,
 )
+
+DISTRS = dict(
+  gsat=lambda f: lambda: gsat_distribution,
+  walksat=lambda f: walksat_distribution,
+  probsat=lambda f: partial(probsat_distribution, f.max_occs),
+)
+
+CONTEXTS = dict(
+  gsat=GSATContext,
+  walksat=DefensiveContext,
+  probsat=DefensiveContext,
+)  
+
 
 class AbstractExperiment:
 
@@ -324,7 +325,7 @@ class AbstractExperiment:
             with mp.Pool(processes=self.poolsize) as pool:
                 self.results = pool.map(self._run_experiment, self.formulae)
         else:
-            self.results = list(map(self.run_experiment, self.formulae))
+            self.results = list(map(self._run_experiment, self.formulae))
 
         return self.results
 
@@ -398,7 +399,7 @@ class DynamicExperiment(AbstractExperiment):
 
     def _run_experiment(self, fp_and_formula):
         fp, formula = fp_and_formula
-        assgn, measurement = SOLVERS[self.solver]['dynamic'](
+        assgn, measurement = SOLVERS[self.solver](
             formula,
             **self.solver_params,
             **self.meta,
@@ -497,9 +498,6 @@ class StaticExperiment(AbstractExperiment):
             database=database,
         )
 
-        self.distr_function = SOLVERS[solver]['static']
-        self.context = SOLVERS[solver]['context']
-
 
     def save_result(self, execute, result):
         for result in self.results:
@@ -536,7 +534,7 @@ class StaticExperiment(AbstractExperiment):
         # calculate the assignment with maximum hamming distance to the satisfying one
         furthest_assgn = sat_assgn.negation()
         # init distribution function
-        distr_f = SOLVERS[self.solver]['static'](formula)(**self.solver_params)
+        distr_f = DISTRS[self.solver](formula)(**self.solver_params)
 
         # calculate the total number of measured states
         total_num_states = sum(
@@ -585,7 +583,7 @@ class StaticExperiment(AbstractExperiment):
                     current_assgn.flip(step)
 
                 # init context
-                ctx = SOLVER[self.solver]['context'](formula, current_assgn)
+                ctx = CONTEXTS[self.solver](formula, current_assgn)
                 # variables for measured path
                 differ, same = current_assgn.hamming_sets(sat_assgn)
                 path = random.sample(differ, n - distance)
