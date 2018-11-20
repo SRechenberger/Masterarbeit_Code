@@ -52,9 +52,6 @@ def generic_sls(
 
     t = 0
     while t < max_tries:
-        if debug:
-            print('*',end='',flush=True)
-            t_begin = time.time()
 
         # generate random assingnment
         if hamming_dist > 0:
@@ -74,17 +71,13 @@ def generic_sls(
 
         # initialize context
         context = context_constructor(formula, current_assignment)
-        if __debug__:
-            instance_check('context',context,Context)
+        assert isinstance(context,Context),\
+            "context = {} :: {} is no Context".format(context, type(context))
 
         f = 0
         while f < max_flips:
             # check, if the current assignment is a solution
             if context.is_sat():
-                if debug:
-                    t_end = time.time()
-                    t_diff = t_end-t_begin
-                    print('Avg time per flip: {} seconds'.format(t_diff/(f+t*max_flips)))
                 measurement.end_run(success = True)
                 return current_assignment, measurement
 
@@ -107,9 +100,4 @@ def generic_sls(
     # If no solution is found,
     # return None
 
-    if debug:
-        t_end = time.time()
-        t_diff = t_end-t_begin
-        print('Avg time per flip: {} seconds'.format(t_diff/(max_tries*max_flips)))
-    
     return None, measurement
