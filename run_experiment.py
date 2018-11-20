@@ -147,7 +147,7 @@ if __name__ == '__main__':
         else:
             seed = int(time.time())
 
-        random.seed(seed)    
+        random.seed(seed)
 
         if args.dynamic:
             e = DynamicExperiment(
