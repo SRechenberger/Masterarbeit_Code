@@ -4,7 +4,7 @@ import os
 import math
 
 from src.solver.utils import Formula
-from src.experiment.utils import FormulaSupply, binomial_vec, Queue, WindowEntropy, entropy
+from src.experiment.utils import FormulaSupply, binomial_vec, Queue, WindowEntropy, entropy, mutual_information
 from functools import partial
 
 class TestHelperFunctions(unittest.TestCase):
@@ -106,4 +106,33 @@ class TestWindowEntropy(unittest.TestCase):
             h_observed = window.get_entropy()
             h_expected = entropy(dist)
             self.assertAlmostEqual(h_observed, h_expected, delta=self.eps)
+
+    def test_mutual_information(self):
+        for _ in range(0,self.cases):
+            sequence = [
+                random.randrange(0,100)
+                for _ in range(0,1000)
+            ]
+            sequence = list(zip(sequence, sequence[1:]))
+            window_X = WindowEntropy(999)
+            window_Y = WindowEntropy(999)
+            window_XY = WindowEntropy(999)
+
+            dist = {}
+
+            for (x,y) in sequence:
+                window_X.count(x)
+                window_Y.count(y)
+                window_XY.count((x,y))
+
+                if (x,y) in dist:
+                    dist[x,y] += 1
+                else:
+                    dist[x,y] = 1
+
+            i_observed = window_X.get_entropy() + window_Y.get_entropy() - window_XY.get_entropy()
+            i_expected = mutual_information(dist)
+            self.assertAlmostEqual(i_observed, i_expected, delta=self.eps)
+
+
 
