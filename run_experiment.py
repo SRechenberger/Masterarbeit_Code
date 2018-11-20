@@ -141,6 +141,14 @@ if __name__ == '__main__':
         if args.verbose:
             print('Experiment #{} setup... '.format(count+1), end = '', flush=True)
 
+        # setting seed
+        if args.seeds:
+            seed = args.seeds[count % len(args.seeds)]
+        else:
+            seed = int(time.time())
+
+        random.seed(seed)    
+
         if args.dynamic:
             e = DynamicExperiment(
                 args.input_dir,
@@ -163,13 +171,6 @@ if __name__ == '__main__':
                 database=args.database_file,
             )
 
-        # setting seed
-        if args.seeds:
-            seed = args.seeds[count % len(args.seeds)]
-        else:
-            seed = int(time.time())
-
-        random.seed(seed)
 
         if args.verbose:
             print('seed is {}... '.format(seed), end='', flush=True)
@@ -181,11 +182,6 @@ if __name__ == '__main__':
 
         # run experiment
         e()
-
-        r = random.random()
-        assert not seed in seedtest or seedtest[seed] == r,\
-            "r = {} != {} = seedtest[{}]".format(r,seedtest[seed],seed)
-        seedtest[seed] = r
 
         #saving
         if args.verbose:
