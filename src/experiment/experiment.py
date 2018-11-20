@@ -230,6 +230,7 @@ class AbstractExperiment:
             *init_database,
             poolsize=1,
             database='experiments.db'):
+            
 
         assert isinstance(input_dir, str),\
             "input_dir = {} :: {} is no str".format(input_dir, type(input_dir))
@@ -320,12 +321,23 @@ class AbstractExperiment:
         """ Runs the prepared experiment """
         if self.results:
             raise RuntimeError('Experiment already performed')
+      
+        rand_gens = [
+          random.Random()
+          for _ in range(0,len(self.formulae))
+        ]  
+
+        arg_iter = iter(
+          (path, formula, rg) 
+          for (path, formula), rg in zip(self.formulae, rand_gens)
+        )
+
 
         if self.poolsize > 1:
             with mp.Pool(processes=self.poolsize) as pool:
-                self.results = pool.map(self._run_experiment, self.formulae)
+                self.results = pool.map(self._run_experiment, arg_iter)
         else:
-            self.results = list(map(self._run_experiment, self.formulae))
+            self.results = list(map(self._run_experiment, arg_iter))
 
         return self.results
 
@@ -397,12 +409,13 @@ class DynamicExperiment(AbstractExperiment):
         )
 
 
-    def _run_experiment(self, fp_and_formula):
-        fp, formula = fp_and_formula
+    def _run_experiment(self, args):
+        fp, formula, rand_gen = args
         assgn, measurement = SOLVERS[self.solver](
             formula,
             **self.solver_params,
             **self.meta,
+            rand_gen=rand_gen
         )
 
         return dict(
@@ -525,8 +538,8 @@ class StaticExperiment(AbstractExperiment):
                 )
 
 
-    def _run_experiment(self, fp_and_formula):
-        fp, formula = fp_and_formula
+    def _run_experiment(self, args):
+        fp, formula, rand_gen = args
         # calculate the total number of measured states
         n = formula.num_vars
         # get the satisfying assignment
@@ -579,14 +592,14 @@ class StaticExperiment(AbstractExperiment):
                 # get a path to a random node 'distance' steps away
                 differ, _ = current_assgn.hamming_sets(sat_assgn)
                 # walk to the start node of the path
-                for step in random.sample(differ, distance):
+                for step in rand_gen.sample(differ, distance):
                     current_assgn.flip(step)
 
                 # init context
                 ctx = CONTEXTS[self.solver](formula, current_assgn)
                 # variables for measured path
                 differ, same = current_assgn.hamming_sets(sat_assgn)
-                path = random.sample(differ, n - distance)
+                path = rand_gen.sample(differ, n - distance)
                 path_set = set(differ)
                 check_set = set(same)
 
