@@ -146,7 +146,7 @@ class Formula:
         return self.occurrences[self.num_vars + literal]
 
 
-    def generate_satisfiable_formula(num_vars, ratio, clause_length = 3):
+    def generate_satisfiable_formula(num_vars, ratio, clause_length = 3, rand_gen=random):
         assert type(clause_length) == int, "clause_length is no int"
         assert clause_length > 0, "clause_length <= 0"
         assert type(num_vars) == int, "num_vars is no int"
@@ -158,6 +158,7 @@ class Formula:
         # optional arguments
         satisfying_assignment = Assignment.generate_random_assignment(
             num_vars,
+            rand_gen=rand_gen,
         )
 
 
@@ -165,7 +166,7 @@ class Formula:
         clauses = []
         p={1: 0.191, 2: 0.118, 3: 0.073}
         for i in range(0, num_clauses + 1):
-            variables = random.sample(range(1,num_vars+1), clause_length)
+            variables = rand_gen.sample(range(1,num_vars+1), clause_length)
 
             acc = [[]]
             for var in variables:
@@ -179,7 +180,7 @@ class Formula:
                     cs.append(clause)
                     ws.append(p[x])
 
-            c, = random.choices(cs,weights=ws)
+            c, = rand_gen.choices(cs,weights=ws)
             clauses.append(c)
 
         formula = Formula(
@@ -269,7 +270,7 @@ class Formula:
 class Assignment:
     """ Assignment modelled as an array of bits """
 
-    def generate_random_assignment(num_vars):
+    def generate_random_assignment(num_vars, rand_gen=random):
         """ Randomly generating a number between
         0 and 2^num_vars, converting it into an assignment,
         and returning it
@@ -279,7 +280,7 @@ class Assignment:
             value_check('num_vars',num_vars,strict_positive=strict_positive)
 
         return Assignment(
-            random.randrange(0,pow(2,num_vars)),
+            rand_gen.randrange(0,pow(2,num_vars)),
             num_vars,
         )
 

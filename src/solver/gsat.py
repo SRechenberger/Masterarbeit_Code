@@ -71,13 +71,13 @@ def gsat_distribution(context):
     return distr
 
 
-def gsat_heuristic(context):
+def gsat_heuristic(context, rand_gen=random):
     score, best = context.score.get_best_bucket()
 
-    return random.choice(list(best))
+    return rand_gen.choice(list(best))
 
 
-def gsat(formula, measurement_constructor, max_tries, max_flips, hamming_dist=0):
+def gsat(formula, measurement_constructor, max_tries, max_flips, hamming_dist=0, rand_gen=random):
     return generic_sls(
         gsat_heuristic,
         formula,
@@ -86,4 +86,5 @@ def gsat(formula, measurement_constructor, max_tries, max_flips, hamming_dist=0)
         GSATContext,
         measurement_constructor,
         hamming_dist=hamming_dist,
+        rand_gen=rand_gen,
     )

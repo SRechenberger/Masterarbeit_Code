@@ -86,11 +86,11 @@ def walksat_heuristic(rho):
     assert isinstance(rho, float),\
         "rho = {} :: {} is not a float".format(rho, type(rho))
 
-    def heur(context):
+    def heur(context, rand_gen=random):
         assert isinstance(context, DefensiveContext),\
             "context = {} :: {} is no DefensiveContext"
 
-        clause_idx = random.choice(context.falselist.lst)
+        clause_idx = rand_gen.choice(context.falselist.lst)
         clause = context.formula.clauses[clause_idx]
 
         best_score = context.formula.max_occs
@@ -107,19 +107,20 @@ def walksat_heuristic(rho):
 
 
         # get random number [0,1)
-        dice = random.random()
+        dice = rand_gen.random()
         # Greedy
         if best_score == 0 or dice > rho:
-            return random.choice(list(clause_best))
+            return rand_gen.choice(list(clause_best))
 
         # Noisy
         else:
-            return random.choice(list(map(abs,clause)))
+            return rand_gen.choice(list(map(abs,clause)))
 
     return heur
 
 
-def walksat(formula, measurement_constructor, max_tries, max_flips, rho = 0.57, hamming_dist=0):
+def walksat(formula, measurement_constructor, max_tries, max_flips, rho = 0.57, hamming_dist=0, rand_gen=random):
+
     return generic_sls(
         walksat_heuristic(rho),
         formula,
@@ -128,12 +129,5 @@ def walksat(formula, measurement_constructor, max_tries, max_flips, rho = 0.57, 
         DefensiveContext,
         measurement_constructor,
         hamming_dist=hamming_dist,
+        rand_gen=rand_gen
     )
-
-
-
-
-
-
-
-

@@ -64,18 +64,18 @@ def probsat_heuristic(max_occ, c_break, phi = 'poly'):
 
     breaks = [func1(x,c_break) for x in range(0,max_occ+1)]
 
-    def heur(context):
+    def heur(context, rand_gen=random):
         assert isinstance(context,DefensiveContext),\
             "context = {} :: {} is no GSATContext".format(context, type(context))
 
         f = lambda i: func(breaks[context.score.get_break_score(i)])
 
-        clause_idx = random.choice(context.falselist.lst)
+        clause_idx = rand_gen.choice(context.falselist.lst)
         clause_vars = map(abs,context.formula.clauses[clause_idx])
         clause_score = list(map(f,clause_vars))
         score_sum = sum(clause_score)
 
-        dice = random.random() * score_sum
+        dice = rand_gen.random() * score_sum
         acc = 0
         for (i,s) in enumerate(clause_score):
             acc += s
@@ -94,7 +94,8 @@ def probsat(
         max_flips,
         c_break=2.3,
         phi='poly',
-        hamming_dist=0):
+        hamming_dist=0,
+        rand_gen=random):
     return generic_sls(
         probsat_heuristic(formula.max_occs,c_break,phi),
         formula,
@@ -103,5 +104,6 @@ def probsat(
         DefensiveContext,
         measurement_constructor,
         hamming_dist=hamming_dist,
+        rand_gen=rand_gen
     )
 

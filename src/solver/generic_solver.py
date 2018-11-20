@@ -1,8 +1,10 @@
+import time
+import random
+
 from src.formula import Formula, Assignment
 from src.experiment.measurement import Measurement
 from src.utils import *
 
-import time
 
 debug = False
 
@@ -25,7 +27,8 @@ def generic_sls(
         max_flips,
         context_constructor,
         measurement_constructor,
-        hamming_dist=0):
+        hamming_dist=0,
+        rand_gen=random):
     """ Generic SLS-Solver according to Algorithm 1,
     including measurement facilities.
     """
@@ -59,12 +62,13 @@ def generic_sls(
             # if a hamming distance > 0 is given
             # flip 'hamming_dist' steps away from the satisfying assignment
             current_assignment = formula.satisfying_assignment
-            for flip in random.sample(range(1,formula.num_vars+1), hamming_dist):
+            for flip in rand_gen.sample(range(1,formula.num_vars+1), hamming_dist):
                 current_assignment.flip(flip)
         else:
             # otherwise generate a random one
             current_assignment = Assignment.generate_random_assignment(
-                formula.num_vars
+                formula.num_vars,
+                rand_gen
             )
         # setup measurement object for a search run
         measurement.init_run(current_assignment)
@@ -86,7 +90,7 @@ def generic_sls(
                 return current_assignment, measurement
 
             # choose variable to flip
-            to_flip = heuristic(context)
+            to_flip = heuristic(context, rand_gen)
 
             # update context
             # also modifies 'current_assignment'
