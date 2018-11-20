@@ -38,7 +38,7 @@ class TestExperiment(unittest.TestCase):
             poolsize = 3
         )
         results = experiment()
-        self.assertTrue(len(results),self.sample_size)
+        self.assertEqual(len(results),self.sample_size)
         experiment.save_results()
 
 
@@ -53,7 +53,7 @@ class TestExperiment(unittest.TestCase):
             poolsize = 3,
         )
         results = experiment()
-        self.assertTrue(len(results),self.sample_size)
+        self.assertEqual(len(results),self.sample_size)
         experiment.save_results()
 
 
@@ -68,6 +68,6 @@ class TestExperiment(unittest.TestCase):
             poolsize = 3,
         )
         results = experiment()
-        self.assertTrue(len(results),self.sample_size)
+        self.assertEqual(len(results),self.sample_size)
         experiment.save_results()
 
