@@ -27,6 +27,8 @@ class TestDistribution(unittest.TestCase):
         random.seed()
 
         cases = 10
+        self.eps = 2**(-30)
+
         self.n = 128
         self.r = 4.2
 
@@ -103,7 +105,7 @@ class TestDistribution(unittest.TestCase):
                        #     print("expected:\n{}".format(expected_distr))
 
                 else:
-                    self.assertTrue(abs(observed_distr[0] - expected_distr[0]) <= 0.0001)
+                    self.assertAlmostEqual(observed_distr[0], expected_distr[0], delta=self.eps)
 
 
             # go to another assignment
@@ -111,7 +113,7 @@ class TestDistribution(unittest.TestCase):
                 ctx.update(flip)
 
             # print("rejections = {}".format(rejections))
-            self.assertTrue(rejections <= self.max_failure)
+            self.assertLessEqual(rejections, self.max_failure)
 
 
 class TestSolver(unittest.TestCase):
@@ -149,7 +151,7 @@ class TestSolver(unittest.TestCase):
                 self.solver_setup['max_flips'],
             )
             if assgn:
-                self.assertTrue(measurement.flips > 0)
+                self.assertGreater(measurement.flips > 0)
                 self.assertTrue(formula.is_satisfied_by(assgn))
                 successes += 1
 
@@ -159,11 +161,7 @@ class TestSolver(unittest.TestCase):
         if __debug__:
             print("{} successes".format(successes), end=' ')
 
-        self.assertTrue(successes >= self.solver_setup['min_successes'])
-
-        #self.assertTrue(
-        #    run_time_exceeded < self.solver_setup['cases'] - self.solver_setup['min_successes']
-        #)
+        self.assertGreaterEqual(successes, self.solver_setup['min_successes'])
 
 
     def test_solver(self):
