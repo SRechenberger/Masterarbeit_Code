@@ -165,6 +165,7 @@ class FormulaSupply:
   """
   def __init__(self, file_paths, buffsize = 10):
     self.file_paths = file_paths
+    self.length = len(self.file_paths)
     self.buffer = []
     self.buffsize = 10
     self.__fill_buffer()
@@ -186,5 +187,8 @@ class FormulaSupply:
     elif not self.buffer:
       self.__fill_buffer()
     return self.buffer.pop()
+
+  def __len__(self):
+    return self.length
 
 
