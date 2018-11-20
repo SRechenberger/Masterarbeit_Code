@@ -6,8 +6,6 @@ from src.experiment.measurement import Measurement
 from src.utils import *
 
 
-debug = False
-
 class Context:
     """ Abstract Context Class;
     the generic SLS solver needs the given context constructor
