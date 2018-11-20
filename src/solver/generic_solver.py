@@ -33,20 +33,21 @@ def generic_sls(
     including measurement facilities.
     """
 
-    if __debug__:
-        value_check(
-            'heuristic',heuristic,
-            is_callable = callable,
-            arity_1     = has_arity(1)
-        )
-        instance_check('formula',formula,Formula)
-        type_check('max_tries',max_tries,int)
-        type_check('max_flips',max_flips,int)
-        value_check(
-            'context_constructor', context_constructor,
-            is_callable = callable,
-            arity_2 = has_arity(2)
-        )
+    assert callable(heuristic),\
+        "heuristic = {} :: {} is not callable".format(heuristic, type(heuristic))
+    assert isinstance(formula, Formula),\
+        "formula = {} :: {} is no formula".format(formula, type(formula))
+    assert isinstance(max_tries, int),\
+        "max_tries = {} :: {} is no int".format(max_tries, type(max_tries))
+    assert max_tries > 0,\
+        "max_tries = {} <= 0".format(max_tries)
+    assert isinstance(max_flips, int),\
+        "max_flips = {} :: {} is no int".format(max_flips, type(max_flips))
+    assert max_flips > 0,\
+        "max_flips = {} <= 0".format(max_flips)
+    assert callable(context_constructor),\
+        "context_constructor = {} :: {} is not callable"
+
 
     #initialize measurement object
     measurement = measurement_constructor(formula, formula.num_vars // 2)
