@@ -3,11 +3,11 @@ import random
 import time
 import numpy as np
 
+from scipy.stats import chisquare
+
 from src.formula import Formula, Assignment
 from src.solver.utils import Falselist
 from src.experiment.measurement import Measurement
-
-from scipy.stats import chisquare
 
 
 class TestMeasurement(Measurement):
@@ -97,10 +97,10 @@ class TestDistribution(unittest.TestCase):
                     if p_val < self.significance_level:
                         rejections += 1
 
-                        if __debug__:
-                            print("X² = {}; p = {}".format(chi_s, p_val))
-                            print("observed:\n{}".format(observed_distr))
-                            print("expected:\n{}".format(expected_distr))
+                       # if __debug__:
+                       #     print("\nX² = {}; p = {}".format(chi_s, p_val))
+                       #     print("observed:\n{}".format(observed_distr))
+                       #     print("expected:\n{}".format(expected_distr))
 
                 else:
                     self.assertTrue(abs(observed_distr[0] - expected_distr[0]) <= 0.0001)
