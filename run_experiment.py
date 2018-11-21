@@ -145,7 +145,7 @@ if __name__ == '__main__':
         if args.seeds:
             seed = args.seeds[count % len(args.seeds)]
         else:
-            seed = int(time.time())
+            seed = (int(time.time() * 10**5) * 39916801) % 87178291199
 
         random.seed(seed)
 
