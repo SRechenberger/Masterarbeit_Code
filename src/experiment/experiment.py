@@ -272,7 +272,7 @@ class AbstractExperiment:
                 ),
                 sample_size
             ),
-            buffsize=poolsize * 10
+            buffsize=min(sample_size, poolsize * 10)
         )
 
         # save poolsize
@@ -513,29 +513,28 @@ class StaticExperiment(AbstractExperiment):
 
 
     def save_result(self, execute, result):
-        for result in self.results:
-            run_id = execute(
-                SAVE_MEASUREMENT_SERIES,
-                self.experiment_id,
-                result['formula_file'],
+        run_id = execute(
+            SAVE_MEASUREMENT_SERIES,
+            self.experiment_id,
+            result['formula_file'],
+        )
+        for series in result['improvement_prob']:
+            execute(
+                SAVE_IMPROVEMENT_PROB,
+                run_id,
+                series['hamming_dist'],
+                series['prob'],
             )
-            for series in result['improvement_prob']:
-                execute(
-                    SAVE_IMPROVEMENT_PROB,
-                    run_id,
-                    series['hamming_dist'],
-                    series['prob'],
-                )
 
-            for series in result['avg_state_entropy']:
-                execute(
-                    SAVE_STATE_ENTROPY,
-                    run_id,
-                    series['hamming_dist'],
-                    series['entropy_avg'],
-                    series['entropy_min'],
-                    series['entropy_max'],
-                )
+        for series in result['avg_state_entropy']:
+            execute(
+                SAVE_STATE_ENTROPY,
+                run_id,
+                series['hamming_dist'],
+                series['entropy_avg'],
+                series['entropy_min'],
+                series['entropy_max'],
+            )
 
 
     def _run_experiment(self, args):
@@ -549,15 +548,17 @@ class StaticExperiment(AbstractExperiment):
         # init distribution function
         distr_f = DISTRS[self.solver](formula)(**self.solver_params)
 
+        path_count = lambda i: int(math.log(i)) + 1
+
         # calculate the total number of measured states
         total_num_states = sum(
             map(
-                lambda i: int(.5 * math.log(i)+1) * (n - 2*i + 1),
+                lambda i: path_count(i) * (n - 2*i + 1),
                 range(1, n // 2 + 1)
             )
         )
         # initialize the bloom filter
-        measured_states = BloomFilter(max_elements = total_num_states, error_rate = 0.2)
+        measured_states = BloomFilter(max_elements = total_num_states, error_rate = 0.01) if n > 20 else set()
 
         # initialize three array:
         #   state_count[i] counts the number of states at distance i
@@ -578,13 +579,13 @@ class StaticExperiment(AbstractExperiment):
         increment_prob = np.zeros(n+1)
         decrement_prob = np.zeros(n+1)
         # at the negated assignment every flip is good; on the other end, every flip is bad
-        increment_prob[0] = 1
-        decrement_prob[n] = 1
+        increment_prob[n] = 1
+        decrement_prob[0] = 1
 
         # for each hamming distance beginning with 1
         for distance in range(1,n // 2 + 1):
             # calculate number of paths to run from this distance
-            num_paths = int(math.log(distance) + 1)
+            num_paths = path_count(distance)
             # for each path
             for i in range(0,num_paths):
                 # copy the left end assignment
@@ -599,11 +600,11 @@ class StaticExperiment(AbstractExperiment):
                 ctx = CONTEXTS[self.solver](formula, current_assgn)
                 # variables for measured path
                 differ, same = current_assgn.hamming_sets(sat_assgn)
-                path = rand_gen.sample(differ, n - distance)
+                path = rand_gen.sample(differ, n - 2*distance + 1)
                 path_set = set(differ)
                 check_set = set(same)
 
-                hamming_dist = distance
+                hamming_dist = n - distance
                 for step in path:
                     # calculate distribution
                     distr = distr_f(ctx)
@@ -614,16 +615,18 @@ class StaticExperiment(AbstractExperiment):
                         # increment counter for this hamming distance
                         state_count[hamming_dist] += 1
                         # calculate incrementation probability
-                        prob = 0
+                        prob = distr[0] * len(path_set)/n
                         for i in path_set:
                             prob += distr[i]
 
-                        co_prob = 0
+                        co_prob = distr[0] * len(check_set)/n
                         for i in check_set:
                             co_prob += distr[i]
 
                         increment_prob[hamming_dist] += prob
                         decrement_prob[hamming_dist] += co_prob
+                        assert abs(prob + co_prob - 1) <= 2**(-20),\
+                            "d={}: prob + co_prob = {} + {} != {} {}".format(hamming_dist, prob, co_prob, prob+co_prob, distr)
 
 
                         # calculate state entropy
@@ -643,10 +646,15 @@ class StaticExperiment(AbstractExperiment):
                     ctx.update(step)
 
         # postprocessing
-        divide = np.vectorize(lambda v, c: v / c if c != 0 else 0)
+        #for i, (inc, dec) in enumerate(zip(increment_prob, decrement_prob)):
+        #    assert inc + dec > 0 ,\
+        #        "increment_prob[{}] + decrement_prob[{}] = {} + {} <= 0".format(
+        #            i, i, increment_prob[i], decrement_prob[i]
+        #        )
+        divide = np.vectorize(lambda v, c: v / c) # if c != 0 else 0)
         state_entropy = divide(state_entropy, state_count)
         calc_prob = np.vectorize(lambda inc, dec: inc/(inc+dec))
-        increment_prob = calc_prob(increment_prob, state_count)
+        increment_prob = calc_prob(increment_prob, decrement_prob)
 
         return dict(
             formula_file=fp,
