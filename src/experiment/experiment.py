@@ -19,7 +19,7 @@ from src.experiment.utils import FormulaSupply, arr_entropy
 
 CREATE_EXPERIMENT = """
 CREATE TABLE IF NOT EXISTS experiment
-    ( id            INTEGER PRIMARY KEY
+    ( experiment_id INTEGER PRIMARY KEY
     , solver        TEXT NOT NULL
     , source_folder TEXT NOT NULL
     , sample_size   INT NOT NULL
@@ -39,12 +39,12 @@ VALUES (?,?,?,?)
 
 CREATE_PARAMETER = """
 CREATE TABLE IF NOT EXISTS parameter
-    ( id                INTEGER PRIMARY KEY
+    ( parameter_id      INTEGER PRIMARY KEY
     , experiment_id     INTEGER NOT NULL
     , name              TEXT NOT NULL
     , val               TEXT NOT NULL
     , type              TEXT NOT NULL
-    , FOREIGN KEY(experiment_id) REFERENCES experiment(id)
+    , FOREIGN KEY(experiment_id) REFERENCES experiment(experiment_id)
     )
 """
 
@@ -60,14 +60,14 @@ VALUES (?,?,?,?)
 
 CREATE_ALGORITHM_RUN = """
 CREATE TABLE IF NOT EXISTS algorithm_run
-    ( id                INTEGER PRIMARY KEY
+    ( run_id            INTEGER PRIMARY KEY
     , experiment_id     INTEGER NOT NULL
     , formula_file      TEXT NOT NULL
     , sat_assgn         TEXT NOT NULL
     , clauses           INT NOT NULL
     , vars              INT NOT NULL
     , sat               BOOL NOT NULL
-    , FOREIGN KEY(experiment_id) REFERENCES experiment(id)
+    , FOREIGN KEY(experiment_id) REFERENCES experiment(experiment_id)
     )
 """
 
@@ -85,7 +85,7 @@ VALUES (?,?,?,?,?,?)
 
 CREATE_SEARCH_RUN = """
 CREATE TABLE IF NOT EXISTS search_run
-    ( id                    INTEGER PRIMARY KEY
+    ( search_id             INTEGER PRIMARY KEY
     , run_id                INTEGER NOT NULL
     , flips                 INT NOT NULL
     , single_entropy        INTEGER
@@ -119,7 +119,7 @@ VALUES (?,?,?,?,?,?,?,?,?)
 
 CREATE_ENTROPY_DATA = """
 CREATE TABLE IF NOT EXISTS entropy_data
-    ( id            INTEGER PRIMARY KEY
+    ( data_id       INTEGER PRIMARY KEY
     , minimum       REAL
     , minimum_at    INTEGER
     , maximum       REAL
@@ -141,10 +141,10 @@ VALUES (?,?,?,?,?)
 
 CREATE_MEASUREMENT_SERIES = """
 CREATE TABLE IF NOT EXISTS measurement_series
-    ( id            INTEGER PRIMARY KEY
+    ( series_id     INTEGER PRIMARY KEY
     , experiment_id INTEGER NOT NULL
     , formula_file  TEXT NOT NULL
-    , FOREIGN KEY(experiment_id) REFERENCES experiment(id)
+    , FOREIGN KEY(experiment_id) REFERENCES experiment(experiment_id)
     )
 """
 
@@ -158,11 +158,11 @@ VALUES (?,?)
 
 CREATE_IMPROVEMENT_PROB = """
 CREATE TABLE IF NOT EXISTS improvement_probability
-    ( id            INTEGER PRIMARY KEY
+    ( prob_id       INTEGER PRIMARY KEY
     , series_id     INTEGER NOT NULL
     , hamming_dist  INTEGER NOT NULL
     , prob          REAL
-    , FOREIGN KEY(series_id) REFERENCES measurement_series(id)
+    , FOREIGN KEY(series_id) REFERENCES measurement_series(series_id)
     )
 """
 
@@ -177,13 +177,13 @@ VALUES (?,?,?)
 
 CREATE_STATE_ENTROPY = """
 CREATE TABLE IF NOT EXISTS state_entropy
-    ( id            INTEGER PRIMARY KEY
+    ( state_entropy_id INTEGER PRIMARY KEY
     , series_id     INTEGER NOT NULL
     , hamming_dist  INTEGER NOT NULL
     , entropy_avg   REAL
     , entropy_min   REAL
     , entropy_max   REAL
-    , FOREIGN KEY(series_id) REFERENCES measurement_series(id)
+    , FOREIGN KEY(series_id) REFERENCES measurement_series(series_id)
     )
 """
 
