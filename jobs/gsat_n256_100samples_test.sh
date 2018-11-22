@@ -1,5 +1,5 @@
 #!/bin/bash
-#MSUB -l nodes=1:ppn16
+#MSUB -l nodes=1:ppn=16
 #MSUB -l walltime=1:00:00
 #MSUB -l pmem=3000mb
 #MSUB -N gsat_n256_100samples_test
