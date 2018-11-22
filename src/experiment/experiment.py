@@ -628,7 +628,6 @@ class StaticExperiment(AbstractExperiment):
                         assert abs(prob + co_prob - 1) <= 2**(-20),\
                             "d={}: prob + co_prob = {} + {} != {} {}".format(hamming_dist, prob, co_prob, prob+co_prob, distr)
 
-
                         # calculate state entropy
                         h = arr_entropy(distr)
                         state_entropy[hamming_dist] += h
