@@ -151,15 +151,12 @@ class TestSolver(unittest.TestCase):
                 self.solver_setup['max_flips'],
             )
             if assgn:
-                self.assertGreater(measurement.flips > 0)
+                self.assertGreater(measurement.flips, 0)
                 self.assertTrue(formula.is_satisfied_by(assgn))
                 successes += 1
 
             if measurement.get_run_time() >= self.solver_setup['max_run_time']:
                 run_time_exceeded += 1
-
-        if __debug__:
-            print("{} successes".format(successes), end=' ')
 
         self.assertGreaterEqual(successes, self.solver_setup['min_successes'])
 
