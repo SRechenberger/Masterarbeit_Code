@@ -214,7 +214,7 @@ CONTEXTS = dict(
   gsat=GSATContext,
   walksat=DefensiveContext,
   probsat=DefensiveContext,
-)  
+)
 
 
 class AbstractExperiment:
@@ -230,7 +230,6 @@ class AbstractExperiment:
             *init_database,
             poolsize=1,
             database='experiments.db'):
-            
 
         assert isinstance(input_dir, str),\
             "input_dir = {} :: {} is no str".format(input_dir, type(input_dir))
@@ -321,14 +320,14 @@ class AbstractExperiment:
         """ Runs the prepared experiment """
         if self.results:
             raise RuntimeError('Experiment already performed')
-      
+
         rand_gens = [
           random.Random()
           for _ in range(0,len(self.formulae))
-        ]  
+        ]
 
         arg_iter = iter(
-          (path, formula, rg) 
+          (path, formula, rg)
           for (path, formula), rg in zip(self.formulae, rand_gens)
         )
 
