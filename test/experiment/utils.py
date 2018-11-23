@@ -4,7 +4,7 @@ import os
 import math
 
 from src.solver.utils import Formula
-from src.experiment.utils import FormulaSupply, binomial_vec, Queue, WindowEntropy, entropy, mutual_information
+from src.experiment.utils import FormulaSupply, binomial_vec, Queue, WindowEntropy, entropy, mutual_information, BloomFilter
 from functools import partial
 
 class TestHelperFunctions(unittest.TestCase):
@@ -135,4 +135,36 @@ class TestWindowEntropy(unittest.TestCase):
             self.assertAlmostEqual(i_observed, i_expected, delta=self.eps)
 
 
+class TestBloomFilter(unittest.TestCase):
+    def setUp(self):
+        random.seed()
+        self.cases = 20
+        self.max_fails = math.ceil(self.cases * 0.1)
+
+    def test_bloom_filter(self):
+        fails = 0
+        for i in range(0, self.cases):
+            n = random.randrange(2**10, 2**20)
+            eps = max(random.random()/10,0.01)
+            # print("\nCase {}: n = {}, eps = {}, ".format(i,n,eps), end='')
+            bf = BloomFilter(n, eps=eps)
+            input_set = set(range(0,n*2))
+            inserted = 0
+            for x in input_set.copy():
+                if random.random() <= .5:
+                    bf.add(x)
+                    input_set.remove(x)
+                    inserted += 1
+
+                if inserted >= n/2:
+                    break
+
+            false_positives = 0
+            for i in input_set:
+                if i in bf:
+                    false_positives += 1
+            # print("error rate = {}".format(false_positives / len(input_set)), end='')
+            if false_positives > eps*len(input_set):
+                fails += 1
+        self.assertLessEqual(fails, self.max_fails)
 

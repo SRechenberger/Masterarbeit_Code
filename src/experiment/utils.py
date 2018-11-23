@@ -191,15 +191,20 @@ class FormulaSupply:
   def __len__(self):
     return self.length
 
+phi = (math.sqrt(5) - 1) / 2
+
+def h(m, x):
+    return math.floor(m * ((hash(x) * phi) % 1))
+
 
 class BloomFilter:
     def __hash_func(self, value, k=0):
-        return (hash(value) + k*hash(value)) % self.m
+        return (h(self.m, value) + h(self.m, value) * k) % self.m
 
 
     def __init__(self, entries, eps=0.1):
         self.m = math.ceil(entries * math.log(eps,.5)/math.log(2))
-        self.k = math.ceil(math.log(2) * m/n)
+        self.k = math.ceil(math.log(2) * self.m/entries)
         self.array = [False] * self.m
 
 
