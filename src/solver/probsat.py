@@ -1,4 +1,3 @@
-import numpy as np
 import random
 from src.solver.generic_solver import Context, generic_sls
 from src.solver.walksat import DefensiveContext
@@ -28,7 +27,7 @@ def probsat_distribution(max_occ, c_break, phi = 'poly'):
     breaks = [func1(x,c_break) for x in range(0,max_occ+1)]
     def probsat_distr(context):
         f = lambda i: func(breaks[context.score.get_break_score(i)])
-        distr = np.zeros(context.formula.num_vars + 1)
+        distr = [0] * (context.formula.num_vars + 1)
 
         false_clauses = len(context.falselist)
 

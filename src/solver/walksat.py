@@ -1,5 +1,4 @@
 import random
-import numpy as np
 from src.utils import *
 from src.formula import Formula, Assignment
 from src.solver.utils import Falselist, Scores
@@ -41,7 +40,7 @@ def walksat_distribution(rho):
 
     def walksat_distr(context):
         # empty distribution
-        distr = np.zeros(context.formula.num_vars + 1)
+        distr = [0] * (context.formula.num_vars + 1)
 
         # get number of false clauses to weight probabilities
         false_clauses = len(context.falselist)

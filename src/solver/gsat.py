@@ -1,4 +1,3 @@
-import numpy as np
 from src.solver.generic_solver import Context, generic_sls
 from src.solver.utils import DiffScores, Scores, Falselist
 from src.formula import Formula, Assignment
@@ -59,7 +58,7 @@ def max_seq(seq, key=lambda x:x):
 
 def gsat_distribution(context):
     # begin with an empty distribution
-    distr = np.zeros(context.formula.num_vars + 1)
+    distr = [0] * (context.formula.num_vars + 1)
 
     _, best = context.score.get_best_bucket()
     for i in best:

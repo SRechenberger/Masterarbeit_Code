@@ -5,7 +5,6 @@ import random
 import sqlite3
 import math
 import multiprocessing as mp
-import numpy as np
 from functools import partial
 from bloom_filter import BloomFilter
 from scipy.special import binom
@@ -566,17 +565,17 @@ class StaticExperiment(AbstractExperiment):
         #   state_entropy_max[i] holds the maximum state entropy found at distance i
         #   increment_prob[i] accumuluates the probability of incrementation at distance i
         # indices 0 and n are known
-        state_count = np.zeros(n+1)
+        state_count = [0] * (n+1)
         # one state at each end
         state_count[0], state_count[n] = 1, 1
-        state_entropy = np.zeros(n+1)
-        state_entropy_min = np.ones(n+1) * math.log(n,2)
-        state_entropy_max = np.zeros(n+1)
+        state_entropy = [0] * (n+1)
+        state_entropy_min = [math.log(n,2)] * (n+1)
+        state_entropy_max = [0] * (n+1)
         state_entropy_min[0], state_entropy_max[0] = 0, 0
         state_entropy_min[n], state_entropy_max[n] = 0, 0
         # entropy at the ends is 0, because there are no uncertainties
-        increment_prob = np.zeros(n+1)
-        decrement_prob = np.zeros(n+1)
+        increment_prob = [0] * (n+1)
+        decrement_prob = [0] * (n+1)
         # at the negated assignment every flip is good; on the other end, every flip is bad
         increment_prob[n] = 1
         decrement_prob[0] = 1
@@ -649,10 +648,11 @@ class StaticExperiment(AbstractExperiment):
         #        "increment_prob[{}] + decrement_prob[{}] = {} + {} <= 0".format(
         #            i, i, increment_prob[i], decrement_prob[i]
         #        )
-        divide = np.vectorize(lambda v, c: v / c) # if c != 0 else 0)
-        state_entropy = divide(state_entropy, state_count)
-        calc_prob = np.vectorize(lambda inc, dec: inc/(inc+dec))
-        increment_prob = calc_prob(increment_prob, decrement_prob)
+        for i, (h,c) in enumerate(zip(state_entropy, state_count)):
+            state_entropy[i] = h/c
+
+        for i, (inc, dec) in enumerate(zip(increment_prob, decrement_prob)):
+            increment_prob[i] = inc/(inc+dec)
 
         return dict(
             formula_file=fp,
