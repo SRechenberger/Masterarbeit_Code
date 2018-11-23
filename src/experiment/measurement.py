@@ -1,4 +1,3 @@
-import numpy as np
 import math
 from src.solver.utils import Formula, Assignment
 from src.experiment.utils import entropy, mutual_information, eta, WindowEntropy
