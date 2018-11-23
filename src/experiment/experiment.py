@@ -6,7 +6,6 @@ import sqlite3
 import math
 import multiprocessing as mp
 from functools import partial
-from scipy.special import binom
 
 from src.solver.gsat import gsat, GSATContext, gsat_distribution
 from src.solver.walksat import walksat, DefensiveContext, walksat_distribution
