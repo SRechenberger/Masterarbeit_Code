@@ -1,8 +1,6 @@
 import src.solver.utils as s_utils
 import math
-import numpy as np
 import sys
-from scipy.special import binom
 from src.solver.utils import Formula, Assignment
 
 
@@ -42,10 +40,6 @@ def mutual_information(distr):
             Y[y] = v
 
     return entropy(X) + entropy(Y) - entropy(distr)
-
-
-def binomial_vec(length):
-    return np.array([binom(length-1,x)/pow(2,length-1) for x in range(0,length)])
 
 
 class Queue:
@@ -191,6 +185,7 @@ class FormulaSupply:
   def __len__(self):
     return self.length
 
+
 class BloomFilter:
     def __hash_func(self, value, k=0):
         return (hash(value) + (hash(value) + (11*13+1)) ** k) % self.m
@@ -213,8 +208,3 @@ class BloomFilter:
                 return False
 
         return True
-
-
-
-
-

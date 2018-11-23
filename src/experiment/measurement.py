@@ -1,7 +1,7 @@
 import numpy as np
 import math
 from src.solver.utils import Formula, Assignment
-from src.experiment.utils import entropy, mutual_information, binomial_vec, eta, WindowEntropy
+from src.experiment.utils import entropy, mutual_information, eta, WindowEntropy
 
 
 class Measurement:
@@ -163,85 +163,3 @@ class EntropyMeasurement(Measurement):
                 success=success,
             )
         )
-
-
-    def get_tms_entropy(self, eps = 0.001, max_loops = 10000):
-        assert type(eps) == float,\
-            "eps = {} :: {} is no float".format(eps, type(eps))
-        assert eps > 0,\
-            "eps = {} <= 0".format(eps)
-        assert type(max_loops) == int,\
-            "max_loops = {} :: {} is no int".format(max_loops, type(max_loops))
-        assert max_loops > 0,\
-            "max_loops = {} <= 0".format(max_loops)
-
-
-        # get number of states
-        tms_states = self.sat_assgn.num_vars + 1
-
-        # initiate initial distribution
-        T_0 = binomial_vec(tms_states)
-
-        # initiate transition matrix
-        Pi = np.zeros((tms_states,tms_states))
-
-        ## absolute probability
-        for (s,t),count in self.tms_steps.items():
-            Pi[s][t] = count
-
-
-        ## relative probability
-        for i,row in enumerate(Pi):
-            s = sum(row)
-            if s == 0:
-                if i == 0:
-                    Pi[0][0] = 0
-                    Pi[0][1] = 1
-                    s = 1
-                elif i == tms_states-1:
-                    Pi[i][i-1] = 1
-                    Pi[i][i] = 0
-                    s = 1
-                else:
-                    Pi[i][i+1] = tms_states - i - 1
-                    Pi[i][i-1] = i
-                    s = tms_states - 1
-
-            for j,cell in enumerate(row):
-                Pi[i][j] = cell/s
-
-        for row in Pi:
-            test = 0
-            for cell in row:
-                if cell > 0:
-                    test += 1
-
-        # approximate stationary distribution
-        distr = T_0.copy()
-
-        s = sum(distr)
-
-        loops = 0
-        converging = 0
-        while loops < 100 or (converging < len(distr) and loops < max_loops):
-            # calculate new tmp
-            tmp = distr @ Pi
-
-            converging = 0
-            for (d,t) in zip(distr,tmp):
-                if abs(d-t) <= eps:
-                    converging += 1
-
-            # save new tmp
-            distr = tmp
-
-            # next loop
-            loops += 1
-
-
-        # calculate state entropy
-        state_entropy = np.array([sum(map(eta,row)) for row in Pi])
-
-        # calculate entropy rate
-        h = np.inner(state_entropy, distr)
-        return h

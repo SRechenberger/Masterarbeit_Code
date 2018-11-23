@@ -4,8 +4,9 @@ import os
 import math
 
 from src.solver.utils import Formula
-from src.experiment.utils import FormulaSupply, binomial_vec, Queue, WindowEntropy, entropy, mutual_information, BloomFilter
+from src.experiment.utils import FormulaSupply, Queue, WindowEntropy, entropy, mutual_information, BloomFilter
 from functools import partial
+from src.analysis.utils import binomial_vec
 
 class TestHelperFunctions(unittest.TestCase):
     def setUp(self):
