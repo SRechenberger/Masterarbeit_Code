@@ -145,14 +145,16 @@ class TestBloomFilter(unittest.TestCase):
         fails = 0
         for i in range(0, self.cases):
             n = random.randrange(2**10, 2**20)
-            eps = max(random.random()/10,0.01)
+            eps = max(random.random()/10,0.02)
             # print("\nCase {}: n = {}, eps = {}, ".format(i,n,eps), end='')
-            bf = BloomFilter(n, eps=eps)
+            bf = BloomFilter(max_elements=n, error_rate=eps)
             input_set = set(range(0,n*2))
+            check = set()
             inserted = 0
             for x in input_set.copy():
                 if random.random() <= .5:
                     bf.add(x)
+                    check.add(x)
                     input_set.remove(x)
                     inserted += 1
 
@@ -163,8 +165,9 @@ class TestBloomFilter(unittest.TestCase):
             for i in input_set:
                 if i in bf:
                     false_positives += 1
-            # print("error rate = {}".format(false_positives / len(input_set)), end='')
+
             if false_positives > eps*len(input_set):
                 fails += 1
+            # print("error rate = {} ({})".format(false_positives / len(input_set), eps))
         self.assertLessEqual(fails, self.max_fails)
 
