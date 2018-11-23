@@ -6,7 +6,6 @@ import sqlite3
 import math
 import multiprocessing as mp
 from functools import partial
-from bloom_filter import BloomFilter
 from scipy.special import binom
 
 from src.solver.gsat import gsat, GSATContext, gsat_distribution
@@ -14,6 +13,8 @@ from src.solver.walksat import walksat, DefensiveContext, walksat_distribution
 from src.solver.probsat import probsat, probsat_distribution
 
 from src.experiment.utils import FormulaSupply, arr_entropy
+
+from src.experiment.utils import BloomFilter
 
 
 CREATE_EXPERIMENT = """
@@ -556,7 +557,7 @@ class StaticExperiment(AbstractExperiment):
             )
         )
         # initialize the bloom filter
-        measured_states = BloomFilter(max_elements = total_num_states, error_rate = 0.01) if n > 20 else set()
+        measured_states = BloomFilter(max_elements=total_num_states, error_rate=0.01)
 
         # initialize three array:
         #   state_count[i] counts the number of states at distance i
