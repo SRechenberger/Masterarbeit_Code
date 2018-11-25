@@ -8,6 +8,8 @@ from src.experiment.utils import FormulaSupply, Queue, WindowEntropy, entropy, m
 from functools import partial
 from src.analysis.utils import binomial_vec
 
+from scipy.stats import binom
+
 class TestHelperFunctions(unittest.TestCase):
     def setUp(self):
         random.seed()
@@ -139,8 +141,8 @@ class TestWindowEntropy(unittest.TestCase):
 class TestBloomFilter(unittest.TestCase):
     def setUp(self):
         random.seed()
-        self.cases = 1 if __debug__ else 10
-        self.max_fails = math.ceil(self.cases * 0.1)
+        self.cases = 5 if __debug__ else 10
+        self.failure_prob = 0.1
 
     def test_bloom_filter(self):
         fails = 0
@@ -167,8 +169,12 @@ class TestBloomFilter(unittest.TestCase):
                 if i in bf:
                     false_positives += 1
 
-            if false_positives > eps*len(input_set):
+            # calculate G-Test statistic
+
+            if false_positives > 2*n*eps:
                 fails += 1
-            # print("error rate = {} ({})".format(false_positives / len(input_set), eps))
-        self.assertLessEqual(fails, self.max_fails)
+            # self.assertGreaterEqual(p, 0.05)
+        p = 1-binom.cdf(fails, self.cases, self.failure_prob)
+        print("p={} fails={} cases={} P[fail]={}".format(p, fails, self.cases, self.failure_prob))
+        self.assertGreaterEqual(p, 0.05)
 
