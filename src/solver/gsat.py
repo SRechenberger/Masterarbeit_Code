@@ -1,11 +1,11 @@
+import random
+import sys
+
 from src.solver.generic_solver import Context, generic_sls
 from src.solver.utils import DiffScores, Scores, Falselist
 from src.formula import Formula, Assignment
-from collections.abc import Sequence
-import random
 from src.utils import *
 
-import sys
 
 class GSATContext(Context):
     def __init__(self, formula, assgn):
@@ -35,25 +35,6 @@ class GSATContext(Context):
 
     def is_sat(self):
         return len(self.falselist) == 0
-
-
-def max_seq(seq, key=lambda x:x):
-    assert isinstance(seq, Sequence),\
-        "seq = {} :: {} is no Sequence".format(seq, type(seq))
-    assert len(seq) > 0,\
-        "seq = {} is empty".format(seq)
-
-    max_seq = [seq[0]]
-    max_val = key(seq[0])
-    for x in seq[1:]:
-        if key(x) > max_val:
-            max_seq = [x]
-            max_val = key(x)
-
-        elif key(x) == max_val:
-            max_seq.append(x)
-
-    return max_seq
 
 
 def gsat_distribution(context):
