@@ -9,9 +9,10 @@ import sys
 
 class GSATContext(Context):
     def __init__(self, formula, assgn):
-        if __debug__:
-            instance_check('formula', formula, Formula)
-            instance_check('assgn', assgn, Assignment)
+        assert isinstance(formula, Formula),\
+            "formula = {} :: {} is no Formula".format(formula, type(formula))
+        assert isinstance(assgn, Assignment),\
+            "assgn = {} :: {} is no Assignment".format(assgn, type(assgn))
 
         self.formula = formula
         self.variables = list(range(1,formula.num_vars+1))
@@ -20,12 +21,10 @@ class GSATContext(Context):
         self.score = DiffScores(formula, assgn, self.falselist)
 
     def update(self, flipped_var):
-        if __debug__:
-            type_check('flipped_var', flipped_var, int)
-            value_check(
-                'flipped_var', flipped_var,
-                strict_pos = strict_positive
-            )
+        assert isinstance(flipped_var, int),\
+            "flipped_var = {} :: {} is no int".format(flipped_var, type(flipped_var))
+        assert flipped_var > 0,\
+            "flipped_var = {} <= 0".format(flipped_var)
 
         self.score.flip(
             flipped_var,
@@ -39,9 +38,10 @@ class GSATContext(Context):
 
 
 def max_seq(seq, key=lambda x:x):
-    if __debug__:
-        instance_check('seq',seq,Sequence)
-        value_check('seq',seq,non_empty = lambda x: len(x) != 0)
+    assert isinstance(seq, Sequence),\
+        "seq = {} :: {} is no Sequence".format(seq, type(seq))
+    assert len(seq) > 0,\
+        "seq = {} is empty".format(seq)
 
     max_seq = [seq[0]]
     max_val = key(seq[0])
