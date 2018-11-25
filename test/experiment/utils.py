@@ -175,6 +175,6 @@ class TestBloomFilter(unittest.TestCase):
                 fails += 1
             # self.assertGreaterEqual(p, 0.05)
         p = 1-binom.cdf(fails, self.cases, self.failure_prob)
-        print("p={} fails={} cases={} P[fail]={}".format(p, fails, self.cases, self.failure_prob))
+        # print("p={} fails={} cases={} P[fail]={}".format(p, fails, self.cases, self.failure_prob))
         self.assertGreaterEqual(p, 0.05)
 
