@@ -3,7 +3,6 @@ import random
 
 from src.formula import Formula, Assignment
 from src.experiment.measurement import Measurement
-from src.utils import *
 
 
 class Context:

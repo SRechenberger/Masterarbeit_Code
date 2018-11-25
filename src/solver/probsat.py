@@ -1,7 +1,6 @@
 import random
 from src.solver.generic_solver import Context, generic_sls
 from src.solver.walksat import DefensiveContext
-from src.utils import *
 
 def poly1(x,c):
     return pow(x,c)

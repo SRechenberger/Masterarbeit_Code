@@ -4,7 +4,6 @@ import sys
 from src.solver.generic_solver import Context, generic_sls
 from src.solver.utils import DiffScores, Scores, Falselist
 from src.formula import Formula, Assignment
-from src.utils import *
 
 
 class GSATContext(Context):
