@@ -33,12 +33,17 @@ class Formula:
     def __init__(self, dimacs = None, clauses = None, num_vars = None, sat_assignment = None):
         """ Load a formula from a .cnf (DIMACS) file """
         # check for argument validity
-        if __debug__:
-            type_check('dimacs', dimacs, str, optional = True)
-            instance_check('clauses', clauses, Sequence, optional = True)
-            type_check('num_vars', num_vars, int, optional = True)
-            value_check('num_vars', num_vars, optional = True, positive = strict_positive)
-            instance_check('sat_assignment', sat_assignment, Assignment, optional = True)
+        assert not dimacs or isinstance(dimacs, str),\
+            "dimacs = {} :: {} is no str".format(dimacs, type(dimacs))
+        assert not clauses or isinstance(clauses, Sequence),\
+            "clauses = {} :: {} is no Sequence".format(clauses, type(clauses))
+        assert not num_vars or isinstance(num_vars, int),\
+            "num_vars = {} :: {} is no int".format(num_vars, type(num_vars))
+        assert not num_vars or num_vars > 0,\
+            "num_vars = {} <= 0".format(num_vars)
+        assert not sat_assignment or isinstance(sat_assignment, Assignment),\
+            "sat_assignment = {} :: {} is no Assignment".format(sat_assignment, type(sat_assignment))
+
 
         # init variables
         self.clauses = []
@@ -125,7 +130,8 @@ class Formula:
 
 
     def is_satisfied_by(self, assignment):
-        assert isinstance(assignment, Assignment), "assignment is no Assignment"
+        assert isinstance(assignment, Assignment),\
+            "assignment is no Assignment"
 
         for clause in self.clauses:
             true_clause = False
@@ -140,20 +146,29 @@ class Formula:
 
 
     def get_occurrences(self, literal):
-        assert type(literal) == int, "literal is no int"
-        assert literal != 0, "literal == 0"
+        assert isinstance(literal, int),\
+            "literal = {} :: {} is no int".format(literal, type(literal))
+        assert literal != 0,\
+            "literal = {} == 0".format(literal)
 
         return self.occurrences[self.num_vars + literal]
 
 
     def generate_satisfiable_formula(num_vars, ratio, clause_length = 3, rand_gen=random):
-        assert type(clause_length) == int, "clause_length is no int"
-        assert clause_length > 0, "clause_length <= 0"
-        assert type(num_vars) == int, "num_vars is no int"
-        assert num_vars > 0, "num_vars <= 0"
-        assert type(ratio) == float, "ratio is no float"
-        assert ratio > 0, "ratio <= 0"
-        assert clause_length == 3, 'Method \'generate_satisfiable_formula\' only implemented for 3CNF yet.'
+        assert isinstance(clause_length, int),\
+            "clause_length = {} :: {} is no int".format(clause_length, type(clause_length))
+        assert clause_length > 0,\
+            "clause_length = {} <= 0".format(clause_length)
+        assert clause_length == 3,\
+            'Method \'generate_satisfiable_formula\' only implemented for 3CNF yet.'
+        assert isinstance(num_vars, int),\
+            "num_vars = {} :: {} is no int".format(num_vars, type(num_vars))
+        assert num_vars > 0,\
+            "num_vars = {} <= 0".format(num_vars)
+        assert isinstance(ratio, float),\
+            "ratio = {} :: {} is no float".format(ratio, type(ratio))
+        assert ratio > 0,\
+            "ratio = {} <= 0".format(ratio)
 
         # optional arguments
         satisfying_assignment = Assignment.generate_random_assignment(
@@ -188,8 +203,10 @@ class Formula:
             num_vars = num_vars,
             sat_assignment = satisfying_assignment
         )
-        if not formula.is_satisfied_by(satisfying_assignment):
-            raise RuntimeError('formula not satisfied')
+
+        assert formula.is_satisfied_by(satisfying_assignment),\
+            "satisfying_assignment = {} does not satisfy formula".format(satisfying_assignment)
+
         return formula
 
 
@@ -201,15 +218,24 @@ class Formula:
             clause_length = 3,
             poolsize = 1,
             verbose = False):
-        assert type(directory) == str, "directory is no str"
-        assert type(number) == int, "number is no int"
-        assert number > 0, "number <= 0"
-        assert type(num_vars) == int, "num_vars is no int"
-        assert num_vars > 0, "num_vars <= 0"
-        assert type(ratio) == float, "ratio is no float"
-        assert ratio > 0, "ratio <= 0"
-        assert type(clause_length) == int, "clause_length is no int"
-        assert clause_length > 0, "clause_length <= 0"
+        assert isinstance(directory, str),\
+            "directory = {} :: {} is no str".format(directory, type(directory))
+        assert isinstance(number, int),\
+            "number = {} :: {} is no int".format(number, type(number))
+        assert number > 0,\
+            "number = {} <= 0".format(number)
+        assert isinstance(num_vars, int),\
+            "num_vars = {} :: {} is no int".format(num_vars, type(num_vars))
+        assert num_vars > 0,\
+            "num_vars = {} <= 0".format(num_vars)
+        assert isinstance(ratio, float),\
+            "ratio = {} :: {} is no float".format(ratio, type(ratio))
+        assert ratio > 0,\
+            "ratio = {} <= 0".format(ratio)
+        assert isinstance(clause_length, int),\
+            "clause_length = {} :: {} is no int".format(clause_length, type(clause_length))
+        assert clause_length > 0,\
+            "clause_length = {} <= 0".format(clause_length)
 
         try:
             os.mkdir(directory)
@@ -275,9 +301,10 @@ class Assignment:
         0 and 2^num_vars, converting it into an assignment,
         and returning it
         """
-        if __debug__:
-            type_check('num_vars',num_vars,int)
-            value_check('num_vars',num_vars,strict_positive=strict_positive)
+        assert isinstance(num_vars, int),\
+            "num_vars = {} :: {} is no int".format(num_vars, type(num_vars))
+        assert num_vars > 0,\
+            "num_vars = {} <= 0".format(num_vars)
 
         return Assignment(
             rand_gen.randrange(0,pow(2,num_vars)),
@@ -308,24 +335,23 @@ class Assignment:
 
     def flip(self, var_index):
         """ Flips the variable with the index given """
-        if __debug__:
-            type_check('var_index',var_index,int)
-            value_check('var_index',var_index,strict_positive=strict_positive)
+        assert isinstance(var_index, int),\
+            "var_index = {} :: {} is no int".format(var_index, type(var_index))
+        assert var_index > 0,\
+            "var_index = {} <= 0".format(var_index)
 
         self.atoms[var_index-1] = not self.atoms[var_index-1]
 
 
     def get_value(self, var_index):
         """ Returns the assignment to the variable with the index given """
-        if __debug__:
-            type_check('var_index',var_index,int)
-            value_check(
-                'var_index',var_index,
-                strict_positive = strict_positive,
-                less_than_n = lambda x: x <= self.num_vars
-            )
+        assert isinstance(var_index, int),\
+            "var_index = {} :: {} is no int".format(var_index, type(var_index))
+        assert var_index > 0,\
+            "var_index = {} <= 0".format(var_index)
 
         return self.atoms[var_index-1]
+
 
     def __getitem__(self, var_index):
         return self.get_value(var_index)
@@ -338,9 +364,10 @@ class Assignment:
 
 
     def is_true(self, literal):
-        if __debug__:
-            type_check('literal',literal,int)
-            value_check('literal',literal,not_zero = not_equal_to(0))
+        assert isinstance(literal, int),\
+            "literal = {} :: {} is no int".format(literal, type(literal))
+        assert literal != 0,\
+            "literal = {} == 0".format(literal)
 
         t = self.get_value(abs(literal))
         return t if literal > 0 else not t
@@ -373,15 +400,16 @@ class Assignment:
 
 
     def hamming_dist(self, assgn):
-        if __debug__:
-            instance_check('assgn',assgn,Assignment)
-            value_check(
-                'assgn',assgn,
-                n_matches = lambda a: a.num_vars == self.num_vars
+        assert isinstance(assgn, Assignment),\
+            "assgn = {} :: {} is no Assignment".format(assgn, type(assgn))
+        assert assgn.num_vars == self.num_vars,\
+            "assgn.num_vars = {} != {} = self.num_vars".format(
+                assgn.num_vars,
+                self.num_vars
             )
 
         dist = 0
-        for i in range(0,self.num_vars):
+        for i in range(1,self.num_vars+1):
             dist += 1 if self[i] != assgn[i] else 0
 
         return dist
