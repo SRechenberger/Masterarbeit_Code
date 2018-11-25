@@ -1,8 +1,10 @@
 import random
-from src.utils import *
+import operator
+
 from src.formula import Formula, Assignment
-from src.solver.utils import Falselist, Scores
+from src.solver.utils import Falselist, Scores, max_seq
 from src.solver.generic_solver import generic_sls, Context
+
 
 class DefensiveContext(Context):
     def __init__(self, formula, assgn):
@@ -50,17 +52,13 @@ def walksat_distribution(rho):
 
         for clause_idx in context.falselist:
             clause = context.formula.clauses[clause_idx]
-            best_score = context.formula.max_occs
-            clause_best = []
 
-            for c in clause:
-                v = abs(c)
-                s = context.score.get_break_score(v)
-                if s < best_score:
-                    best_score = s
-                    clause_best = [v]
-                elif s == best_score:
-                    clause_best.append(v)
+            best_score, clause_best = max_seq(
+                clause,
+                key=context.score.get_break_score,
+                compare=operator.lt,
+                modifier=abs,
+            )
 
             if best_score == 0:
                 for var in clause_best:
@@ -92,24 +90,18 @@ def walksat_heuristic(rho):
         clause_idx = rand_gen.choice(context.falselist.lst)
         clause = context.formula.clauses[clause_idx]
 
-        best_score = context.formula.max_occs
-        clause_best = []
-
-        for c in clause:
-            v = abs(c)
-            s = context.score.get_break_score(v)
-            if s < best_score:
-                best_score = s
-                clause_best = [v]
-            elif s == best_score:
-                clause_best.append(v)
-
+        best_score, clause_best = max_seq(
+            clause,
+            key=context.score.get_break_score,
+            compare=operator.lt,
+            modifier=abs,
+        )
 
         # get random number [0,1)
         dice = rand_gen.random()
         # Greedy
         if best_score == 0 or dice > rho:
-            return rand_gen.choice(list(clause_best))
+            return abs(rand_gen.choice(list(clause_best)))
 
         # Noisy
         else:
