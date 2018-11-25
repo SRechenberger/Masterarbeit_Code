@@ -2,14 +2,39 @@ import re
 import copy
 import os
 import sys
+import operator
+from collections.abc import Sequence
 from src.utils import *
 from src.formula import Formula, Assignment
+
+
+def max_seq(seq, key=lambda x:x, compare=operator.gt, modifier=lambda x:x):
+    """ Finds all optima of a sequence regarding 'key' and 'compare' """
+
+    assert isinstance(seq, Sequence),\
+        "seq = {} :: {} is no Sequence".format(seq, type(seq))
+    assert len(seq) > 0,\
+        "seq = {} is empty".format(seq)
+
+    max_seq = [modifier(seq[0])]
+    max_val = key(modifier(seq[0]))
+    for x in seq[1:]:
+        x = modifier(x)
+        if compare(key(x), max_val):
+            max_seq = [x]
+            max_val = key(x)
+
+        elif key(x) == max_val:
+            max_seq.append(x)
+
+    return max_val, max_seq
 
 
 class Falselist:
     """ Models a list with no need for order,
     for the list of unsatisfied clauses.
     """
+
     def __init__(self):
         self.lst = []
         self.mapping = {}
