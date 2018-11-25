@@ -139,7 +139,7 @@ class TestWindowEntropy(unittest.TestCase):
 class TestBloomFilter(unittest.TestCase):
     def setUp(self):
         random.seed()
-        self.cases = 20
+        self.cases = 1 if __debug__ else 10
         self.max_fails = math.ceil(self.cases * 0.1)
 
     def test_bloom_filter(self):
