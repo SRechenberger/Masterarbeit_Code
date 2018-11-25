@@ -8,7 +8,6 @@ from src.solver.gsat import gsat
 from src.solver.walksat import walksat
 from src.solver.probsat import probsat
 from src.formula import Formula
-from src.utils import *
 
 class TestExperiment(unittest.TestCase):
 
