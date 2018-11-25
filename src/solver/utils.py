@@ -4,7 +4,6 @@ import os
 import sys
 import operator
 from collections.abc import Sequence
-from src.utils import *
 from src.formula import Formula, Assignment
 
 

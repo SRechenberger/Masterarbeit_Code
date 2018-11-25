@@ -4,7 +4,6 @@ import os
 import re
 import multiprocessing as mp
 from collections.abc import Sequence
-from src.utils import *
 
 
 if platform.sys.version_info.major < 3:
