@@ -1,283 +1,39 @@
-import platform
-import random
 import re
 import copy
 import os
-import multiprocessing as mp
-from src.utils import *
+import sys
+import operator
 from collections.abc import Sequence
-
-if platform.sys.version_info.major < 3:
-    raise Exception("Must be Python 3")
-
-if platform.sys.version_info.minor < 6:
-
-    def choices(seq, weights = None):
-        if not weights:
-            weights = [1/len(seq) for _ in range(0,len(seq))]
-
-        acc = 0
-        dice = random.random()
-        for p,x in zip(weights, seq):
-            acc += p
-            if acc > dice:
-                return [x]
+from src.formula import Formula, Assignment
 
 
+def max_seq(seq, key=lambda x:x, compare=operator.gt, modifier=lambda x:x):
+    """ Finds all optima of a sequence regarding 'key' and 'compare' """
 
-    random.choices = choices
+    assert isinstance(seq, Sequence),\
+        "seq = {} :: {} is no Sequence".format(seq, type(seq))
+    assert len(seq) > 0,\
+        "seq = {} is empty".format(seq)
 
-class Formula:
-    """ CNF formulae in DIMACS format """
+    max_seq = [modifier(seq[0])]
+    max_val = key(modifier(seq[0]))
+    for x in seq[1:]:
+        x = modifier(x)
+        if compare(key(x), max_val):
+            max_seq = [x]
+            max_val = key(x)
 
-    def __init__(self, dimacs = None, clauses = None, num_vars = None, sat_assignment = None):
-        """ Load a formula from a .cnf (DIMACS) file """
-        # check for argument validity
-        if __debug__:
-            type_check('dimacs', dimacs, str, optional = True)
-            instance_check('clauses', clauses, Sequence, optional = True)
-            type_check('num_vars', num_vars, int, optional = True)
-            value_check('num_vars', num_vars, optional = True, positive = strict_positive)
-            instance_check('sat_assignment', sat_assignment, Assignment, optional = True)
+        elif key(x) == max_val:
+            max_seq.append(x)
 
-        # init variables
-        self.clauses = []
-        self.num_clauses = 0
-        self.num_vars = 0
-        self.comments = []
-        self.occurrences = []
-        self.max_clause_length = 0
-        self.satisfying_assignment = None
+    return max_val, max_seq
 
-        # parse the file.
-        if dimacs:
-            r = re.compile(r'-?\d+')           # find numbers
-            rh = re.compile(r'-?0x[0-9a-fA-F]+') # find hex numbers
-
-            for line in dimacs.splitlines():
-                if line[0] == 'c':
-                    if line.startswith('c assgn'):
-                        hex_val, = rh.findall(line)
-                    else:
-                        self.comments.append(line)
-                elif line[0] == 'p':
-                    n, m = r.findall(line)
-                    self.num_vars = int(n)
-                    self.num_clauses = int(m)
-                    self.satisfying_assignment = Assignment(int(hex_val,16), int(n))
-                else:
-                    self.clauses.append(list(map(int, r.findall(line)))[:-1])
-                    if len(self.clauses[-1]) > self.max_clause_length:
-                        self.max_clause_length = len(self.clauses[-1])
-
-        # or use the given stuff
-        elif not dimacs and clauses and num_vars and sat_assignment:
-            self.satisfying_assignment = sat_assignment
-            self.clauses = clauses
-            self.num_clauses = len(clauses)
-            self.num_vars = num_vars
-            self.max_clause_length = max(map(len,clauses))
-
-        else:
-            raise ValueError(
-                "Either 'dimacs' or 'clauses', 'num_vars' and 'sat_assignment' must be provided"
-            )
-
-        self.occurrences = [];
-        for _ in range(0,self.num_vars*2+1):
-            self.occurrences.append([])
-
-        for idx in range(0, self.num_clauses):
-            for literal in self.clauses[idx]:
-                self.occurrences[self.num_vars + literal].append(idx)
-
-        self.max_occs = 0
-        for occ in self.occurrences:
-            if len(occ) > self.max_occs:
-                self.max_occs = len(occ)
-
-        self.ratio = self.num_clauses / self.num_vars
-
-    def __eq__(self, formula):
-        if not formula:
-            return False
-        else:
-            return all([
-                self.num_vars == formula.num_vars,
-                self.clauses == formula.clauses,
-                str(self.satisfying_assignment) == str(formula.satisfying_assignment)
-            ])
-
-    def __str__(self):
-        """ Represent formula in DIMACS format """
-
-        toReturn = ''
-
-        for comment in self.comments:
-            toReturn += comment
-        toReturn += 'c assgn {}\n'.format(str(self.satisfying_assignment))
-        toReturn += 'p cnf {} {}\n'.format(self.num_vars, self.num_clauses)
-        for clause in self.clauses:
-            for literal in clause:
-                toReturn += '{} '.format(literal)
-            toReturn += '0\n'
-
-        return toReturn
-
-
-    def is_satisfied_by(self, assignment):
-        assert isinstance(assignment, Assignment), "assignment is no Assignment"
-
-        for clause in self.clauses:
-            true_clause = False
-            for literal in clause:
-                if assignment.is_true(literal):
-                    true_clause = True
-                    break
-            if not true_clause:
-                return False
-
-        return True
-
-
-    def get_occurrences(self, literal):
-        assert type(literal) == int, "literal is no int"
-        assert literal != 0, "literal == 0"
-
-        return self.occurrences[self.num_vars + literal]
-
-
-    def generate_satisfiable_formula(num_vars, ratio, clause_length = 3, seed=None):
-        assert type(clause_length) == int, "clause_length is no int"
-        assert clause_length > 0, "clause_length <= 0"
-        assert type(num_vars) == int, "num_vars is no int"
-        assert num_vars > 0, "num_vars <= 0"
-        assert type(ratio) == float, "ratio is no float"
-        assert ratio > 0, "ratio <= 0"
-        assert clause_length == 3, 'Method \'generate_satisfiable_formula\' only implemented for 3CNF yet.'
-
-        # optional arguments
-        if seed:
-            random.seed(seed)
-
-        satisfying_assignment = Assignment.generate_random_assignment(
-            num_vars,
-            seed = seed
-        )
-
-
-        num_clauses = int(ratio * num_vars)
-        clauses = []
-        p={1: 0.191, 2: 0.118, 3: 0.073}
-        for i in range(0, num_clauses + 1):
-            variables = random.sample(range(1,num_vars+1), clause_length)
-
-            acc = [[]]
-            for var in variables:
-                acc = list(map(lambda xs: [var] + xs, acc)) + list(map(lambda xs: [-var] + xs, acc))
-
-            f = lambda lit: 1 if satisfying_assignment.is_true(lit) else 0
-            cs, ws = [], []
-            for clause in acc:
-                x = sum(map(f,clause))
-                if x > 0:
-                    cs.append(clause)
-                    ws.append(p[x])
-
-            c, = random.choices(cs,weights=ws)
-            clauses.append(c)
-
-        formula = Formula(
-            clauses = clauses,
-            num_vars = num_vars,
-            sat_assignment = satisfying_assignment
-        )
-        if not formula.is_satisfied_by(satisfying_assignment):
-            raise RuntimeError('formula not satisfied')
-        return formula
-
-
-    def generate_formula_pool(
-            directory,
-            number,
-            num_vars,
-            ratio,
-            clause_length = 3,
-            seed = None,
-            poolsize = 1,
-            verbose = False):
-        assert type(directory) == str, "directory is no str"
-        assert type(number) == int, "number is no int"
-        assert number > 0, "number <= 0"
-        assert type(num_vars) == int, "num_vars is no int"
-        assert num_vars > 0, "num_vars <= 0"
-        assert type(ratio) == float, "ratio is no float"
-        assert ratio > 0, "ratio <= 0"
-        assert type(clause_length) == int, "clause_length is no int"
-        assert clause_length > 0, "clause_length <= 0"
-
-        if seed:
-            random.seed(seed)
-
-        try:
-            os.mkdir(directory)
-        except FileExistsError:
-            pass
-
-        with mp.Pool(processes = 3) as pool:
-            future_formulae = []
-            for _ in range(0,number):
-                ff = pool.apply_async(
-                    Formula.generate_satisfiable_formula,
-                    (
-                        num_vars,
-                        ratio,
-                        clause_length
-                    )
-                )
-                future_formulae.append(ff)
-
-            idx = 0
-            for ff in future_formulae:
-                f = ff.get()
-                filename = 'n{}-r{:.2f}-k{}-{:016X}.cnf'.format(
-                    num_vars,
-                    ratio,
-                    clause_length,
-                    hash(f),
-                )
-                with open(os.path.join(directory,filename),'w') as target:
-                    target.write(str(f))
-
-                del future_formulae[idx]
-                idx += 1
-
-                if verbose:
-                    print(
-                        'File {} written.'.format(
-                            os.path.join(directory,filename)
-                        )
-                    )
-
-
-
-    def __hash__(self):
-        return abs(
-            hash(
-                '{}{}{}{}{}'.format(
-                    self.num_vars,
-                    self.max_clause_length,
-                    self.ratio,
-                    str(self.satisfying_assignment),
-                    id(self)
-                )
-            )
-        )
 
 class Falselist:
     """ Models a list with no need for order,
     for the list of unsatisfied clauses.
     """
+
     def __init__(self):
         self.lst = []
         self.mapping = {}
@@ -287,11 +43,7 @@ class Falselist:
 
 
     def remove(self, elem):
-        if __debug__:
-            value_check(
-                'elem', elem, error=IndexError,
-                registered = lambda e: e in self.mapping
-            )
+        assert elem in self.mapping
 
         idx = self.mapping[elem]
         tmp = self.lst[idx]
@@ -312,146 +64,87 @@ class Falselist:
         return len(self.lst)
 
 
+class DiffScores:
 
-class Assignment:
-    """ Assignment modelled as an array of bits """
+    def self_test(self, formula, assignment, falselist):
+        """ Consistency test """
 
-    def generate_random_assignment(num_vars, seed = None):
-        """ Randomly generating a number between
-        0 and 2^num_vars, converting it into an assignment,
-        and returning it
-        """
-        if __debug__:
-            type_check('num_vars',num_vars,int)
-            value_check('num_vars',num_vars,strict_positive=strict_positive)
+        # test num_true_lit
+        for clause_idx, clause in enumerate(formula.clauses):
+            true_lits = 0
+            for lit in clause:
+                true_lits += 1 if assignment.is_true(lit) else 0
 
-        if seed:
-            random.seed(seed)
+            if true_lits != self.num_true_lit[clause_idx]:
+                print(
+                    "Clause {}: true_lits {} desired {}".format(
+                        clause_idx, true_lits, self.num_true_lit[clause_idx]
+                    )
+                )
+                return False
 
-        return Assignment(
-            random.randrange(0,pow(2,num_vars)),
-            num_vars,
-        )
+        # test variable scores
+        for var in range(1,formula.num_vars+1):
+            makes = 0
+            breaks = 0
+            sat_lit = var if assignment.get_value(var) else -var
 
+            ## count make and break score
+            # satisfying occurrences
+            for clause_idx in formula.get_occurrences(sat_lit):
+                if self.num_true_lit[clause_idx] == 1 and self.crit_var[clause_idx] == var:
+                    breaks += 1
 
-    def atoms_from_integer(number):
-        """ Takes a number and converts it into a list of booleans """
-        atoms = []
-        n = number
-        while n > 0:
-            atoms.append(n % 2 == 1)
-            n //= 2
-        return atoms
+            # falsifying occurrences
+            for clause_idx in formula.get_occurrences(-sat_lit):
+                if self.num_true_lit[clause_idx] == 0:
+                    makes += 1
 
+            diff = (makes - breaks)
+            if diff != self.get_score(var):
+                print(
+                    "Variable {}: make {} break {} diff {} desired {}".format(
+                        var, makes, breaks, diff, self.get_score(var)
+                    ),
+                    file = sys.stderr,
+                )
+                return False
 
-    def integer_from_atoms(atoms):
-        """ Takes a list of booleans and converts it into a number """
-        n = 0
-        tmp = atoms.copy()
-        while tmp:
-            n *= 2
-            n += 1 if tmp.pop() else 0
+            if var not in self.buckets[self.get_score(var)]:
+                return False
 
-        return n
-
-
-    def flip(self, var_index):
-        """ Flips the variable with the index given """
-        if __debug__:
-            type_check('var_index',var_index,int)
-            value_check('var_index',var_index,strict_positive=strict_positive)
-
-        self.atoms[var_index-1] = not self.atoms[var_index-1]
-
-
-    def get_value(self, var_index):
-        """ Returns the assignment to the variable with the index given """
-        if __debug__:
-            type_check('var_index',var_index,int)
-            value_check(
-                'var_index',var_index,
-                strict_positive = strict_positive,
-                less_than_n = lambda x: x <= self.num_vars
-            )
-
-        return self.atoms[var_index-1]
-
-    def __getitem__(self, var_index):
-        return self.get_value(var_index)
-
-    def __setitem__(self, var_index, value):
-        self.atoms[var_index] = True if value else False
-
-    def __delitem__(self, var_index):
-        pass
+        # all good
+        return True
 
 
-    def is_true(self, literal):
-        if __debug__:
-            type_check('literal',literal,int)
-            value_check('literal',literal,not_zero = not_equal_to(0))
-
-        t = self.get_value(abs(literal))
-        return t if literal > 0 else not t
-
-
-    def __init__(self, number, num_vars):
-        """ Generate an assignment from an integer """
-        if __debug__:
-            type_check('number',number,int)
-
-        self.atoms = Assignment.atoms_from_integer(number)
-        self.atoms += [False]*(num_vars-len(self.atoms))
-        self.num_vars = num_vars
-
-
-    def __str__(self):
-        """ Converts the assignment to a hex literal with 0x prefix """
-        return hex(Assignment.integer_from_atoms(self.atoms))
-
-
-    def hamming_dist(self, assgn):
-        if __debug__:
-            instance_check('assgn',assgn,Assignment)
-            value_check(
-                'assgn',assgn,
-                n_matches = lambda a: a.num_vars == self.num_vars
-            )
-
-        dist = 0
-        for i in range(0,self.num_vars):
-            dist += 1 if self[i] != assgn[i] else 0
-
-        return dist
-
-
-
-class Scores:
     def __init__(self, formula, assignment, falselist):
-        if __debug__:
-            instance_check('formula',formula,Formula)
-            instance_check('assignment',assignment,Assignment)
-            instance_check('falselist',falselist,Falselist)
+        assert isinstance(formula,Formula), \
+            "formula = {} :: {} is no Formula".format(formula,type(formula))
+        assert isinstance(assignment,Assignment), \
+            "assignment = {} :: {} is no Assignment".format(formula,type(assignment))
+        assert isinstance(falselist,Falselist), \
+            "falselist = {} :: {} is no Falselist".format(formula,type(falselist))
 
+        self.max_score = formula.max_occs
         self.crit_var = []
         self.num_true_lit = []
-        self.breaks = {}
-        self.makes = {}
+        self.score = {}
+        self.best_score = 0
 
-        self.diff_buckets = {
+
+        self.buckets = {
             k: set() for k in range(-formula.max_occs, formula.max_occs+1)
         }
-        self.bucket_mapping = [
-            None for _ in range(0,formula.num_vars+1)
-        ]
 
-        self.best_score = -formula.max_occs
-        self.minimum_score = -formula.max_occs
 
-        # Begin at clause 0
-        clause_idx = 0
+        # all variables have score 0 and are in the 0-bucket
+        for v in range(1,formula.num_vars+1):
+            self.buckets[0].add(v)
+            self.score[v] = 0
+
+
         # for each clause of the formula
-        for clause in formula.clauses:
+        for clause_idx, clause in enumerate(formula.clauses):
             # init the criticial variable
             self.crit_var.append(None)
             # init the number of true literals for this clause
@@ -473,185 +166,373 @@ class Scores:
                 # it is the critical literal
                 self.crit_var[-1] = crit_var
                 # thus it breaks the clause
-                self.increment_break_score(crit_var)
+                self.decrement_score(crit_var)
 
             # if there is no true literal
             elif self.num_true_lit[-1] == 0:
                 # add the clause to the list of false clauses
                 falselist.add(clause_idx)
-                # a flip every literal in the clause will make it sat
+                # a flip of any variable in the clause makes it sat
                 for lit in clause:
-                    self.increment_make_score(abs(lit))
-
-            # next clause
-            clause_idx += 1
-
-        for var in range(1,formula.num_vars+1):
-            self.update_diff(var)
-
-
-    def update_diff(self, variable):
-        if __debug__:
-            type_check('variable',variable,int)
-            value_check('variable',variable,strict_positive=strict_positive)
-
-        # calculate the new score
-        new_score = self.get_make_score(variable) - self.get_break_score(variable)
-        # read the old score
-        old_score = self.bucket_mapping[variable]
-
-        # if there is an old score
-        if old_score:
-            # remove from old bucket
-            self.diff_buckets[old_score].remove(variable)
-
-        # add to new bucket
-        self.diff_buckets[new_score].add(variable)
-        self.bucket_mapping[variable] = new_score
-
-        old_score = old_score if old_score else -self.minimum_score
-
-        if new_score > self.best_score:
-            self.best_score = new_score
-        elif new_score < old_score and old_score == self.best_score:
-            for i in range(old_score, new_score-1, -1):
-                if self.diff_buckets[i]:
-                    self.best_score = i
-                    break
+                    self.increment_score(abs(lit))
 
 
     def get_best_bucket(self):
-        return self.diff_buckets[self.best_score]
+        """ Returns the first non-empty bucket """
 
-    def get_score_of_var(self, var):
-        return self.bucket_mapping[var]
+        return self.best_score, self.buckets[self.best_score]
 
-    def increment_break_score(self, variable):
-        if __debug__:
-            type_check('variable',variable,int)
-            value_check('variable', variable, strict_positive = strict_positive)
 
-        if variable in self.breaks:
-            self.breaks[variable] += 1
+
+    def get_score(self, var):
+        """ Returns the variable's break score """
+
+        assert type(var) == int, "var = {} :: {} is no int".format(var, type(var))
+        assert var > 0, "var = {} <= 0".format(var)
+
+        return self.score[var]
+
+
+    def increment_score(self, variable):
+        """ Increments the score of the variable and lifts it into the next higher bucket """
+        assert type(variable) == int, "variable = {} is no int".format(variable)
+        assert variable > 0, "variable = {} <= 0".format(variable)
+
+        # if the flipped variable has the best score,
+        # and is lifted, then the best score is to be incremented
+        if self.best_score == self.score[variable]:
+            self.best_score += 1
+        # lift variable to next higher bucket
+        self.buckets[self.score[variable]].remove(variable)
+        # increment break score
+        self.score[variable] += 1
+        # while updating, the break score may temporarily be greater than normally possible;
+        # in this case, add a new bucket as buffer
+        if self.score[variable] not in self.buckets:
+            self.buckets[self.score[variable]] = {variable}
         else:
-            self.breaks[variable] = 1
+            self.buckets[self.score[variable]].add(variable)
 
 
 
-    def decrement_break_score(self, variable):
-        if __debug__:
-            type_check('variable',variable,int)
-            value_check('variable', variable, strict_positive = strict_positive)
+    def decrement_score(self, variable):
+        """ Decrements the score of the variable and lowers it into the next lower bucket """
 
-        if variable in self.breaks:
-            self.breaks[variable] -= 1
-            if __debug__:
-                value_check(
-                    'self.breaks[{}]'.format(variable),self.breaks[variable],
-                    positive = positive
-                )
+        assert type(variable) == int, "variable = {} is no int".format(variable)
+        assert variable > 0, "variable = {} <= 0".format(variable)
 
 
-
-    def increment_make_score(self, variable):
-        if __debug__:
-            type_check('variable',variable,int)
-            value_check('variable', variable, strict_positive = strict_positive)
-
-        if variable in self.makes:
-            self.makes[variable] += 1
+        # lower variable to next lower bucket
+        self.buckets[self.score[variable]].remove(variable)
+        # if the flipped variable was the only variable with best score, and is lowered
+        # then the best score is lowered
+        if self.best_score == self.score[variable] and not self.buckets[self.score[variable]]:
+            self.best_score -= 1
+        # decrement break score
+        self.score[variable] -= 1
+        # while updating, the break score may temporarily be greater than normally possible;
+        # in this case, add a new bucket as buffer
+        if self.score[variable] not in self.buckets:
+            self.buckets[self.score[variable]] = {variable}
         else:
-            self.makes[variable] = 1
-
-
-
-
-    def decrement_make_score(self, variable):
-        if __debug__:
-            type_check('variable',variable,int)
-            value_check('variable', variable, strict_positive = strict_positive)
-
-        if variable in self.makes:
-            self.makes[variable] -= 1
-            if __debug__:
-                value_check(
-                    'self.makes[{}]'.format(variable),self.makes[variable],
-                    positive = positive
-                )
-
-
-
-
-    def get_break_score(self, variable):
-        if __debug__:
-            type_check('variable',variable,int)
-
-        if variable in self.breaks:
-            return self.breaks[variable]
-        else:
-            return 0
-
-
-
-    def get_make_score(self, variable):
-        if __debug__:
-            type_check('variable',variable,int)
-
-        if variable in self.makes:
-            return self.makes[variable]
-        else:
-            return 0
-
+            self.buckets[self.score[variable]].add(variable)
 
 
     def flip(self, variable, formula, assignment, falselist):
-        if __debug__:
-            type_check('variable',variable,int)
-            instance_check('formula',formula,Formula)
-            instance_check('assignment',assignment,Assignment)
-            instance_check('falselist',falselist,Falselist)
+        assert type(variable) == int, \
+            "variable = {} :: {} is no int".format(variable, type(variable))
+        assert variable > 0, "variable = {} <= 0".format(variable)
+        assert isinstance(formula,Formula), \
+            "formula = {} :: {} is no Formula".format(formula,type(formula))
+        assert isinstance(assignment,Assignment), \
+            "assignment = {} :: {} is no Assignment".format(formula,type(assignment))
+        assert isinstance(falselist,Falselist), \
+            "falselist = {} :: {} is no Falselist".format(formula,type(falselist))
+
+        # a[v] = -a[v]
+        assignment.flip(variable) # TODO this does not really belong here
+        # satisfyingLiteral = a[v] ? v : -v
+        satisfying_literal = variable if assignment.is_true(variable) else -variable
+        # falsifyingLiteral = a[v] ? -v : v
+        falsifying_literal = -variable if assignment.is_true(variable) else variable
+        # for each clause, 'satisfyingLiteral' occurs in
+        for clause_idx in formula.get_occurrences(satisfying_literal):
+            # if the clause is unsat
+            if self.num_true_lit[clause_idx] == 0:
+                # remove from falselist
+                falselist.remove(clause_idx)
+                # no literal in the clause makes it sat anymore (for it is now sat),
+                # but 'variable' would break it,
+                # therefore, its score is decremented twice
+                self.decrement_score(variable)
+                for lit in formula.clauses[clause_idx]:
+                    self.decrement_score(abs(lit))
+                # make 'variable' critical (for it is now the only satisfying variable)
+                self.crit_var[clause_idx] = variable
+
+            # if the clause is sat by one literal
+            elif self.num_true_lit[clause_idx] == 1:
+                # the clauses critical variable does no longer break it
+                # i.e. it isn't critical anymore
+                self.increment_score(self.crit_var[clause_idx])
+
+            # the clause has one more satisfying literal
+            self.num_true_lit[clause_idx] += 1
+
+        # for each clause, 'falsifying_literal' occurs in
+        for clause_idx in formula.get_occurrences(falsifying_literal):
+            # if the variable was critical
+            if self.num_true_lit[clause_idx] == 1:
+                # add the clause to the falselist
+                falselist.add(clause_idx)
+                # 'variable' now no longer breaks the clause, but would make it;
+                # thus its score is incremented twice
+                # the score of all other variables will be increased
+                self.increment_score(variable)
+                for lit in formula.clauses[clause_idx]:
+                    self.increment_score(abs(lit))
+                # set variable as critical (for whatever reason)
+                self.crit_var[clause_idx] = variable
+
+            # if the clause was satisfyed by a second variable
+            elif self.num_true_lit[clause_idx] == 2:
+                # find the critical variable
+                for lit in formula.clauses[clause_idx]:
+                    # if the literal satisfies the clause
+                    if assignment.is_true(lit):
+                        # make it the critical variable
+                        self.crit_var[clause_idx] = abs(lit)
+                        # increment its break score
+                        self.decrement_score(abs(lit))
+
+            # the clause is now satisfied by one fewer literal
+            self.num_true_lit[clause_idx] -= 1
+
+
+class Scores:
+    def self_test(self, formula, assignment, falselist):
+        """ Consistency test """
+
+        # test num_true_lit
+        for clause_idx, clause in enumerate(formula.clauses):
+            true_lits = 0
+            for lit in clause:
+                true_lits += 1 if assignment.is_true(lit) else 0
+
+            if true_lits != self.num_true_lit[clause_idx]:
+                print(
+                    "Clause {}: true_lits {} desired {}".format(
+                        clause_idx, true_lits, self.num_true_lit[clause_idx]
+                    )
+                )
+                return False
+
+        # test variable scores
+        for var in range(1,formula.num_vars+1):
+            breaks = 0
+            sat_lit = var if assignment.get_value(var) else -var
+
+            ## count make and break score
+            # satisfying occurrences
+            for clause_idx, _ in enumerate(formula.clauses):
+                if self.num_true_lit[clause_idx] == 1 and self.crit_var[clause_idx] == var:
+                    breaks += 1
+
+            if breaks != self.get_break_score(var):
+                print(
+                    "Variable {}: break {} desired {}".format(
+                        var, breaks, self.get_score(var)
+                    ),
+                    file = sys.stderr,
+                )
+                return False
+
+            if var not in self.buckets[self.get_break_score(var)]:
+                return False
+
+        # all good
+        return True
+
+
+    def __init__(self, formula, assignment, falselist):
+        assert isinstance(formula,Formula), \
+            "formula = {} :: {} is no Formula".format(formula,type(formula))
+        assert isinstance(assignment,Assignment), \
+            "assignment = {} :: {} is no Assignment".format(formula,type(assignment))
+        assert isinstance(falselist,Falselist), \
+            "falselist = {} :: {} is no Falselist".format(formula,type(falselist))
+
+
+        self.formula = formula
+        self.crit_var = [
+            0 for _ in formula.clauses
+        ]
+        self.num_true_lit = [
+            0 for _ in formula.clauses
+        ]
+        self.breaks = {}
+
+        self.buckets = {
+            score: set() for score in range(0, formula.max_occs+1)
+        }
+        self.best_score = 0
+
+
+        # all variables have score 0 and are in the 0-bucket
+        for v in range(1,formula.num_vars+1):
+            self.buckets[0].add(v)
+            self.breaks[v] = 0
+
+        # for each clause of the formula
+        for clause_idx, clause in enumerate(formula.clauses):
+            # a local variable to track the critical variable
+            crit_var = 0
+            # for each literal of the clause
+            for lit in clause:
+                # if the literal is satisfied
+                if assignment.is_true(lit):
+                    # it MAY BE the critical variable of the clause
+                    crit_var = abs(lit)
+                    # there is one more true literal
+                    self.num_true_lit[clause_idx] += 1
+
+            # if after the traverse of the clause there is exactly one true
+            # literal
+            if self.num_true_lit[clause_idx] == 1:
+                # it is the critical literal
+                self.crit_var[clause_idx] = crit_var
+                # thus it breaks the clause
+                self.increment_break_score(crit_var)
+
+            # if there is no true literal
+            elif self.num_true_lit[clause_idx] == 0:
+                # add the clause to the list of false clauses
+                falselist.add(clause_idx)
+
+
+    def get_best_bucket(self):
+        """ Returns the first non-empty bucket """
+        return self.buckets[self.best_score]
+
+        raise RuntimeError("all buckets are empty")
+
+
+    def get_break_score(self, var):
+        """ Returns the variable's break score """
+
+        assert type(var) == int, "var = {} :: {} is no int".format(var, type(var))
+        assert var > 0, "var = {} <= 0".format(var)
+
+        return self.breaks[var]
+
+
+    def increment_break_score(self, variable):
+        """ Increments the Break score of the variable and lifts it into the next higher bucket """
+
+        assert type(variable) == int, "variable = {} is no int".format(variable)
+        assert variable > 0, "variable = {} <= 0".format(variable)
+
+        # remove variable from old bucket
+        self.buckets[self.breaks[variable]].remove(variable)
+        if self.best_score == self.breaks[variable] and not self.buckets[self.breaks[variable]]:
+            self.best_score += 1
+        # increment break score
+        self.breaks[variable] += 1
+        # add variable to new bucket
+        # while updating, the break score may temporarily be greater than normally possible;
+        # in this case, add a new bucket as buffer
+        if self.breaks[variable] not in self.buckets:
+            self.buckets[self.breaks[variable]] = {variable}
+        else:
+            self.buckets[self.breaks[variable]].add(variable)
+
+
+    def decrement_break_score(self, variable):
+        """ Decrements the Break score of the variable and lowers it into the next lower bucket """
+
+        assert type(variable) == int, "variable = {} is no int".format(variable)
+        assert variable > 0, "variable = {} <= 0".format(variable)
+        assert variable in self.breaks, "variable = {} not listed in self.breaks".format(variable)
+
+        # remove variable from old bucket
+        self.buckets[self.breaks[variable]].remove(variable)
+        if self.best_score == self.breaks[variable]:
+            self.best_score -= 1
+        # decrement break score
+        self.breaks[variable] -= 1
+        # while updating, the break score may temporarily be greater than normally possible;
+        # in this case, add a new bucket as buffer
+        if self.breaks[variable] not in self.buckets:
+            self.buckets[self.breaks[variable]] = {variable}
+        else:
+            self.buckets[self.breaks[variable]].add(variable)
+
+
+    def flip(self, variable, formula, assignment, falselist):
+        assert type(variable) == int, \
+            "variable = {} :: {} is no int".format(variable, type(variable))
+        assert variable > 0, "variable = {} <= 0".format(variable)
+        assert isinstance(formula,Formula), \
+            "formula = {} :: {} is no Formula".format(formula,type(formula))
+        assert isinstance(assignment,Assignment), \
+            "assignment = {} :: {} is no Assignment".format(formula,type(assignment))
+        assert isinstance(falselist,Falselist), \
+            "falselist = {} :: {} is no Falselist".format(formula,type(falselist))
 
         # a[v] = -a[v]
         assignment.flip(variable)
         # satisfyingLiteral = a[v] ? v : -v
         satisfying_literal = variable if assignment.is_true(variable) else -variable
         # falsifyingLiteral = a[v] ? -v : v
-        # isn't this just -satisfyingLiteral ?
         falsifying_literal = -variable if assignment.is_true(variable) else variable
-        occs = formula.occurrences
+        # for each clause, 'satisfyingLiteral' occurs in
         for clause_idx in formula.get_occurrences(satisfying_literal):
+            assert satisfying_literal in formula.clauses[clause_idx], \
+                "literal {} not in clause {}#{}".format(
+                    satisfying_literal, clause_idx, formula.clauses[clause_idx]
+                )
+            # if the clause is unsat
             if self.num_true_lit[clause_idx] == 0:
+                # remove from falselist
                 falselist.remove(clause_idx)
-                self.increment_break_score(variable)
+                # 'variable' now breaks this clause
+                self.increment_break_score(variable)    # TODO this line triggers the error
+                # make 'variable' critical
                 self.crit_var[clause_idx] = variable
 
-                # no variable in the clause will make it sat (because it already
-                # is)
-                for lit in formula.clauses[clause_idx]:
-                    self.decrement_make_score(abs(lit))
-                    self.update_diff(abs(lit))
+            # if the clause is sat by one literal
             elif self.num_true_lit[clause_idx] == 1:
+                # its critical variable does not break it anymore
                 self.decrement_break_score(self.crit_var[clause_idx])
-                self.update_diff(self.crit_var[clause_idx])
+
+            # the clause has one more satisfying literal
             self.num_true_lit[clause_idx] += 1
 
+        # for each clause, 'falsifying_literal' occurs in
         for clause_idx in formula.get_occurrences(falsifying_literal):
+            assert falsifying_literal in formula.clauses[clause_idx], \
+                "literal {} not in clause {}#{}".format(
+                    falsifying_literal, clause_idx, formula.clauses[clause_idx]
+                )
+            # if the variable was critical
             if self.num_true_lit[clause_idx] == 1:
+                # add the clause to the falselist
                 falselist.add(clause_idx)
+                # decrement its break score (for the clause is already broken)
                 self.decrement_break_score(variable)
-                self.update_diff(variable)
+                # set variable as critical (for whatever reason)
                 self.crit_var[clause_idx] = variable
 
-                # every variable in the clause will make it sat (because it is
-                # no longer)
-                for lit in formula.clauses[clause_idx]:
-                    self.increment_make_score(abs(lit))
-                    self.update_diff(abs(lit))
-
+            # if the clause was satisfyed by a second variable
             elif self.num_true_lit[clause_idx] == 2:
+                # find the critical variable
                 for lit in formula.clauses[clause_idx]:
+                    # if the literal satisfies the clause
                     if assignment.is_true(lit):
+                        # make it the critical variable
                         self.crit_var[clause_idx] = abs(lit)
+                        # increment its break score
                         self.increment_break_score(abs(lit))
-                        self.update_diff(abs(lit))
+
+            # the clause is now satisfied by one fewer literal
             self.num_true_lit[clause_idx] -= 1

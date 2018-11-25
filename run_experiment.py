@@ -1,31 +1,45 @@
 import argparse
 import time
+import random
 
-from src.experiment.experiment import Experiment
-from src.experiment.utils import EntropyMeasurement
+from src.experiment.experiment import DynamicExperiment, StaticExperiment
+from src.experiment.measurement import EntropyMeasurement
 
 parser = argparse.ArgumentParser()
 
 parser.add_argument(
     'input_dir',
-    help = 'folder of input formulae',
-    type = str,
+    help='folder of input formulae',
+    type=str,
 )
 parser.add_argument(
     'sample_size',
-    help = 'number of formulae to draw',
-    type = int,
+    help='number of formulae to draw',
+    type=int,
+)
+
+experiment_type_group = parser.add_mutually_exclusive_group(required = True)
+experiment_type_group.add_argument(
+    '--dynamic',
+    help='run dynamic experiment; needs max_flips and max_tries',
+    metavar=('MAX_TRIES','MAX_FLIPS'),
+    nargs=2,
+    type=int,
 )
 
 parser.add_argument(
-    'max_tries',
-    help = 'maximum number of tries',
-    type = int,
+    '--hamming_dist',
+    help='if a value D > 0 is given, every random walk \
+    will start at an assignment a with d(a,a*) = D;\
+    has no effect for static experiments.',
+    metavar='D',
+    type=int,
 )
-parser.add_argument(
-    'max_flips',
-    help = 'maximum number of flips per try',
-    type = int,
+
+experiment_type_group.add_argument(
+    '--static',
+    help='run static experiment',
+    action='store_true'
 )
 
 solver_group = parser.add_mutually_exclusive_group(required = True)
@@ -36,20 +50,23 @@ solver_group.add_argument(
 )
 solver_group.add_argument(
     '--walksat',
-    help = 'run with WalkSAT algorithm',
+    help = 'run with WalkSAT algorithm with noise parameter RHO',
+    metavar='RHO',
     nargs = 1,
     type = float,
 )
 solver_group.add_argument(
     '--probsat_poly',
-    help = 'run with ProbSAT algorithm with polynomial phi function',
-    nargs = 2,
+    help = 'run with ProbSAT algorithm with polynomial phi function and break weight C_BREAK',
+    metavar='C_BREAK',
+    nargs = 1,
     type = float,
 )
 solver_group.add_argument(
     '--probsat_exp',
-    help = 'run with ProbSAT algorithm with exponential phi function',
-    nargs = 2,
+    help = 'run with ProbSAT algorithm with exponential phi function and break weight C_BREAK',
+    metavar='C_BREAK',
+    nargs = 1,
     type = float,
 )
 
@@ -80,6 +97,12 @@ parser.add_argument(
     action = 'store_true',
 )
 
+parser.add_argument(
+    '--seeds',
+    help='random seeds for the experiments',
+    type=int,
+    nargs='+'
+)
 
 def calc_time(seconds):
     s = seconds % 60
@@ -100,46 +123,76 @@ if __name__ == '__main__':
     elif args.probsat_poly:
         solver = 'probsat'
         setup = dict(
-            c_make = args.probsat_poly[0],
-            c_break = args.probsat_poly[1],
+            c_break = args.probsat_poly[0],
             phi = 'poly'
         )
+    elif args.probsat_exp:
+        solver = 'probsat'
+        setup = dict(
+            c_break = args.probsat_poly[0],
+            phi = 'exp'
+        )
 
+    seedtest = {}
 
     count = 0
     while count < args.repeat:
         # setup
         if args.verbose:
-            print('Experiment #{} setup... '.format(count+1), end = '')
+            print('Experiment #{} setup... '.format(count+1), end = '', flush=True)
 
-        e = Experiment(
-            args.input_dir,
-            args.sample_size,
-            solver,
-            args.max_tries,
-            args.max_flips,
-            EntropyMeasurement,
-            poolsize = args.poolsize,
-            database = args.database_file,
-            **setup,
-        )
+        # setting seed
+        if args.seeds:
+            seed = args.seeds[count % len(args.seeds)]
+        else:
+            seed = (int(time.time() * 10**5) * 39916801) % 87178291199
+
+        random.seed(seed)
+
+        if args.dynamic:
+            e = DynamicExperiment(
+                args.input_dir,
+                args.sample_size,
+                solver,
+                setup,
+                args.dynamic[0],
+                args.dynamic[1],
+                EntropyMeasurement,
+                poolsize=args.poolsize,
+                database=args.database_file,
+            )
+        elif args.static:
+            e = StaticExperiment(
+                args.input_dir,
+                args.sample_size,
+                solver,
+                setup,
+                poolsize=args.poolsize,
+                database=args.database_file,
+            )
+
+
+        if args.verbose:
+            print('seed is {}... '.format(seed), end='', flush=True)
 
         # running
         if args.verbose:
-            print('running... ',end='')
+            print('running... ',end='', flush=True)
             begin_time = time.time()
 
-        e.run_experiment()
+        # run experiment
+        e()
 
         #saving
         if args.verbose:
             time_taken = time.time() - begin_time
             print(
                 'finished in {}h {}m {}s...'.format(*calc_time(int(time_taken))),
-                end = ''
+                end = '',
+                flush=True
             )
         e.save_results()
         if args.verbose:
-            print('saved.')
+            print('saved.', flush=True)
         count += 1
 

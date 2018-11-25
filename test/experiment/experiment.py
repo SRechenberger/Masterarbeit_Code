@@ -1,13 +1,13 @@
 import unittest
 import random
 
-from src.experiment.experiment import Experiment
-from src.experiment.utils import EntropyMeasurement
+from src.experiment.experiment import DynamicExperiment
+from src.experiment.measurement import EntropyMeasurement
 from src.solver.generic_solver import Context
 from src.solver.gsat import gsat
 from src.solver.walksat import walksat
 from src.solver.probsat import probsat
-from src.solver.utils import Formula
+from src.formula import Formula
 from src.utils import *
 
 class TestExperiment(unittest.TestCase):
@@ -28,37 +28,46 @@ class TestExperiment(unittest.TestCase):
 
 
     def test_experiment_with_gsat(self):
-        experiment = Experiment(
+        experiment = DynamicExperiment(
             self.pool_dir,
             self.sample_size,
             'gsat',
-            10,self.n*3,EntropyMeasurement,
+            dict(),
+            10,self.n*3,
+            EntropyMeasurement,
             poolsize = 3
         )
-        results = experiment.run_experiment()
-        self.assertTrue(len(results),self.sample_size)
+        results = experiment()
+        self.assertEqual(len(results),self.sample_size)
+        experiment.save_results()
+
 
     def test_experiment_with_walksat(self):
-        experiment = Experiment(
+        experiment = DynamicExperiment(
             self.pool_dir,
             self.sample_size,
             'walksat',
-            10,self.n*3,EntropyMeasurement,
+            dict(rho=0.57),
+            10,self.n*3,
+            EntropyMeasurement,
             poolsize = 3,
-            rho = 0.57
         )
-        results = experiment.run_experiment()
-        self.assertTrue(len(results),self.sample_size)
+        results = experiment()
+        self.assertEqual(len(results),self.sample_size)
+        experiment.save_results()
+
 
     def test_experiment_with_probsat(self):
-        experiment = Experiment(
+        experiment = DynamicExperiment(
             self.pool_dir,
             self.sample_size,
             'probsat',
-            10,self.n*3,EntropyMeasurement,
+            dict(c_break=2.3,phi='poly'),
+            10,self.n*3,
+            EntropyMeasurement,
             poolsize = 3,
-            c_make = 0.0, c_break = 2.3, phi = 'poly'
         )
-        results = experiment.run_experiment()
-        self.assertTrue(len(results),self.sample_size)
+        results = experiment()
+        self.assertEqual(len(results),self.sample_size)
+        experiment.save_results()
 

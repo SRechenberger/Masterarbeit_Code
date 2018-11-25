@@ -1,13 +1,17 @@
 import unittest
 import random
 import time
+import numpy as np
 
-from src.solver.utils import Formula
-from src.experiment.utils import Measurement
+from scipy.stats import chisquare
+
+from src.formula import Formula, Assignment
+from src.solver.utils import Falselist
+from src.experiment.measurement import Measurement
 
 
 class TestMeasurement(Measurement):
-    def __init__(self, formula):
+    def __init__(self, formula, *more_args):
         self.flips = 0
         self.begin_time = time.time()
 
@@ -18,15 +22,108 @@ class TestMeasurement(Measurement):
         return time.time() - self.begin_time
 
 
+class TestDistribution(unittest.TestCase):
+    def setUp(self):
+        random.seed()
+
+        cases = 10
+        self.eps = 2**(-30)
+
+        self.n = 128
+        self.r = 4.2
+
+        self.significance_level = 0.01 if __debug__ else 0.05
+        self.sample_size = 10 if __debug__ else 100
+        self.repeat = 10 if __debug__ else 100
+        self.max_failure = self.repeat * 0.2
+        self.jump_range = self.n // 10
+
+        self.formulae = [
+            Formula.generate_satisfiable_formula(self.n,self.r)
+            for _ in range(0,cases)
+        ]
+
+
+    def generic_test_distribution_against_heuristic(self, context_constr, heuristik, distribution):
+        for f in self.formulae:
+            n = f.num_vars
+            assgn = Assignment.generate_random_assignment(n)
+            ctx = context_constr(f,assgn)
+
+            rejections = 0
+            for r in range(0,self.repeat):
+                observed_distr = np.zeros(n+1)
+
+                # measure empirical distribution
+                for _ in range(0,self.sample_size):
+                    x = heuristik(ctx)
+                    observed_distr[x] += 1
+
+
+                # calculate expected distribution
+                expected_distr = distribution(ctx)
+                for i,_ in enumerate(expected_distr):
+                    expected_distr[i] *= self.sample_size
+
+
+                # simple length check
+                self.assertEqual(len(observed_distr),len(expected_distr))
+
+
+                # make buckets with at least 5 observed values in every one
+                obs_buckets = [0]
+                exp_buckets = [0]
+                for o,e in zip(observed_distr, expected_distr):
+                    obs_buckets[-1] += o
+                    exp_buckets[-1] += e
+                    if obs_buckets[-1] >= 5:
+                        obs_buckets.append(0)
+                        exp_buckets.append(0)
+
+                #print(obs_buckets,exp_buckets,sep='\n')
+                o_last = obs_buckets.pop()
+                e_last = exp_buckets.pop()
+                obs_buckets[-1] += o_last
+                exp_buckets[-1] += e_last
+                # print(obs_buckets,exp_buckets,sep='\n')
+
+                observed_distr = np.array(obs_buckets)
+                expected_distr = np.array(exp_buckets)
+
+                self.assertEqual(len(observed_distr),len(expected_distr))
+
+                # Chi-Square-Test
+
+                if len(observed_distr) > 1:
+                    chi_s, p_val = chisquare(observed_distr, f_exp=expected_distr, axis = None)
+                    if p_val < self.significance_level:
+                        rejections += 1
+
+                       # if __debug__:
+                       #     print("\nX² = {}; p = {}".format(chi_s, p_val))
+                       #     print("observed:\n{}".format(observed_distr))
+                       #     print("expected:\n{}".format(expected_distr))
+
+                else:
+                    self.assertAlmostEqual(observed_distr[0], expected_distr[0], delta=self.eps)
+
+
+            # go to another assignment
+            for flip in random.sample(range(1,n),self.jump_range):
+                ctx.update(flip)
+
+            # print("rejections = {}".format(rejections))
+            self.assertLessEqual(rejections, self.max_failure)
+
+
 class TestSolver(unittest.TestCase):
     def setUp(self):
         random.seed()
 
-        cases = 1 if __debug__ else 10
-        success_rate = 10
+        cases = 1 if __debug__ else 100
 
-        n = 128
-        r = 4.0
+        n = 128 
+        r = 4.2
 
         formulae = [
             Formula.generate_satisfiable_formula(n,r)
@@ -34,12 +131,12 @@ class TestSolver(unittest.TestCase):
         ]
 
         self.solver_setup = dict(
-            max_flips     = n * 5,
+            max_flips     = n*5,
             max_tries     = 100,
             formulae      = formulae,
             max_run_time  = 20,
             cases         = cases,
-            min_successes = cases // 10,
+            min_successes = cases // 100,
         )
 
 
@@ -54,17 +151,14 @@ class TestSolver(unittest.TestCase):
                 self.solver_setup['max_flips'],
             )
             if assgn:
-                self.assertTrue(measurement.flips > 0)
+                self.assertGreater(measurement.flips, 0)
+                self.assertTrue(formula.is_satisfied_by(assgn))
                 successes += 1
 
             if measurement.get_run_time() >= self.solver_setup['max_run_time']:
                 run_time_exceeded += 1
 
-        self.assertTrue(successes >= self.solver_setup['min_successes'])
-        if not __debug__:
-            self.assertTrue(
-                run_time_exceeded < self.solver_setup['cases'] - self.solver_setup['min_successes']
-            )
+        self.assertGreaterEqual(successes, self.solver_setup['min_successes'])
 
 
     def test_solver(self):

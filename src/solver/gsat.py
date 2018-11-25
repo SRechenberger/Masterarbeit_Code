@@ -1,28 +1,30 @@
-from src.solver.generic_solver import Context, generic_sls
-from src.solver.utils import Formula, Assignment, Scores, Falselist
-from collections.abc import Sequence
 import random
+import sys
+
+from src.solver.generic_solver import Context, generic_sls
+from src.solver.utils import DiffScores, Scores, Falselist
+from src.formula import Formula, Assignment
 from src.utils import *
+
 
 class GSATContext(Context):
     def __init__(self, formula, assgn):
-        if __debug__:
-            instance_check('formula', formula, Formula)
-            instance_check('assgn', assgn, Assignment)
+        assert isinstance(formula, Formula),\
+            "formula = {} :: {} is no Formula".format(formula, type(formula))
+        assert isinstance(assgn, Assignment),\
+            "assgn = {} :: {} is no Assignment".format(assgn, type(assgn))
 
         self.formula = formula
         self.variables = list(range(1,formula.num_vars+1))
         self.assgn = assgn
         self.falselist = Falselist()
-        self.score = Scores(formula, assgn, self.falselist)
+        self.score = DiffScores(formula, assgn, self.falselist)
 
     def update(self, flipped_var):
-        if __debug__:
-            type_check('flipped_var', flipped_var, int)
-            value_check(
-                'flipped_var', flipped_var,
-                strict_pos = strict_positive
-            )
+        assert isinstance(flipped_var, int),\
+            "flipped_var = {} :: {} is no int".format(flipped_var, type(flipped_var))
+        assert flipped_var > 0,\
+            "flipped_var = {} <= 0".format(flipped_var)
 
         self.score.flip(
             flipped_var,
@@ -35,37 +37,34 @@ class GSATContext(Context):
         return len(self.falselist) == 0
 
 
-def max_seq(seq, key=lambda x:x):
-    if __debug__:
-        instance_check('seq',seq,Sequence)
-        value_check('seq',seq,non_empty = lambda x: len(x) != 0)
+def gsat_distribution(context):
+    # begin with an empty distribution
+    distr = [0] * (context.formula.num_vars + 1)
 
-    max_seq = [seq[0]]
-    max_val = key(seq[0])
-    for x in seq[1:]:
-        if key(x) > max_val:
-            max_seq = [x]
-            max_val = key(x)
+    _, best = context.score.get_best_bucket()
+    for i in best:
+        distr[i] = 1/len(best)
 
-        elif key(x) == max_val:
-            max_seq.append(x)
+    assert abs(sum(distr) - 1) < 0.001,\
+        "sub(distr) = {} != 1".format(sum(distr))
 
-    return max_seq
+    return distr
 
 
-def gsat_heuristic(context):
-    """ Sucks complexitywise; needs to be somehow constant in |Var(F)| """
+def gsat_heuristic(context, rand_gen=random):
+    score, best = context.score.get_best_bucket()
 
-    best = context.score.get_best_bucket()
+    return rand_gen.choice(list(best))
 
-    return random.choice(list(best))
 
-def gsat(formula, measurement, max_tries, max_flips):
+def gsat(formula, measurement_constructor, max_tries, max_flips, hamming_dist=0, rand_gen=random):
     return generic_sls(
         gsat_heuristic,
         formula,
         max_tries,
         max_flips,
         GSATContext,
-        measurement
+        measurement_constructor,
+        hamming_dist=hamming_dist,
+        rand_gen=rand_gen,
     )
