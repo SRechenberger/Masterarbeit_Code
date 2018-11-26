@@ -1,8 +1,22 @@
+"""
+# Module src.formula
+
+## Contents
+    - class Formula
+    - class Assignment
+
+## Side Effects
+    - if python version < 3.6, a simple version of random.choices
+      is added to module random
+"""
+
+
 import random
 import platform
 import os
 import re
 import multiprocessing as mp
+
 from collections.abc import Sequence
 
 
@@ -12,16 +26,19 @@ if platform.sys.version_info.major < 3:
 
 if platform.sys.version_info.minor < 6:
 
-    def choices(seq, weights = None):
+    def choices(seq, weights=None):
+        """ simplified version of random.choices included in python 3.6 """
         if not weights:
-            weights = [1/len(seq) for _ in range(0,len(seq))]
+            weights = [1/len(seq) for _ in range(0, len(seq))]
 
         acc = 0
         dice = random.random()
-        for p,x in zip(weights, seq):
-            acc += p
+        for prob, val in zip(weights, seq):
+            acc += prob
             if acc > dice:
-                return [x]
+                return [val]
+
+        return []
 
     random.choices = choices
 
@@ -29,7 +46,7 @@ if platform.sys.version_info.minor < 6:
 class Formula:
     """ CNF formulae in DIMACS format """
 
-    def __init__(self, dimacs = None, clauses = None, num_vars = None, sat_assignment = None):
+    def __init__(self, dimacs=None, clauses=None, num_vars=None, sat_assignment=None):
         """ Load a formula from a .cnf (DIMACS) file """
         # check for argument validity
         assert not dimacs or isinstance(dimacs, str),\
@@ -41,7 +58,10 @@ class Formula:
         assert not num_vars or num_vars > 0,\
             "num_vars = {} <= 0".format(num_vars)
         assert not sat_assignment or isinstance(sat_assignment, Assignment),\
-            "sat_assignment = {} :: {} is no Assignment".format(sat_assignment, type(sat_assignment))
+            "sat_assignment = {} :: {} is no Assignment".format(
+                sat_assignment,
+                type(sat_assignment)
+            )
 
 
         # init variables
@@ -55,22 +75,22 @@ class Formula:
 
         # parse the file.
         if dimacs:
-            r = re.compile(r'-?\d+')           # find numbers
-            rh = re.compile(r'-?0x[0-9a-fA-F]+') # find hex numbers
+            numbers = re.compile(r'-?\d+')           # find numbers
+            hex_numbers = re.compile(r'-?0x[0-9a-fA-F]+') # find hex numbers
 
             for line in dimacs.splitlines():
                 if line[0] == 'c':
                     if line.startswith('c assgn'):
-                        hex_val, = rh.findall(line)
+                        hex_val, = hex_numbers.findall(line)
                     else:
                         self.comments.append(line)
                 elif line[0] == 'p':
-                    n, m = r.findall(line)
-                    self.num_vars = int(n)
-                    self.num_clauses = int(m)
-                    self.satisfying_assignment = Assignment(int(hex_val,16), int(n))
+                    num_vars, num_clauses = numbers.findall(line)
+                    self.num_vars = int(num_vars)
+                    self.num_clauses = int(num_clauses)
+                    self.satisfying_assignment = Assignment(int(hex_val, 16), int(num_vars))
                 else:
-                    self.clauses.append(list(map(int, r.findall(line)))[:-1])
+                    self.clauses.append(list(map(int, numbers.findall(line)))[:-1])
                     if len(self.clauses[-1]) > self.max_clause_length:
                         self.max_clause_length = len(self.clauses[-1])
 
@@ -80,14 +100,14 @@ class Formula:
             self.clauses = clauses
             self.num_clauses = len(clauses)
             self.num_vars = num_vars
-            self.max_clause_length = max(map(len,clauses))
+            self.max_clause_length = max(map(len, clauses))
 
         else:
             raise ValueError(
                 "Either 'dimacs' or 'clauses', 'num_vars' and 'sat_assignment' must be provided"
             )
 
-        self.occurrences = [[] for _ in range(0,self.num_vars*2+1)];
+        self.occurrences = [[] for _ in range(0, self.num_vars*2+1)]
 
         for clause_idx, clause in enumerate(self.clauses):
             for lit in clause:
@@ -104,31 +124,33 @@ class Formula:
     def __eq__(self, formula):
         if not formula:
             return False
-        else:
-            return all([
-                self.num_vars == formula.num_vars,
-                self.clauses == formula.clauses,
-                str(self.satisfying_assignment) == str(formula.satisfying_assignment)
-            ])
+
+        return all([
+            self.num_vars == formula.num_vars,
+            self.clauses == formula.clauses,
+            str(self.satisfying_assignment) == str(formula.satisfying_assignment)
+        ])
+
 
     def __str__(self):
         """ Represent formula in DIMACS format """
 
-        toReturn = ''
+        to_return = "\n".join(self.comments)
 
-        for comment in self.comments:
-            toReturn += comment
-        toReturn += 'c assgn {}\n'.format(str(self.satisfying_assignment))
-        toReturn += 'p cnf {} {}\n'.format(self.num_vars, self.num_clauses)
+        #for comment in self.comments:
+        #    to_return += comment
+        to_return += 'c assgn {}\n'.format(str(self.satisfying_assignment))
+        to_return += 'p cnf {} {}\n'.format(self.num_vars, self.num_clauses)
         for clause in self.clauses:
             for literal in clause:
-                toReturn += '{} '.format(literal)
-            toReturn += '0\n'
+                to_return += '{} '.format(literal)
+            to_return += '0\n'
 
-        return toReturn
+        return to_return
 
 
     def is_satisfied_by(self, assignment):
+        """ Checks, whether self is satisfied by the given assignment """
         assert isinstance(assignment, Assignment),\
             "assignment is no Assignment"
 
@@ -145,6 +167,7 @@ class Formula:
 
 
     def get_occurrences(self, literal):
+        """ Returns the list of occurrences of literal """
         assert isinstance(literal, int),\
             "literal = {} :: {} is no int".format(literal, type(literal))
         assert literal != 0,\
@@ -153,7 +176,9 @@ class Formula:
         return self.occurrences[self.num_vars + literal]
 
 
-    def generate_satisfiable_formula(num_vars, ratio, clause_length = 3, rand_gen=random):
+    @staticmethod
+    def generate_satisfiable_formula(num_vars, ratio, clause_length=3, rand_gen=random):
+        """ Randomly generates a satisfying formula """
         assert isinstance(clause_length, int),\
             "clause_length = {} :: {} is no int".format(clause_length, type(clause_length))
         assert clause_length > 0,\
@@ -175,32 +200,32 @@ class Formula:
             rand_gen=rand_gen,
         )
 
-
         num_clauses = int(ratio * num_vars)
         clauses = []
-        p={1: 0.191, 2: 0.118, 3: 0.073}
-        for i in range(0, num_clauses + 1):
-            variables = rand_gen.sample(range(1,num_vars+1), clause_length)
+        probs = {1: 0.191, 2: 0.118, 3: 0.073}
+        for _ in range(0, num_clauses + 1):
+            variables = rand_gen.sample(range(1, num_vars+1), clause_length)
 
-            acc = [[]]
+            all_clauses = [[]]
             for var in variables:
-                acc = list(map(lambda xs: [var] + xs, acc)) + list(map(lambda xs: [-var] + xs, acc))
+                all_clauses = list(map(lambda clause: [var] + clause, all_clauses)) \
+                            + list(map(lambda clause: [-var] + clause, all_clauses))
 
-            f = lambda lit: 1 if satisfying_assignment.is_true(lit) else 0
-            cs, ws = [], []
-            for clause in acc:
-                x = sum(map(f,clause))
-                if x > 0:
-                    cs.append(clause)
-                    ws.append(p[x])
+            sat = lambda lit: 1 if satisfying_assignment.is_true(lit) else 0
+            possible_clauses, weights = [], []
+            for clause in all_clauses:
+                sat_vars = sum(map(sat, clause))
+                if sat_vars > 0:
+                    possible_clauses.append(clause)
+                    weights.append(probs[sat_vars])
 
-            c, = rand_gen.choices(cs,weights=ws)
-            clauses.append(c)
+            clause, = rand_gen.choices(possible_clauses, weights=weights)
+            clauses.append(clause)
 
         formula = Formula(
-            clauses = clauses,
-            num_vars = num_vars,
-            sat_assignment = satisfying_assignment
+            clauses=clauses,
+            num_vars=num_vars,
+            sat_assignment=satisfying_assignment
         )
 
         assert formula.is_satisfied_by(satisfying_assignment),\
@@ -209,14 +234,16 @@ class Formula:
         return formula
 
 
+    @staticmethod
     def generate_formula_pool(
             directory,
             number,
             num_vars,
             ratio,
-            clause_length = 3,
-            poolsize = 1,
-            verbose = False):
+            clause_length=3,
+            poolsize=1,
+            verbose=False):
+        """ Generates a set of random formulae and writes them into the given directory """
         assert isinstance(directory, str),\
             "directory = {} :: {} is no str".format(directory, type(directory))
         assert isinstance(number, int),\
@@ -241,10 +268,10 @@ class Formula:
         except FileExistsError:
             pass
 
-        with mp.Pool(processes = 3) as pool:
+        with mp.Pool(processes=poolsize) as pool:
             future_formulae = []
-            for _ in range(0,number):
-                ff = pool.apply_async(
+            for _ in range(0, number):
+                future_formula = pool.apply_async(
                     Formula.generate_satisfiable_formula,
                     (
                         num_vars,
@@ -252,19 +279,19 @@ class Formula:
                         clause_length
                     )
                 )
-                future_formulae.append(ff)
+                future_formulae.append(future_formula)
 
             idx = 0
-            for ff in future_formulae:
-                f = ff.get()
+            for future_formula in future_formulae:
+                formula = future_formula.get()
                 filename = 'n{}-r{:.2f}-k{}-{:016X}.cnf'.format(
                     num_vars,
                     ratio,
                     clause_length,
-                    hash(f),
+                    hash(formula),
                 )
-                with open(os.path.join(directory,filename),'w') as target:
-                    target.write(str(f))
+                with open(os.path.join(directory, filename), 'w') as target:
+                    target.write(str(formula))
 
                 del future_formulae[idx]
                 idx += 1
@@ -272,7 +299,7 @@ class Formula:
                 if verbose:
                     print(
                         'File {} written.'.format(
-                            os.path.join(directory,filename)
+                            os.path.join(directory, filename)
                         )
                     )
 
@@ -295,6 +322,7 @@ class Formula:
 class Assignment:
     """ Assignment modelled as an array of bits """
 
+    @staticmethod
     def generate_random_assignment(num_vars, rand_gen=random):
         """ Randomly generating a number between
         0 and 2^num_vars, converting it into an assignment,
@@ -306,30 +334,33 @@ class Assignment:
             "num_vars = {} <= 0".format(num_vars)
 
         return Assignment(
-            rand_gen.randrange(0,pow(2,num_vars)),
+            rand_gen.randrange(0, pow(2, num_vars)),
             num_vars,
         )
 
 
+    @staticmethod
     def atoms_from_integer(number):
         """ Takes a number and converts it into a list of booleans """
         atoms = []
-        n = number
-        while n > 0:
-            atoms.append(n % 2 == 1)
-            n //= 2
+        num = number
+        while num > 0:
+            atoms.append(num % 2 == 1)
+            num //= 2
+
         return atoms
 
 
+    @staticmethod
     def integer_from_atoms(atoms):
         """ Takes a list of booleans and converts it into a number """
-        n = 0
+        num = 0
         tmp = atoms.copy()
         while tmp:
-            n *= 2
-            n += 1 if tmp.pop() else 0
+            num *= 2
+            num += 1 if tmp.pop() else 0
 
-        return n
+        return num
 
 
     def flip(self, var_index):
@@ -363,18 +394,19 @@ class Assignment:
 
 
     def is_true(self, literal):
+        """ Checks, whether the given literal is true or false under self """
         assert isinstance(literal, int),\
             "literal = {} :: {} is no int".format(literal, type(literal))
         assert literal != 0,\
             "literal = {} == 0".format(literal)
 
-        t = self.get_value(abs(literal))
-        return t if literal > 0 else not t
+        val = self.get_value(abs(literal))
+        return val if literal > 0 else not val
 
 
     def __init__(self, atoms, num_vars):
         """ Generate an assignment from an integer or a list of booleans """
-        assert isinstance(atoms, int) or isinstance(atoms, list),\
+        assert isinstance(atoms, (int, list)),\
             "atoms = {} :: {} is neither int nor list".format(atoms, type(atoms))
         assert not isinstance(atoms, list) or len(atoms) == num_vars,\
             "len(atoms) = {} != {} = num_vars".format(len(atoms), num_vars)
@@ -399,6 +431,7 @@ class Assignment:
 
 
     def hamming_dist(self, assgn):
+        """ Calculates the hamming distance between self and assgn """
         assert isinstance(assgn, Assignment),\
             "assgn = {} :: {} is no Assignment".format(assgn, type(assgn))
         assert assgn.num_vars == self.num_vars,\
@@ -408,7 +441,7 @@ class Assignment:
             )
 
         dist = 0
-        for i in range(1,self.num_vars+1):
+        for i in range(1, self.num_vars+1):
             dist += 1 if self[i] != assgn[i] else 0
 
         return dist
@@ -423,8 +456,8 @@ class Assignment:
         different = []
         same = []
 
-        for i, x, y in zip(range(1,self.num_vars+1), iter(self), iter(assgn)):
-            if x == y:
+        for i, a_i, b_i in zip(range(1, self.num_vars+1), iter(self), iter(assgn)):
+            if a_i == b_i:
                 same.append(i)
 
             else:
@@ -437,7 +470,7 @@ class Assignment:
         """ Returns the bitwise negation of the assignment """
 
         atoms = self.atoms.copy()
-        for i in range(0,len(atoms)):
+        for i in enumerate(atoms):
             atoms[i] = not atoms[i]
 
         return Assignment(
@@ -447,8 +480,6 @@ class Assignment:
 
 
     def copy(self):
+        """ Copies the assignment """
+        # TODO isn't there a built in protocol?
         return type(self)(self.atoms.copy(), self.num_vars)
-
-
-
-
