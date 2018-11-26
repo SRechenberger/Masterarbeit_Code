@@ -3,9 +3,10 @@ import random
 import os
 import math
 
+from functools import partial
+
 from src.solver.utils import Formula
 from src.experiment.utils import FormulaSupply, Queue, WindowEntropy, entropy, mutual_information, BloomFilter
-from functools import partial
 from src.analysis.utils import binomial_vec
 
 from scipy.stats import binom
