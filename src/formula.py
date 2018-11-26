@@ -1,11 +1,11 @@
 """
-# Module src.formula
+## Module src.formula
 
-## Contents
+### Contents
     - class Formula
     - class Assignment
 
-## Side Effects
+### Side Effects
     - if python version < 3.6, a simple version of random.choices
       is added to module random
 """
