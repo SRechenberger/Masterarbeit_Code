@@ -470,7 +470,7 @@ class Assignment:
         """ Returns the bitwise negation of the assignment """
 
         atoms = self.atoms.copy()
-        for i in enumerate(atoms):
+        for i, _ in enumerate(atoms):
             atoms[i] = not atoms[i]
 
         return Assignment(
