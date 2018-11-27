@@ -556,7 +556,7 @@ class StaticExperiment(AbstractExperiment):
             )
         )
         # initialize the bloom filter
-        measured_states = BloomFilter(max_elements=total_num_states, error_rate=0.01)
+        measured_states = BloomFilter(max_elements=total_num_states, error_rate=0.005)
 
         # initialize three array:
         #   state_count[i] counts the number of states at distance i
