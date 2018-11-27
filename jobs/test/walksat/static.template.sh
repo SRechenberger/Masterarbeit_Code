@@ -1,6 +1,6 @@
 #!/bin/bash
 #MSUB -l nodes=1:ppn=16
-#MSUB -l walltime=1:00:00
+#MSUB -l walltime=2:00:00
 #MSUB -l pmem=3000mb
 #MSUB -N walksat-static-test
 #MSUB -o /work/ul/ul_student/ul_pwn14/output/walksat_static_test
