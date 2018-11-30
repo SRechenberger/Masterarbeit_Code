@@ -589,9 +589,8 @@ class StaticExperiment(AbstractExperiment):
                 # copy the left end assignment
                 current_assgn = furthest_assgn.copy()
                 # get a path to a random node 'distance' steps away
-                differ, _ = current_assgn.hamming_sets(sat_assgn)
                 # walk to the start node of the path
-                for step in rand_gen.sample(differ, distance):
+                for step in rand_gen.sample(range(1,n+1), distance):
                     current_assgn.flip(step)
 
                 # init context
