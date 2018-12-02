@@ -371,6 +371,7 @@ class Assignment:
             "var_index = {} <= 0".format(var_index)
 
         self.atoms[var_index-1] = not self.atoms[var_index-1]
+        self.number = self.number ^ (1 << var_index - 1)
 
 
     def get_value(self, var_index):
@@ -387,6 +388,7 @@ class Assignment:
         return self.get_value(var_index)
 
     def __setitem__(self, var_index, value):
+        self.number = self.number ^ ((1 if value else 0) << var_index - 1)
         self.atoms[var_index] = True if value else False
 
     def __delitem__(self, var_index):
@@ -413,10 +415,12 @@ class Assignment:
 
         if isinstance(atoms, list):
             self.atoms = atoms
+            self.number = Assignment.integer_from_atoms(atoms)
 
         else:
             self.atoms = Assignment.atoms_from_integer(atoms)
             self.atoms += [False]*(num_vars-len(self.atoms))
+            self.number = atoms
 
         self.num_vars = num_vars
 
