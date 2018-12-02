@@ -19,6 +19,17 @@ class TestAssignment(unittest.TestCase):
             self.assertEqual(str(assgn1),str(assgn2))
 
 
+    def test_num(self):
+        num_vars = 1000
+        assgn = Assignment.generate_random_assignment(num_vars)
+        for i in range(0, 1000):
+            x = random.randrange(0,num_vars)+1
+            assgn.flip(x)
+            self.assertEqual(
+                assgn.number,
+                Assignment.integer_from_atoms(assgn.atoms)
+            )
+
     def test_flip(self):
         for i in range(1,1000):
             num_vars = random.randrange(1,i+1)
