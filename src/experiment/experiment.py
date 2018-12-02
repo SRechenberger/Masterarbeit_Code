@@ -556,7 +556,7 @@ class StaticExperiment(AbstractExperiment):
             )
         )
         # initialize the bloom filter
-        measured_states = BloomFilter(max_elements=total_num_states, error_rate=0.005)
+        measured_states = set() # BloomFilter(max_elements=total_num_states, error_rate=0.005)
 
         # initialize three array:
         #   state_count[i] counts the number of states at distance i
@@ -606,9 +606,9 @@ class StaticExperiment(AbstractExperiment):
                     # calculate distribution
                     distr = distr_f(ctx)
                     # current hamming distance
-                    assgn_str = str(current_assgn)
+                    assgn_num = current_assgn.number
                     # if this state was not already measured
-                    if assgn_str not in measured_states:
+                    if assgn_num not in measured_states:
                         # increment counter for this hamming distance
                         state_count[hamming_dist] += 1
                         # calculate incrementation probability
@@ -632,7 +632,7 @@ class StaticExperiment(AbstractExperiment):
                         state_entropy_min[hamming_dist] = min(state_entropy_min[hamming_dist],h)
 
                         # add this assignment to the set of measured states
-                        measured_states.add(assgn_str)
+                        measured_states.add(assgn_num)
 
                     # remove walked step form differ
                     path_set.remove(step)
