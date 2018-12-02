@@ -17,5 +17,5 @@ python -O run_experiment.py $WORK/input/n`echo $N` $X \
   --static \
   --probsat_poly 2.3 \
   --poolsize 16 \
-  --database_file $WORK/output/experiments.db \
+  --database_file $WORK/output/probsat_static_experiments.db \
   --verbose

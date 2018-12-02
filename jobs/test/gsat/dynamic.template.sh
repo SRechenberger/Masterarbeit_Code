@@ -17,5 +17,5 @@ python -O run_experiment.py $WORK/input/n`echo $N` $X \
   --dynamic $((N/2)) $(($N*5)) \
   --gsat \
   --poolsize 16 \
-  --database_file $WORK/output/experiments.db \
+  --database_file $WORK/output/gsat_dynamic_experiments.db \
   --verbose

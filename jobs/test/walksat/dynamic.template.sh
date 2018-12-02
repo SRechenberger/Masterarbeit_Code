@@ -17,5 +17,5 @@ python -O run_experiment.py $WORK/input/n`echo $N` $X \
   --dynamic $((N/2)) $(($N*5)) \
   --walksat 0.57 \
   --poolsize 16 \
-  --database_file $WORK/output/experiments.db \
+  --database_file $WORK/output/walkat_dynamic_experiments.db \
   --verbose
