@@ -575,10 +575,8 @@ class StaticExperiment(AbstractExperiment):
         state_entropy_min[n], state_entropy_max[n] = 0, 0
         # entropy at the ends is 0, because there are no uncertainties
         increment_prob = [0] * (n+1)
-        decrement_prob = [0] * (n+1)
         # at the negated assignment every flip is good; on the other end, every flip is bad
         increment_prob[n] = 1
-        decrement_prob[0] = 1
 
         # for each hamming distance beginning with 1
         for distance in range(1,n // 2 + 1):
@@ -616,14 +614,7 @@ class StaticExperiment(AbstractExperiment):
                         for i in path_set:
                             prob += distr[i]
 
-                        co_prob = distr[0] * len(check_set)/n
-                        for i in check_set:
-                            co_prob += distr[i]
-
                         increment_prob[hamming_dist] += prob
-                        decrement_prob[hamming_dist] += co_prob
-                        assert abs(prob + co_prob - 1) <= 2**(-20),\
-                            "d={}: prob + co_prob = {} + {} != {} {}".format(hamming_dist, prob, co_prob, prob+co_prob, distr)
 
                         # calculate state entropy
                         h = arr_entropy(distr)
@@ -650,8 +641,8 @@ class StaticExperiment(AbstractExperiment):
         for i, (h,c) in enumerate(zip(state_entropy, state_count)):
             state_entropy[i] = h/c
 
-        for i, (inc, dec) in enumerate(zip(increment_prob, decrement_prob)):
-            increment_prob[i] = inc/(inc+dec)
+        for i, (inc, c) in enumerate(zip(increment_prob, state_count)):
+            increment_prob[i] = inc/c
 
         return dict(
             formula_file=fp,
