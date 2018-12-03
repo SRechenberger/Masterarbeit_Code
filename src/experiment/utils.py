@@ -184,27 +184,3 @@ class FormulaSupply:
 
   def __len__(self):
     return self.length
-
-
-class BloomFilter:
-    def __hash_func(self, value, k=0):
-        return (hash(value) + (hash(value) + (11*13+1)) ** k) % self.m
-
-
-    def __init__(self, max_elements=1000, error_rate=0.1):
-        self.m = math.ceil(max_elements * math.log(error_rate,.5)/math.log(2))
-        self.k = math.ceil(math.log(2) * self.m/max_elements)
-        self.array = [False] * self.m
-
-
-    def add(self, value):
-        for k in range(0, self.k):
-            self.array[self.__hash_func(value, k)] = True
-
-
-    def __contains__(self, value):
-        for k in range(0, self.k):
-            if not self.array[self.__hash_func(value, k)]:
-                return False
-
-        return True
