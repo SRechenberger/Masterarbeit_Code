@@ -25,7 +25,8 @@ def probsat_distribution(max_occ, c_break, phi = 'poly'):
     func1, func = functions[phi]
     breaks = [func1(x,c_break) for x in range(0,max_occ+1)]
     def probsat_distr(context):
-        f = lambda i: func(breaks[context.score.get_break_score(i)])
+        get_break_score = context.score.get_break_score
+        f = lambda i: func(breaks[get_break_score(i)])
         distr = [0] * (context.formula.num_vars + 1)
 
         false_clauses = len(context.falselist)
@@ -33,8 +34,9 @@ def probsat_distribution(max_occ, c_break, phi = 'poly'):
         if false_clauses <= 0:
             distr[0] = 1
 
+        clauses = context.formula.clauses
         for clause_idx in context.falselist:
-            clause = context.formula.clauses[clause_idx]
+            clause = clauses[clause_idx]
             score_sum = sum(map(f,map(abs,clause)))
             for var in map(abs, clause):
                 # probability
