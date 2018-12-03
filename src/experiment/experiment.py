@@ -13,8 +13,6 @@ from src.solver.probsat import probsat, probsat_distribution
 
 from src.experiment.utils import FormulaSupply, arr_entropy
 
-from src.experiment.utils import BloomFilter
-
 
 CREATE_EXPERIMENT = """
 CREATE TABLE IF NOT EXISTS experiment
@@ -546,7 +544,7 @@ class StaticExperiment(AbstractExperiment):
         # init distribution function
         distr_f = DISTRS[self.solver](formula)(**self.solver_params)
 
-        path_count = lambda i: int(math.log(i)) + 1
+        path_count = lambda i: int(math.log(i, 2)) + 1
 
         # calculate the total number of measured states
         total_num_states = sum(
@@ -556,7 +554,7 @@ class StaticExperiment(AbstractExperiment):
             )
         )
         # initialize the bloom filter
-        measured_states = set() # BloomFilter(max_elements=total_num_states, error_rate=0.005)
+        measured_states = set()
 
         # initialize three array:
         #   state_count[i] counts the number of states at distance i
