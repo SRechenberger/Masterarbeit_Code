@@ -41,6 +41,26 @@ def update_entropy_data(data, curr_entropy, curr_hamming_dist):
     data['count'] += 1
 
 
+class RuntimeMeasurement(Measurement):
+    def __init__(self, formula, window_width):
+        self.runs = 0
+        self.searches = []
+
+    def init_run(self, assng):
+        self.flips = 0
+
+    def end_run(self, success=False):
+        self.searches.append(
+            dict(
+                flips=self.flips,
+                success=self.success
+            )
+        )
+
+    def count(self, flip):
+        self.flips += 1
+
+
 class EntropyMeasurement(Measurement):
 
     """ Counts probability distribution of
@@ -76,6 +96,7 @@ class EntropyMeasurement(Measurement):
         assert flip > 0,\
             "flip = {} <= 0".format(flip)
 
+        self.steps += 1
         self.simple_entropy_tracker.count(flip)
         h_tmp = self.simple_entropy_tracker.get_entropy()
         if h_tmp:
