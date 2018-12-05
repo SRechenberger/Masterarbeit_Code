@@ -1,9 +1,10 @@
 import argparse
 import time
 import random
+import os
 
 from src.experiment.experiment import DynamicExperiment, StaticExperiment
-from src.experiment.measurement import EntropyMeasurement
+from src.experiment.measurement import EntropyMeasurement, RuntimeMeasurement
 
 parser = argparse.ArgumentParser()
 
@@ -56,15 +57,8 @@ solver_group.add_argument(
     type = float,
 )
 solver_group.add_argument(
-    '--probsat_poly',
+    '--probsat',
     help = 'run with ProbSAT algorithm with polynomial phi function and break weight C_BREAK',
-    metavar='C_BREAK',
-    nargs = 1,
-    type = float,
-)
-solver_group.add_argument(
-    '--probsat_exp',
-    help = 'run with ProbSAT algorithm with exponential phi function and break weight C_BREAK',
     metavar='C_BREAK',
     nargs = 1,
     type = float,
@@ -120,17 +114,11 @@ if __name__ == '__main__':
     elif args.walksat:
         solver = 'walksat'
         setup = dict(rho = args.walksat[0])
-    elif args.probsat_poly:
+    elif args.probsat:
         solver = 'probsat'
         setup = dict(
             c_break = args.probsat_poly[0],
             phi = 'poly'
-        )
-    elif args.probsat_exp:
-        solver = 'probsat'
-        setup = dict(
-            c_break = args.probsat_poly[0],
-            phi = 'exp'
         )
 
     seedtest = {}
@@ -151,8 +139,7 @@ if __name__ == '__main__':
 
         if args.dynamic:
             e = DynamicExperiment(
-                args.input_dir,
-                args.sample_size,
+                os.listdir(args.input_dir),
                 solver,
                 setup,
                 args.dynamic[0],
@@ -163,8 +150,7 @@ if __name__ == '__main__':
             )
         elif args.static:
             e = StaticExperiment(
-                args.input_dir,
-                args.sample_size,
+                os.listdir(args.input_dir),
                 solver,
                 setup,
                 poolsize=args.poolsize,
