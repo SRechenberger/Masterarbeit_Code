@@ -43,19 +43,11 @@ def update_entropy_data(data, curr_entropy, curr_hamming_dist):
 
 class RuntimeMeasurement(Measurement):
     def __init__(self, formula, window_width):
-        self.runs = 0
-        self.searches = []
-
-    def init_run(self, assng):
         self.flips = 0
+        self.success = False
 
     def end_run(self, success=False):
-        self.searches.append(
-            dict(
-                flips=self.flips,
-                success=self.success
-            )
-        )
+        self.success = success
 
     def count(self, flip):
         self.flips += 1
