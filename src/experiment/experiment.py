@@ -153,6 +153,25 @@ INSERT INTO measurement_series
 VALUES (?,?)
 """
 
+CREATE_PERFORMANCE = """
+CREATE TABLE IF NOT EXISTS performance
+    ( performance_id INTEGER PRIMARY KEY
+    , series_id      INTEGER NOT NULL
+    , runtime        INTEGER NOT NULL
+    , success        BOOLEAN
+    , FOREIGN KEY(series_id) REFERENCES measurement_series(series_id)
+    )
+"""
+
+SAVE_PERFORMANCE = """
+INSERT INTO performance
+    ( series_id
+    , runtime
+    , success
+    )
+VALUES (?,?,?)
+"""
+
 CREATE_IMPROVEMENT_PROB = """
 CREATE TABLE IF NOT EXISTS improvement_probability
     ( prob_id       INTEGER PRIMARY KEY
@@ -219,8 +238,7 @@ class AbstractExperiment:
 
     def __init__(
             self,
-            input_dir,
-            sample_size,
+            input_files,
             solver,
             solver_params,
             is_static,
@@ -228,14 +246,8 @@ class AbstractExperiment:
             poolsize=1,
             database='experiments.db'):
 
-        assert isinstance(input_dir, str),\
-            "input_dir = {} :: {} is no str".format(input_dir, type(input_dir))
-        assert os.path.isdir(input_dir),\
-            "input_dir = {} is no directory".format(input_dir)
-        assert isinstance(sample_size, int),\
-            "sample_size = {} :: {} is no int".format(sample_size, type(sample_size))
-        assert sample_size > 0,\
-            "sample_size = {} <= 0".format(sample_size)
+        assert all([os.path.isfile(input_file) for input_file in input_files]),\
+            "input_files = {} is no List[str]".format(input_files)
         assert isinstance(solver, str),\
             "solver = {} :: {} is no str".format(solver, type(solver))
         assert solver in SOLVERS,\
@@ -256,19 +268,8 @@ class AbstractExperiment:
         self.solver_params = solver_params
         # load formulae
         self.formulae = FormulaSupply(
-            random.sample(
-                list(
-                    map(
-                        partial(os.path.join, input_dir),
-                        filter(
-                            lambda s: s.endswith('.cnf'),
-                            os.listdir(input_dir),
-                        )
-                    )
-                ),
-                sample_size
-            ),
-            buffsize=min(sample_size, poolsize * 10)
+            input_files,
+            buffsize=min(len(input_files), poolsize * 10)
         )
 
         # save poolsize
@@ -362,8 +363,7 @@ class DynamicExperiment(AbstractExperiment):
     """ Random experiment on a set of input formulae """
     def __init__(
             self,
-            input_dir,              # directory of input files
-            sample_size,            # number of files to draw
+            input_files,            # list of input files
             solver,                 # the solver to be used
             solver_params,          # special parameters of the solver
             max_tries, max_flips,   # generic solver parameters
@@ -487,37 +487,41 @@ class StaticExperiment(AbstractExperiment):
 
     def __init__(
             self,
-            input_dir,              # directory of input files
+            input_dir,              # list of input files
             sample_size,            # number of files to draw
             solver,                 # the solver to be used
             solver_params,          # solver specific parameters
+            performance_tests       # number of algorithm runs per formula
             poolsize=1,             # number of parallel processes
             database='experiments.db'):
 
         super(StaticExperiment,self).__init__(
-            input_dir,
-            sample_size,
+            input_files,
             solver,
             solver_params,
             True,
             CREATE_MEASUREMENT_SERIES,
+            CREATE_PERFORMANCE,
             CREATE_IMPROVEMENT_PROB,
             CREATE_STATE_ENTROPY,
             poolsize=poolsize,
             database=database,
         )
 
+        self.performance_tests = performance_tests
+
 
     def save_result(self, execute, result):
-        run_id = execute(
+        series_id = execute(
             SAVE_MEASUREMENT_SERIES,
             self.experiment_id,
             result['formula_file'],
         )
+
         for series in result['improvement_prob']:
             execute(
                 SAVE_IMPROVEMENT_PROB,
-                run_id,
+                series_id,
                 series['hamming_dist'],
                 series['prob'],
             )
@@ -525,11 +529,19 @@ class StaticExperiment(AbstractExperiment):
         for series in result['avg_state_entropy']:
             execute(
                 SAVE_STATE_ENTROPY,
-                run_id,
+                series_id,
                 series['hamming_dist'],
                 series['entropy_avg'],
                 series['entropy_min'],
                 series['entropy_max'],
+            )
+
+        for performance in result['performance']:
+            execute(
+                SAVE_PERFORMANCE,
+                series_id,
+                performance['runtime'],
+                performance['success'],
             )
 
 
@@ -642,6 +654,22 @@ class StaticExperiment(AbstractExperiment):
         for i, (inc, c) in enumerate(zip(increment_prob, state_count)):
             increment_prob[i] = inc/c
 
+        # measure peformance
+        performance = []
+        for _ in range(self.performance_tests):
+            assgn, measurement = SOLVERS[self.solver](
+                formula,
+                **self.solver_params,
+                measurement_constructor=RuntimeMeasurement,
+                rand_gen=rand_gen,
+            )
+            performance.append(
+                dict(
+                    runtime=measurement.flips,
+                    success=measurement.success,
+                )
+            )
+
         return dict(
             formula_file=fp,
             improvement_prob=[
@@ -654,4 +682,5 @@ class StaticExperiment(AbstractExperiment):
                     zip(state_entropy,state_entropy_min,state_entropy_max)
                 )
             ],
+            performance=performance,
         )
