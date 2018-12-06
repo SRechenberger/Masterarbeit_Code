@@ -12,13 +12,13 @@ from src.solver.walksat import walksat, DefensiveContext, walksat_distribution
 from src.solver.probsat import probsat, probsat_distribution
 
 from src.experiment.utils import FormulaSupply, arr_entropy
+from src.experiment.measurement import RuntimeMeasurement
 
 
 CREATE_EXPERIMENT = """
 CREATE TABLE IF NOT EXISTS experiment
     ( experiment_id INTEGER PRIMARY KEY
     , solver        TEXT NOT NULL
-    , source_folder TEXT NOT NULL
     , sample_size   INT NOT NULL
     , static        BOOL NOT NULL
     )
@@ -27,11 +27,10 @@ CREATE TABLE IF NOT EXISTS experiment
 SAVE_EXPERIMENT = """
 INSERT INTO experiment
     ( solver
-    , source_folder
     , sample_size
     , static
     )
-VALUES (?,?,?,?)
+VALUES (?,?,?)
 """
 
 CREATE_PARAMETER = """
@@ -141,6 +140,9 @@ CREATE TABLE IF NOT EXISTS measurement_series
     ( series_id     INTEGER PRIMARY KEY
     , experiment_id INTEGER NOT NULL
     , formula_file  TEXT NOT NULL
+    , performance_tests INT
+    , max_tries     INT NOT NULL
+    , max_flips     INT NOT NULL
     , FOREIGN KEY(experiment_id) REFERENCES experiment(experiment_id)
     )
 """
@@ -149,8 +151,11 @@ SAVE_MEASUREMENT_SERIES = """
 INSERT INTO measurement_series
     ( experiment_id
     , formula_file
+    , performance_tests
+    , max_tries
+    , max_flips
     )
-VALUES (?,?)
+VALUES (?,?,?,?,?)
 """
 
 CREATE_PERFORMANCE = """
@@ -290,8 +295,7 @@ class AbstractExperiment:
                 SAVE_EXPERIMENT,
                 (
                     solver,
-                    input_dir,
-                    sample_size,
+                    len(input_files),
                     is_static
                 )
             )
@@ -487,11 +491,12 @@ class StaticExperiment(AbstractExperiment):
 
     def __init__(
             self,
-            input_dir,              # list of input files
-            sample_size,            # number of files to draw
+            input_files,            # list of input files
             solver,                 # the solver to be used
             solver_params,          # solver specific parameters
-            performance_tests       # number of algorithm runs per formula
+            performance_tests,      # number of algorithm runs per formula
+            max_flips,
+            max_tries,
             poolsize=1,             # number of parallel processes
             database='experiments.db'):
 
@@ -508,7 +513,11 @@ class StaticExperiment(AbstractExperiment):
             database=database,
         )
 
-        self.performance_tests = performance_tests
+        self.performance_tests = dict(
+            number_of=performance_tests,
+            max_tries=max_tries,
+            max_flips=max_flips
+        )
 
 
     def save_result(self, execute, result):
@@ -516,6 +525,9 @@ class StaticExperiment(AbstractExperiment):
             SAVE_MEASUREMENT_SERIES,
             self.experiment_id,
             result['formula_file'],
+            self.performance_tests['number_of'],
+            self.performance_tests['max_tries'],
+            self.performance_tests['max_flips'],
         )
 
         for series in result['improvement_prob']:
@@ -656,9 +668,11 @@ class StaticExperiment(AbstractExperiment):
 
         # measure peformance
         performance = []
-        for _ in range(self.performance_tests):
+        for _ in range(self.performance_tests['number_of']):
             assgn, measurement = SOLVERS[self.solver](
                 formula,
+                max_tries=self.performance_tests['max_tries'],
+                max_flips=self.performance_tests['max_flips'],
                 **self.solver_params,
                 measurement_constructor=RuntimeMeasurement,
                 rand_gen=rand_gen,

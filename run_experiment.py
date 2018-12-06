@@ -3,6 +3,8 @@ import time
 import random
 import os
 
+from functools import partial
+
 from src.experiment.experiment import DynamicExperiment, StaticExperiment
 from src.experiment.measurement import EntropyMeasurement, RuntimeMeasurement
 
@@ -12,11 +14,6 @@ parser.add_argument(
     'input_dir',
     help='folder of input formulae',
     type=str,
-)
-parser.add_argument(
-    'sample_size',
-    help='number of formulae to draw',
-    type=int,
 )
 
 experiment_type_group = parser.add_mutually_exclusive_group(required = True)
@@ -39,8 +36,12 @@ parser.add_argument(
 
 experiment_type_group.add_argument(
     '--static',
-    help='run static experiment',
-    action='store_true'
+    help='run static experiment with\
+    N performance_tests\
+    each with MAX_TRIES and MAX_FLIPS.',
+    nargs=3,
+    metavar=('N', 'MAX_TRIES', 'MAX_FLIPS'),
+    type=int,
 )
 
 solver_group = parser.add_mutually_exclusive_group(required = True)
@@ -117,7 +118,7 @@ if __name__ == '__main__':
     elif args.probsat:
         solver = 'probsat'
         setup = dict(
-            c_break = args.probsat_poly[0],
+            c_break = args.probsat[0],
             phi = 'poly'
         )
 
@@ -150,9 +151,13 @@ if __name__ == '__main__':
             )
         elif args.static:
             e = StaticExperiment(
-                os.listdir(args.input_dir),
+                list(map(
+                    partial(os.path.join, args.input_dir),
+                    os.listdir(args.input_dir),
+                )),
                 solver,
                 setup,
+                *args.static,
                 poolsize=args.poolsize,
                 database=args.database_file,
             )
