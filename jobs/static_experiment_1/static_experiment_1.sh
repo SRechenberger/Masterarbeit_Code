@@ -6,12 +6,12 @@ sh ../gsat.static.template.sh 256 $NAME
 # WalkSAT
 for i in $(cat walksat_parameters);
 do
-  sh ../walksat.static.template.sh 256 $i $NAME;
+  sh ../walksat.static.template.sh 256 $i $NAME$i;
 done;
 
 # ProbSAT
 for i in $(cat probsat_parameters);
 do
-  sh ../probsat.static.template.sh 256 $i $NAME;
+  sh ../probsat.static.template.sh 256 $i $NAME$i;
 done;
 
