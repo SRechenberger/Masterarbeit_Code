@@ -15,7 +15,7 @@ NAME=$3
 module load devel/python/3.5.2
 
 python -O run_experiment.py $WORK/input/n`echo $N` \
-  --static 10 100 $((20*N)) \
+  --static 10 $((2*N)) $((10*N)) \
   --probsat $CBR \
   --poolsize 16 \
   --database_file $WORK/output/`echo $NAME`.probsat.db \
