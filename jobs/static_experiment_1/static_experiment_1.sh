@@ -8,12 +8,12 @@ msub jobs/gsat.static.template.sh 256 $NAME
 # WalkSAT
 for i in $WALKSAT;
 do
-  msub jobs/walksat.static.template.sh 256 $i $((NAME))_rho$i;
+  msub jobs/walksat.static.template.sh 256 $i `echo $NAME`_rho$i;
 done;
 
 # ProbSAT
 for i in $PROBSAT;
 do
-  msub jobs/probsat.static.template.sh 256 $i $((NAME))_cb$i;
+  msub jobs/probsat.static.template.sh 256 $i `echo $NAME`_cb$i;
 done;
 
