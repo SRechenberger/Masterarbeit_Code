@@ -280,8 +280,6 @@ class Formula:
                     )
                 )
                 future_formulae.append(future_formula)
-
-            idx = 0
             for future_formula in future_formulae:
                 formula = future_formula.get()
                 filename = 'n{}-r{:.2f}-k{}-{:016X}.cnf'.format(
@@ -293,8 +291,6 @@ class Formula:
                 with open(os.path.join(directory, filename), 'w') as target:
                     target.write(str(formula))
 
-                del future_formulae[idx]
-                idx += 1
 
                 if verbose:
                     print(
