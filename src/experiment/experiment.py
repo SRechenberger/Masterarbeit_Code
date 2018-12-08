@@ -377,8 +377,7 @@ class DynamicExperiment(AbstractExperiment):
             hamming_dist=0):        # start hamming distance
 
         super(DynamicExperiment, self).__init__(
-            input_dir,
-            sample_size,
+            input_files,
             solver,
             dict(
                 max_tries=max_tries,
