@@ -140,7 +140,10 @@ if __name__ == '__main__':
 
         if args.dynamic:
             e = DynamicExperiment(
-                os.listdir(args.input_dir),
+                list(map(
+                    partial(os.path.join, args.input_dir),
+                    os.listdir(args.input_dir),
+                )),
                 solver,
                 setup,
                 args.dynamic[0],
