@@ -140,9 +140,6 @@ CREATE TABLE IF NOT EXISTS measurement_series
     ( series_id     INTEGER PRIMARY KEY
     , experiment_id INTEGER NOT NULL
     , formula_file  TEXT NOT NULL
-    , performance_tests INT
-    , max_tries     INT NOT NULL
-    , max_flips     INT NOT NULL
     , FOREIGN KEY(experiment_id) REFERENCES experiment(experiment_id)
     )
 """
@@ -151,30 +148,8 @@ SAVE_MEASUREMENT_SERIES = """
 INSERT INTO measurement_series
     ( experiment_id
     , formula_file
-    , performance_tests
-    , max_tries
-    , max_flips
     )
-VALUES (?,?,?,?,?)
-"""
-
-CREATE_PERFORMANCE = """
-CREATE TABLE IF NOT EXISTS performance
-    ( performance_id INTEGER PRIMARY KEY
-    , series_id      INTEGER NOT NULL
-    , runtime        INTEGER NOT NULL
-    , success        BOOLEAN
-    , FOREIGN KEY(series_id) REFERENCES measurement_series(series_id)
-    )
-"""
-
-SAVE_PERFORMANCE = """
-INSERT INTO performance
-    ( series_id
-    , runtime
-    , success
-    )
-VALUES (?,?,?)
+VALUES (?,?)
 """
 
 CREATE_IMPROVEMENT_PROB = """
@@ -493,9 +468,6 @@ class StaticExperiment(AbstractExperiment):
             input_files,            # list of input files
             solver,                 # the solver to be used
             solver_params,          # solver specific parameters
-            performance_tests,      # number of algorithm runs per formula
-            max_flips,
-            max_tries,
             poolsize=1,             # number of parallel processes
             database='experiments.db'):
 
@@ -505,17 +477,10 @@ class StaticExperiment(AbstractExperiment):
             solver_params,
             True,
             CREATE_MEASUREMENT_SERIES,
-            CREATE_PERFORMANCE,
             CREATE_IMPROVEMENT_PROB,
             CREATE_STATE_ENTROPY,
             poolsize=poolsize,
             database=database,
-        )
-
-        self.performance_tests = dict(
-            number_of=performance_tests,
-            max_tries=max_tries,
-            max_flips=max_flips
         )
 
 
@@ -524,9 +489,6 @@ class StaticExperiment(AbstractExperiment):
             SAVE_MEASUREMENT_SERIES,
             self.experiment_id,
             result['formula_file'],
-            self.performance_tests['number_of'],
-            self.performance_tests['max_tries'],
-            self.performance_tests['max_flips'],
         )
 
         for series in result['improvement_prob']:
@@ -545,14 +507,6 @@ class StaticExperiment(AbstractExperiment):
                 series['entropy_avg'],
                 series['entropy_min'],
                 series['entropy_max'],
-            )
-
-        for performance in result['performance']:
-            execute(
-                SAVE_PERFORMANCE,
-                series_id,
-                performance['runtime'],
-                performance['success'],
             )
 
 
@@ -665,24 +619,6 @@ class StaticExperiment(AbstractExperiment):
         for i, (inc, c) in enumerate(zip(increment_prob, state_count)):
             increment_prob[i] = inc/c
 
-        # measure peformance
-        performance = []
-        for _ in range(self.performance_tests['number_of']):
-            assgn, measurement = SOLVERS[self.solver](
-                formula,
-                max_tries=self.performance_tests['max_tries'],
-                max_flips=self.performance_tests['max_flips'],
-                **self.solver_params,
-                measurement_constructor=RuntimeMeasurement,
-                rand_gen=rand_gen,
-            )
-            performance.append(
-                dict(
-                    runtime=measurement.flips,
-                    success=measurement.success,
-                )
-            )
-
         return dict(
             formula_file=fp,
             improvement_prob=[
@@ -695,5 +631,4 @@ class StaticExperiment(AbstractExperiment):
                     zip(state_entropy,state_entropy_min,state_entropy_max)
                 )
             ],
-            performance=performance,
         )
