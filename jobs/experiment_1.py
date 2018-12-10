@@ -46,9 +46,9 @@ for solver in ['gsat','walksat','probsat']:
             call(
                 TEMPLATE(
                     False,
-                    f'--dynamic 100 20000',
+                    '--dynamic 100 20000',
                     solver,
-                    f'{p}',
+                    str(p),
                     sys.argv[1],
                     sys.argv[2],
                     sys.argv[3],
@@ -76,9 +76,9 @@ for solver in ['gsat','walksat','probsat']:
             call(
                 TEMPLATE(
                     True,
-                    f'--static',
+                    '--static',
                     solver,
-                    f'{p}',
+                    str(p),
                     sys.argv[1],
                     sys.argv[2],
                     sys.argv[3],
