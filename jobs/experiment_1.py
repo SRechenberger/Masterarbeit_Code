@@ -27,61 +27,62 @@ TEMPLATE = lambda static, jobflag, solver, param, infolder, outfolder, dbfolder,
     str(repeat),
 ]
 
-for solver in ['gsat','walksat','probsat']:
-    if solver == 'gsat':
-        call(
-            TEMPLATE(
-                False,
-                '--dynamic 100 20000',
-                solver,
-                '',
-                sys.argv[1],
-                sys.argv[2],
-                sys.argv[3],
-                10,
-            )
-        )
-    else:
-        for p in PARAMS[solver]:
+if sys.argv[1] == 'dynamic':
+    for solver in ['gsat','walksat','probsat']:
+        if solver == 'gsat':
             call(
                 TEMPLATE(
                     False,
                     '--dynamic 100 20000',
                     solver,
-                    str(p),
-                    sys.argv[1],
+                    '',
                     sys.argv[2],
                     sys.argv[3],
+                    sys.argv[4],
                     10,
                 )
             )
+        else:
+            for p in PARAMS[solver]:
+                call(
+                    TEMPLATE(
+                        False,
+                        '--dynamic 100 20000',
+                        solver,
+                        str(p),
+                        sys.argv[2],
+                        sys.argv[3],
+                        sys.argv[4],
+                        10,
+                    )
+                )
 
-
-for solver in ['gsat','walksat','probsat']:
-    if solver == 'gsat':
-        call(
-            TEMPLATE(
-                True,
-                '--static',
-                solver,
-                '',
-                sys.argv[1],
-                sys.argv[2],
-                sys.argv[3],
-                1,
-            )
-        )
-    else:
-        for p in PARAMS[solver]:
+elif sys.argv[1] == 'static':
+    for solver in ['gsat','walksat','probsat']:
+        if solver == 'gsat':
             call(
                 TEMPLATE(
                     True,
                     '--static',
                     solver,
-                    str(p),
-                    sys.argv[1],
+                    '',
                     sys.argv[2],
                     sys.argv[3],
+                    sys.argv[4],
                     1,
                 )
             )
+        else:
+            for p in PARAMS[solver]:
+                call(
+                    TEMPLATE(
+                        True,
+                        '--static',
+                        solver,
+                        str(p),
+                        sys.argv[2],
+                        sys.argv[3],
+                        sys.argv[4],
+                        1,
+                    )
+                )
