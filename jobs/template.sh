@@ -16,4 +16,5 @@ python -O run_experiment.py $4 \
   $1 \
   --poolsize 16 \
   --database_file $3 \
-  --verbose
+  --verbose \
+  --repeat $5

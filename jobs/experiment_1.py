@@ -7,17 +7,24 @@ PARAMS = dict(
     probsat = list(map(lambda x:x/10, range(0,42,2)))
 )
 
-MSUB = 'msub'
+MSUB = 'echo'
 
-TEMPLATE = lambda static, jobflag, solver, param, infolder, outfolder, dbfolder: [
+NAME = lambda static, solver, param: '{}.{}.{}'.format(
+    'static' if static else 'dynamic',
+    solver,
+    0 if solver == 'gsat' else param
+)
+
+TEMPLATE = lambda static, jobflag, solver, param, infolder, outfolder, dbfolder, repeat: [
     MSUB,
-    '-N', f'{"static" if static else "dynamic"}.{solver}.{0 if solver == "gsat" else param}',
-    '-o', f'{outfolder}/{"static" if static else "dynamic"}.{solver}.{0 if solver == "gsat" else param}.out',
+    '-N', NAME(static, solver, param),
+    '-o', outfolder + '/' + NAME(static, solver, param) + '.out',
     '-l', 'walltime={}'.format('5:00:00' if static else '4:00:00'),
-    f'template.sh', f'\"--{solver} {param}\"',
-    f'\"{jobflag}\"',
-    f'{dbfolder}/{"static" if static else "dynamic"}.{solver}.{0 if solver == "gsat" else param}.out',
-    f'{infolder}',
+    'template.sh', '\"--{} {}\"'.format(solver, param),
+    '\"{}\"'.format(jobflag),
+    dbfolder + '/' + NAME(static, solver, param) + '.db',
+    infolder,
+    str(repeat),
 ]
 
 for solver in ['gsat','walksat','probsat']:
@@ -31,6 +38,7 @@ for solver in ['gsat','walksat','probsat']:
                 sys.argv[1],
                 sys.argv[2],
                 sys.argv[3],
+                10,
             )
         )
     else:
@@ -44,6 +52,7 @@ for solver in ['gsat','walksat','probsat']:
                     sys.argv[1],
                     sys.argv[2],
                     sys.argv[3],
+                    10,
                 )
             )
 
@@ -59,6 +68,7 @@ for solver in ['gsat','walksat','probsat']:
                 sys.argv[1],
                 sys.argv[2],
                 sys.argv[3],
+                1,
             )
         )
     else:
@@ -72,5 +82,6 @@ for solver in ['gsat','walksat','probsat']:
                     sys.argv[1],
                     sys.argv[2],
                     sys.argv[3],
+                    1,
                 )
             )
