@@ -36,12 +36,8 @@ parser.add_argument(
 
 experiment_type_group.add_argument(
     '--static',
-    help='run static experiment with\
-    N performance_tests\
-    each with MAX_TRIES and MAX_FLIPS.',
-    nargs=3,
-    metavar=('N', 'MAX_TRIES', 'MAX_FLIPS'),
-    type=int,
+    help='run static experiment with',
+    action='store_true',
 )
 
 solver_group = parser.add_mutually_exclusive_group(required = True)
@@ -160,7 +156,6 @@ if __name__ == '__main__':
                 )),
                 solver,
                 setup,
-                *args.static,
                 poolsize=args.poolsize,
                 database=args.database_file,
             )
