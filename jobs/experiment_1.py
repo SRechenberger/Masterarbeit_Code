@@ -7,7 +7,7 @@ PARAMS = dict(
     probsat = list(map(lambda x:x/10, range(0,42,2)))
 )
 
-MSUB = 'echo'
+MSUB = 'msub'
 
 NAME = lambda static, solver, param: '{}.{}.{}'.format(
     'static' if static else 'dynamic',
