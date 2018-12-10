@@ -9,14 +9,14 @@ PARAMS = dict(
 
 MSUB = 'msub'
 
-TEMPLATE = lambda static, jobflag, jobname, solver, param, infolder, outfolder, dbfolder: [
+TEMPLATE = lambda static, jobflag, solver, param, infolder, outfolder, dbfolder: [
     MSUB,
-    '-N', f'{solver}.{jobname}',
-    '-o', f'{outfolder}',
+    '-N', f'{"static" if static else "dynamic"}.{solver}.{0 if solver == "gsat" else param}',
+    '-o', f'{outfolder}/{"static" if static else "dynamic"}.{solver}.{0 if solver == "gsat" else param}.out',
     '-l', 'walltime={}'.format('5:00:00' if static else '4:00:00'),
     f'template.sh', f'\"--{solver} {param}\"',
     f'\"{jobflag}\"',
-    f'{dbfolder}',
+    f'{dbfolder}/{"static" if static else "dynamic"}.{solver}.{0 if solver == "gsat" else param}.out',
     f'{infolder}',
 ]
 
@@ -25,8 +25,7 @@ for solver in ['gsat','walksat','probsat']:
         call(
             TEMPLATE(
                 False,
-                '--dynamic',
-                'dynamic_1',
+                '--dynamic 100 20000',
                 solver,
                 '',
                 sys.argv[1],
@@ -40,7 +39,6 @@ for solver in ['gsat','walksat','probsat']:
                 TEMPLATE(
                     False,
                     f'--dynamic 100 20000',
-                    f'dynamic_1_{p}',
                     solver,
                     f'{p}',
                     sys.argv[1],
@@ -56,7 +54,6 @@ for solver in ['gsat','walksat','probsat']:
             TEMPLATE(
                 True,
                 '--static',
-                'static_1',
                 solver,
                 '',
                 sys.argv[1],
@@ -70,7 +67,6 @@ for solver in ['gsat','walksat','probsat']:
                 TEMPLATE(
                     True,
                     f'--static',
-                    f'static_1_{p}',
                     solver,
                     f'{p}',
                     sys.argv[1],
