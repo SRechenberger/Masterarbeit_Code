@@ -5,13 +5,17 @@ from src.solver.utils import Formula, Assignment
 
 
 def eta(p):
-    if p == 0:
+    if p  <= 0:
+        return 0
+    elif p >= 1:
         return 0
     else:
         return -p * math.log(p,2)
 
+
 def arr_entropy(distr):
     return sum(map(eta,distr))
+
 
 def entropy(distr):
     total = 0
