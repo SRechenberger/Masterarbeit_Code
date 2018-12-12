@@ -8,15 +8,6 @@ import sqlite3
 import seaborn as sns
 import math
 
-#def eta(p):
-#    print(p)
-#    if p  <= 0:
-#        return 0
-#    elif p >= 1:
-#        return 0
-#    else:
-#        return -p * math.log(p,2)
-
 def flatten(xss):
     return [
         x
@@ -36,9 +27,8 @@ def build_transition_matrix(distr):
     n = len(distr)
     Pi = np.zeros((n,n))
     for i, p in enumerate(distr):
-        # TODO something is mixed up here
-        Pi[i][max(0,i-1)] = 1-p
-        Pi[i][min(i+1,n-1)] = p
+        Pi[i][max(0,i-1)] = p       # lower Hamming-distance => better
+        Pi[i][min(i+1,n-1)] = 1 - p # higher Hamming-distance => worse
 
     return Pi
 
