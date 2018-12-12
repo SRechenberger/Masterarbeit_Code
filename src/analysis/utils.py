@@ -33,7 +33,7 @@ def build_transition_matrix(distr):
     return Pi
 
 
-def approximate_stationary_distr(distr, eps=0.0001):
+def approximate_stationary_distr(distr, eps=0.0001, max_loops=1000):
     assert type(eps) == float,\
         "eps = {} :: {} is no float".format(eps, type(eps))
     assert eps > 0,\
@@ -44,27 +44,27 @@ def approximate_stationary_distr(distr, eps=0.0001):
     A = binomial_vec(len(distr))
 
     # approximate stationary distribution
-    while True:
+    for _ in range(max_loops):
         # calculate new tmp
         T = A
         A = A @ Pi
 
         if la.norm(T - A) <= eps:
-            break
+            return A, True
 
-    return A
+    return A, False
 
 
-def calculate_tms_entropy(distr_seq, eps = 0.0001):
+def calculate_tms_entropy(distr_seq, **approx_kargs):
     distr = np.array(distr_seq)
-    A_inf = approximate_stationary_distr(distr, eps=eps)
+    A_inf, converged = approximate_stationary_distr(distr, **approx_kargs)
 
     # calculate state entropy
     H = np.array([bin_h(p) for p in distr])
 
     # calculate entropy rate
     h = np.inner(H, A_inf)
-    return h
+    return h, converged
 
 
 def read_improvement_probs(file, experiment_id):
@@ -86,9 +86,10 @@ def read_improvement_probs(file, experiment_id):
             )
             yield formula_file, np.array(flatten(improvement_prob))
 
-def get_tms_entropy(file, experiment_id, eps=0.0001):
+def get_tms_entropy(file, experiment_id, **approx_kargs):
     for formula_file, distr in read_improvement_probs(file, experiment_id):
-        yield formula_file, calculate_tms_entropy(distr, eps)
+        tms_entropy, converged = calculate_tms_entropy(distr, **approx_kargs)
+        yield formula_file, tms_entropy, converged
 
 
 def log_likelihood(sample, pdf):
