@@ -107,3 +107,46 @@ def fit_pdf(sample, pdf, n, bounds=None):
         f, theta,
         bounds=bounds,
     )
+
+
+
+def get_state_entropy_points(file, experiment_id):
+    """Return state entropy of all formulae with their respective hamming distance"""
+    with sqlite3.connect(file) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT hamming_dist, entropy_avg FROM measurement_series NATURAL JOIN state_entropy WHERE experiment_id = ?",
+            (experiment_id,)
+        )
+        data_points = dict(
+            hamming_dist=[],
+            entropy_avg=[]
+        )
+        for hamming_dist, entropy_avg in cursor:
+            data_points['hamming_dist'].append(hamming_dist)
+            data_points['entropy_avg'].append(entropy_avg)
+
+        return data_points
+
+
+def get_state_entropy_distr(file, experiment_id):
+    distr = {}
+    points = get_state_entropy_points(file, experiment_id)
+    for hamming_dist, entropy_avg in zip(points['hamming_dist'], points['entropy_avg']):
+        if hamming_dist in distr:
+            distr[hamming_dist].append(entropy_avg)
+        else:
+            distr[hamming_dist] = [entropy_avg]
+
+    return distr
+
+
+
+def get_entropy_avg(file, experiment_id, field):
+    with sqlite3.connect(file) as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            f'SELECT average FROM algorithm_run NATURAL JOIN search_run JOIN entropy_data ON {field} = data_id WHERE experiment_id = ? AND success = 1',
+            (experiment_id,)
+        )
+        return np.array([h for h in cursor])
