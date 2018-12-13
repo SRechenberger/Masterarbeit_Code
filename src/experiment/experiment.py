@@ -521,7 +521,7 @@ class StaticExperiment(AbstractExperiment):
         # init distribution function
         distr_f = DISTRS[self.solver](formula)(**self.solver_params)
 
-        path_count = lambda i: int(math.log(i, 2)) + 1
+        path_count = lambda i: max(1, i // 3)
 
         # calculate the total number of measured states
         total_num_states = sum(
