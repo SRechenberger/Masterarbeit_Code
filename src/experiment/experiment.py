@@ -78,6 +78,7 @@ CREATE TABLE IF NOT EXISTS algorithm_run
     , clauses           INT NOT NULL
     , vars              INT NOT NULL
     , sat               BOOL NOT NULL
+    , total_runtime     INTEGER NOT NULL
     , FOREIGN KEY(experiment_id) REFERENCES experiment(experiment_id)
     , FOREIGN KEY(formula_id) REFERENCES formula(formula_id)
     )
@@ -91,8 +92,9 @@ INSERT INTO algorithm_run
     , clauses
     , vars
     , sat
+    , total_runtime
     )
-VALUES (?,?,?,?,?,?)
+VALUES (?,?,?,?,?,?,?)
 """
 
 CREATE_SEARCH_RUN = """
@@ -451,6 +453,7 @@ class DynamicExperiment(AbstractExperiment):
             result['num_clauses'],
             result['num_vars'],
             result['sat'],
+            sum(iter(run['flips'] for run in result['runs'])),
         )
         for run in result['runs']:
             single_entropy_id = DynamicExperiment.__save_entropy_data(execute, run['single_entropy'])
