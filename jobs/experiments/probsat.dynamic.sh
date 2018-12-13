@@ -15,6 +15,6 @@ python -O run_experiment.py \
   --dynamic 600 10240 \
   --probsat $CB \
   --poolsize 16 \
-  --database_file $WORK/output/data/probsat-cb`echo $CB`-dynamic.db \
+  --database_file $WORK/output/data/probsat-cb`echo $CB`.db \
   --repeat 10 \
   --verbose

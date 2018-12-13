@@ -1,4 +1,3 @@
-
 # Run GSAT
 msub \
   -o $WORK/output/stdout/gsat-dynamic.out \
