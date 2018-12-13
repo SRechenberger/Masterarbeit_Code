@@ -22,6 +22,8 @@ class Measurement:
 
 def entropy_data(window_width):
     return dict(
+        latest=0,
+        latest_at=None,
         minimum=math.log(window_width,2),
         minimum_at=None,
         maximum=0,
@@ -31,6 +33,8 @@ def entropy_data(window_width):
     )
 
 def update_entropy_data(data, curr_entropy, curr_hamming_dist):
+    data['latest'] = curr_entropy
+    data['latest_at'] = curr_hamming_dist
     if curr_entropy < data['minimum']:
         data['minimum'] = curr_entropy
         data['minimum_at'] = curr_hamming_dist

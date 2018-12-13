@@ -134,6 +134,8 @@ VALUES (?,?,?,?,?,?,?,?,?)
 CREATE_ENTROPY_DATA = """
 CREATE TABLE IF NOT EXISTS entropy_data
     ( data_id       INTEGER PRIMARY KEY
+    , latest        REAL
+    , latest_at     INTEGER
     , minimum       REAL
     , minimum_at    INTEGER
     , maximum       REAL
@@ -144,13 +146,15 @@ CREATE TABLE IF NOT EXISTS entropy_data
 
 SAVE_ENTROPY_DATA = """
 INSERT INTO entropy_data
-    ( minimum
+    ( latest
+    , latest_at
+    , minimum
     , minimum_at
     , maximum
     , maximum_at
     , average
     )
-VALUES (?,?,?,?,?)
+VALUES (?,?,?,?,?,?,?)
 """
 
 CREATE_MEASUREMENT_SERIES = """
@@ -496,6 +500,8 @@ class DynamicExperiment(AbstractExperiment):
 
         return execute(
             SAVE_ENTROPY_DATA,
+            data['latest'],
+            data['latest_at'],
             data['minimum'],
             data['minimum_at'],
             data['maximum'],
