@@ -7,6 +7,8 @@ import math
 import multiprocessing as mp
 from functools import partial
 
+from src.formula import Formula
+
 from src.solver.gsat import gsat, GSATContext, gsat_distribution
 from src.solver.walksat import walksat, DefensiveContext, walksat_distribution
 from src.solver.probsat import probsat, probsat_distribution
@@ -31,6 +33,19 @@ INSERT INTO experiment
     , static
     )
 VALUES (?,?,?)
+"""
+
+CREATE_FORMULA = """
+CREATE TABLE IF NOT EXISTS formula
+    ( formula_id    INTEGER PRIMARY KEY
+    , formula_file  TEXT
+    )
+"""
+
+SAVE_FORMULA = """
+INSERT INTO formula
+    ( formula_file )
+VALUES (?)
 """
 
 CREATE_PARAMETER = """
@@ -58,19 +73,20 @@ CREATE_ALGORITHM_RUN = """
 CREATE TABLE IF NOT EXISTS algorithm_run
     ( run_id            INTEGER PRIMARY KEY
     , experiment_id     INTEGER NOT NULL
-    , formula_file      TEXT NOT NULL
+    , formula_id        INTEGER NOT NULL
     , sat_assgn         TEXT NOT NULL
     , clauses           INT NOT NULL
     , vars              INT NOT NULL
     , sat               BOOL NOT NULL
     , FOREIGN KEY(experiment_id) REFERENCES experiment(experiment_id)
+    , FOREIGN KEY(formula_id) REFERENCES formula(formula_id)
     )
 """
 
 SAVE_ALGORITHM_RUN = """
 INSERT INTO algorithm_run
     ( experiment_id
-    , formula_file
+    , formula_id
     , sat_assgn
     , clauses
     , vars
@@ -139,15 +155,16 @@ CREATE_MEASUREMENT_SERIES = """
 CREATE TABLE IF NOT EXISTS measurement_series
     ( series_id     INTEGER PRIMARY KEY
     , experiment_id INTEGER NOT NULL
-    , formula_file  TEXT NOT NULL
+    , formula_id    INTEGER NOT NULL
     , FOREIGN KEY(experiment_id) REFERENCES experiment(experiment_id)
+    , FOREIGN KEY(formula_id) REFERENCES formula(formula_id)
     )
 """
 
 SAVE_MEASUREMENT_SERIES = """
 INSERT INTO measurement_series
     ( experiment_id
-    , formula_file
+    , formula_id
     )
 VALUES (?,?)
 """
@@ -247,10 +264,12 @@ class AbstractExperiment:
         self.solver = solver
         self.solver_params = solver_params
         # load formulae
-        self.formulae = FormulaSupply(
-            input_files,
-            buffsize=min(len(input_files), poolsize * 10)
-        )
+        #self.formulae = FormulaSupply(
+        #    input_files,
+        #    buffsize=min(len(input_files), poolsize * 10)
+        #)
+
+
 
         # save poolsize
         self.poolsize = poolsize
@@ -263,8 +282,29 @@ class AbstractExperiment:
             c = conn.cursor()
             c.execute(CREATE_EXPERIMENT)
             c.execute(CREATE_PARAMETER)
+            c.execute(CREATE_FORMULA)
             for statement in init_database:
                 c.execute(statement)
+
+            self.formulae = []
+            for file in input_files:
+                with open(file, 'r') as f:
+                    formula = Formula(dimacs=f.read())
+                res = c.execute(
+                    'SELECT formula_id FROM formula WHERE formula_file like ?',
+                    (file,)
+                )
+                res = list(res)
+                if len(res) == 0:
+                    c.execute(
+                        SAVE_FORMULA,
+                        (file,)
+                    )
+                    formula_id = c.lastrowid
+                elif len(res) > 0:
+                    formula_id, = res[0]
+
+                self.formulae.append((formula_id, formula))
 
             c.execute(
                 SAVE_EXPERIMENT,
@@ -298,14 +338,14 @@ class AbstractExperiment:
         if self.results:
             raise RuntimeError('Experiment already performed')
 
-        rand_gens = [
+        rand_gens = iter(
           random.Random()
           for _ in range(0,len(self.formulae))
-        ]
+        )
 
         arg_iter = iter(
-          (path, formula, rg)
-          for (path, formula), rg in zip(self.formulae, rand_gens)
+          (f_id, formula, rg)
+          for (f_id, formula), rg in zip(self.formulae, rand_gens)
         )
 
 
@@ -384,7 +424,7 @@ class DynamicExperiment(AbstractExperiment):
 
 
     def _run_experiment(self, args):
-        fp, formula, rand_gen = args
+        f_id, formula, rand_gen = args
         assgn, measurement = SOLVERS[self.solver](
             formula,
             **self.solver_params,
@@ -393,7 +433,7 @@ class DynamicExperiment(AbstractExperiment):
         )
 
         return dict(
-            formula_file=fp,
+            formula_id=f_id,
             sat_assgn=formula.satisfying_assignment,
             num_clauses=formula.num_clauses,
             num_vars=formula.num_vars,
@@ -406,7 +446,7 @@ class DynamicExperiment(AbstractExperiment):
         run_id = execute(
             SAVE_ALGORITHM_RUN,
             self.experiment_id,
-            result['formula_file'],
+            result['formula_id'],
             str(result['sat_assgn']),
             result['num_clauses'],
             result['num_vars'],
@@ -488,7 +528,7 @@ class StaticExperiment(AbstractExperiment):
         series_id = execute(
             SAVE_MEASUREMENT_SERIES,
             self.experiment_id,
-            result['formula_file'],
+            result['formula_id'],
         )
 
         for series in result['improvement_prob']:
@@ -511,7 +551,7 @@ class StaticExperiment(AbstractExperiment):
 
 
     def _run_experiment(self, args):
-        fp, formula, rand_gen = args
+        f_id, formula, rand_gen = args
         # calculate the total number of measured states
         n = formula.num_vars
         # get the satisfying assignment
@@ -620,7 +660,7 @@ class StaticExperiment(AbstractExperiment):
             increment_prob[i] = inc/c
 
         return dict(
-            formula_file=fp,
+            formula_id=f_id,
             improvement_prob=[
                 dict(hamming_dist=d, prob=p)
                 for d,p in enumerate(increment_prob)
