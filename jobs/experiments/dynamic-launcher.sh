@@ -1,3 +1,4 @@
+# alias msub='echo msub'
 # Run GSAT
 msub \
   -o $WORK/output/stdout/gsat-dynamic.out \
