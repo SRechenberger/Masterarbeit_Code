@@ -3,11 +3,11 @@ import sys
 from subprocess import call
 
 PARAMS = dict(
-    walksat = list(map(lambda x:x/10, range(0,11,1))),
-    probsat = list(map(lambda x:x/10, range(0,42,2)))
+    walksat = list(map(lambda x:float(x)/10, range(0,11,1))),
+    probsat = list(map(lambda x:float(x)/10, range(0,42,2)))
 )
 
-MSUB = 'msub'
+MSUB = 'echo'
 
 NAME = lambda static, solver, param: '{}.{}.{}'.format(
     'static' if static else 'dynamic',
@@ -20,8 +20,8 @@ TEMPLATE = lambda static, jobflag, solver, param, infolder, outfolder, dbfolder,
     '-N', NAME(static, solver, param),
     '-o', outfolder + '/' + NAME(static, solver, param) + '.out',
     '-l', 'walltime={}'.format('5:00:00' if static else '4:00:00'),
-    'jobs/template.sh', '--{} {}'.format(solver, param),
-    jobflag,
+    'jobs/template.sh', '"--{} {}"'.format(solver, param),
+    '"{}"'.format(jobflag),
     dbfolder + '/' + NAME(static, solver, param) + '.db',
     infolder,
     str(repeat),
