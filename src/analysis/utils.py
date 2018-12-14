@@ -92,24 +92,6 @@ def get_tms_entropy(file, experiment_id, **approx_kargs):
         yield formula_file, tms_entropy, converged
 
 
-def log_likelihood(sample, pdf):
-    n = len(sample)
-    return sum(map(pdf, sample))/n
-
-
-def fit_pdf(sample, pdf, n, bounds=None):
-    theta = np.random.rand(n)
-    f = lambda theta: log_likelihood(
-            sample,
-            lambda x: -pdf(x, *theta)
-        )
-    return minimize(
-        f, theta,
-        bounds=bounds,
-    )
-
-
-
 def get_state_entropy_points(file, experiment_id):
     """Return state entropy of all formulae with their respective hamming distance"""
     with sqlite3.connect(file) as conn:
