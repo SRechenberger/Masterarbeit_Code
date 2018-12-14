@@ -166,6 +166,7 @@ CREATE TABLE IF NOT EXISTS measurement_series
     , experiment_id INTEGER NOT NULL
     , formula_id    INTEGER NOT NULL
     , measured_states INTEGER NOT NULL
+    , max_measured_states INTEGER NOT NULL
     , FOREIGN KEY(experiment_id) REFERENCES experiment(experiment_id)
     , FOREIGN KEY(formula_id) REFERENCES formula(formula_id)
     )
@@ -176,8 +177,9 @@ INSERT INTO measurement_series
     ( experiment_id
     , formula_id
     , measured_states
+    , max_measured_states
     )
-VALUES (?,?,?)
+VALUES (?,?,?,?)
 """
 
 CREATE_IMPROVEMENT_PROB = """
@@ -551,6 +553,7 @@ class StaticExperiment(AbstractExperiment):
             self.experiment_id,
             result['formula_id'],
             result['measured_states'],
+            result['max_measured_states'],
         )
 
         for series in result['improvement_prob']:
@@ -585,13 +588,6 @@ class StaticExperiment(AbstractExperiment):
 
         path_count = lambda i: max(1, i // 3 * 2)
 
-        # calculate the total number of measured states
-        total_num_states = sum(
-            map(
-                lambda i: path_count(i) * (n - 2*i + 1),
-                range(1, n // 2 + 1)
-            )
-        )
         # initialize the bloom filter
         measured_states = set()
 
@@ -681,9 +677,18 @@ class StaticExperiment(AbstractExperiment):
         for i, (inc, c) in enumerate(zip(increment_prob, state_count)):
             increment_prob[i] = inc/c
 
+        # calculate the maximum number of measured states
+        total_num_states = sum(
+            map(
+                lambda i: path_count(i) * (n - 2*i + 1),
+                range(1, n // 2 + 1)
+            )
+        )
+
         return dict(
             formula_id=f_id,
             measured_states=len(measured_states),
+            max_measured_states=total_num_states,
             improvement_prob=[
                 dict(hamming_dist=d, prob=p)
                 for d,p in enumerate(increment_prob)
