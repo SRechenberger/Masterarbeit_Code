@@ -1,12 +1,18 @@
+import sqlite3
+import math
+import pandas
+
 import numpy as np
 import numpy.linalg as la
+
+import seaborn as sns
+
 from scipy.special import binom
 from scipy.optimize import minimize
 from scipy.stats import beta
+
 from src.experiment.utils import eta
-import sqlite3
-import seaborn as sns
-import math
+
 
 def flatten(xss):
     return [
@@ -33,7 +39,7 @@ def build_transition_matrix(distr):
     return Pi
 
 
-def approximate_stationary_distr(distr, eps=0.0001, max_loops=1000):
+def approximate_stationary_distr(distr, eps=2**(-15), max_loops=20000):
     assert type(eps) == float,\
         "eps = {} :: {} is no float".format(eps, type(eps))
     assert eps > 0,\
@@ -132,3 +138,53 @@ def get_entropy_avg(file, experiment_id, field):
             (experiment_id,)
         )
         return np.array([h for h in cursor])
+
+
+def hamming_dist_to_state_entropy(file, formula_id):
+    with sqlite3.connect(file) as conn:
+        cursor = conn.cursor()
+        rows = cursor.execute(
+            """ SELECT hamming_dist, entropy_avg \
+            FROM measurement_series NATURAL JOIN state_entropy \
+            WHERE formula_id = ? """,
+            (formula_id,),
+        )
+        results = dict(
+            hamming_dist=[],
+            state_entropy=[],
+        )
+        for hamming_dist, state_entropy in rows:
+            results['hamming_dist'].append(hamming_dist)
+            results['state_entropy'].append(state_entropy)
+
+        return pandas.DataFrame.from_dict(results)
+
+
+def tms_entropy(file, satisfies=None):
+    with sqlite3.connect(file) as conn:
+        cursor = conn.cursor()
+        series_ids = cursor.execute(
+            """ SELECT formula_id, series_id \
+            FROM measurement_series """
+        )
+        results = dict(
+            formula_id=[],
+            tms_entropy=[],
+            converged=[],
+        )
+        for formula_id, series_id in series_ids:
+            cursor_2 = conn.cursor()
+            probs = cursor_2.execute(
+                """ SELECT prob \
+                FROM improvement_probability \
+                WHERE series_id = ? """,
+                (series_id,)
+            )
+            prob_vector = np.array([prob for prob in probs])
+            tms_entropy, converged = calculate_tms_entropy(prob_vector)
+            if not satisfies or satisfies(formula_id, tms_entropy, converged):
+                results['formula_id'].append(formula_id)
+                results['tms_entropy'].append(tms_entropy)
+                results['converged'].append(converged)
+
+        return pandas.DataFrame.from_dict(results)
