@@ -1,6 +1,6 @@
 #!/bin/bash
 #MSUB -l nodes=1:ppn=16
-#MSUB -l walltime=12:00:00
+#MSUB -l walltime=5:00:00
 #MSUB -l pmem=3000mb
 #MSUB -M sascha.rechenberger@uni-ulm.de
 #MSUB -m bea
