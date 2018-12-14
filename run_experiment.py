@@ -120,6 +120,7 @@ if __name__ == '__main__':
 
     seedtest = {}
 
+    experiment_id = None
     count = 0
     while count < args.repeat:
         # setup
@@ -147,6 +148,7 @@ if __name__ == '__main__':
                 EntropyMeasurement,
                 poolsize=args.poolsize,
                 database=args.database_file,
+                repetition_of=experiment_id,
             )
         elif args.static:
             e = StaticExperiment(
@@ -158,6 +160,7 @@ if __name__ == '__main__':
                 setup,
                 poolsize=args.poolsize,
                 database=args.database_file,
+                repetition_of=experiment_id,
             )
 
 
@@ -171,6 +174,8 @@ if __name__ == '__main__':
 
         # run experiment
         e()
+        if not experiment_id:
+            experiment_id = e.experiment_id
 
         #saving
         if args.verbose:
