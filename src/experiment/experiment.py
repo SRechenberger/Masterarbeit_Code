@@ -162,6 +162,7 @@ CREATE TABLE IF NOT EXISTS measurement_series
     ( series_id     INTEGER PRIMARY KEY
     , experiment_id INTEGER NOT NULL
     , formula_id    INTEGER NOT NULL
+    , measured_states INTEGER NOT NULL
     , FOREIGN KEY(experiment_id) REFERENCES experiment(experiment_id)
     , FOREIGN KEY(formula_id) REFERENCES formula(formula_id)
     )
@@ -171,8 +172,9 @@ SAVE_MEASUREMENT_SERIES = """
 INSERT INTO measurement_series
     ( experiment_id
     , formula_id
+    , measured_states
     )
-VALUES (?,?)
+VALUES (?,?,?)
 """
 
 CREATE_IMPROVEMENT_PROB = """
@@ -538,6 +540,7 @@ class StaticExperiment(AbstractExperiment):
             SAVE_MEASUREMENT_SERIES,
             self.experiment_id,
             result['formula_id'],
+            result['measured_states'],
         )
 
         for series in result['improvement_prob']:
@@ -670,6 +673,7 @@ class StaticExperiment(AbstractExperiment):
 
         return dict(
             formula_id=f_id,
+            measured_states=len(measured_states),
             improvement_prob=[
                 dict(hamming_dist=d, prob=p)
                 for d,p in enumerate(increment_prob)
