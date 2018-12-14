@@ -20,19 +20,22 @@ from src.experiment.measurement import RuntimeMeasurement
 CREATE_EXPERIMENT = """
 CREATE TABLE IF NOT EXISTS experiment
     ( experiment_id INTEGER PRIMARY KEY
+    , repetition_of INTEGER
     , solver        TEXT NOT NULL
     , sample_size   INT NOT NULL
     , static        BOOL NOT NULL
+    , FOREIGN KEY(repetition_of) REFERENCES experiment(experiment_id)
     )
 """
 
 SAVE_EXPERIMENT = """
 INSERT INTO experiment
-    ( solver
+    ( repetition_of
+    , solver
     , sample_size
     , static
     )
-VALUES (?,?,?)
+VALUES (?,?,?,?)
 """
 
 CREATE_FORMULA = """
@@ -247,6 +250,7 @@ class AbstractExperiment:
             solver,
             solver_params,
             is_static,
+            repetition_of,
             *init_database,
             poolsize=1,
             database='experiments.db'):
@@ -271,6 +275,7 @@ class AbstractExperiment:
         # get solver functions
         self.solver = solver
         self.solver_params = solver_params
+        self.repetition_of = repetition_of
         # load formulae
         #self.formulae = FormulaSupply(
         #    input_files,
@@ -317,6 +322,7 @@ class AbstractExperiment:
             c.execute(
                 SAVE_EXPERIMENT,
                 (
+                    self.repetition_of,
                     solver,
                     len(input_files),
                     is_static
@@ -397,7 +403,8 @@ class DynamicExperiment(AbstractExperiment):
             measurement_constructor,
             poolsize=1,             # number of parallel processes
             database='experiments.db',
-            hamming_dist=0):        # start hamming distance
+            hamming_dist=0,         # start hamming distance
+            repetition_of=None):
 
         super(DynamicExperiment, self).__init__(
             input_files,
@@ -408,6 +415,7 @@ class DynamicExperiment(AbstractExperiment):
                 **solver_params,
             ),
             False,
+            repetition_of,
             CREATE_ALGORITHM_RUN,
             CREATE_SEARCH_RUN,
             CREATE_ENTROPY_DATA,
@@ -520,13 +528,15 @@ class StaticExperiment(AbstractExperiment):
             solver,                 # the solver to be used
             solver_params,          # solver specific parameters
             poolsize=1,             # number of parallel processes
-            database='experiments.db'):
+            database='experiments.db',
+            repetition_of=None):
 
         super(StaticExperiment,self).__init__(
             input_files,
             solver,
             solver_params,
             True,
+            repetition_of,
             CREATE_MEASUREMENT_SERIES,
             CREATE_IMPROVEMENT_PROB,
             CREATE_STATE_ENTROPY,
