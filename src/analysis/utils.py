@@ -13,6 +13,15 @@ from scipy.stats import beta
 
 from src.experiment.utils import eta
 
+class StdevFunc:
+    def __init__(self):
+        self.values = []
+
+    def step(self, value):
+        self.values.append(value)
+
+    def finalize(self):
+        return np.std(self.values)
 
 def flatten(xss):
     return [
@@ -142,22 +151,41 @@ def get_entropy_avg(file, experiment_id, field):
 
 def hamming_dist_to_state_entropy(file, formula_id):
     with sqlite3.connect(file) as conn:
-        cursor = conn.cursor()
-        rows = cursor.execute(
-            """ SELECT hamming_dist, entropy_avg \
-            FROM measurement_series NATURAL JOIN state_entropy \
+        rows = cursor.cursor().execute(
+            """ SELECT experiment_id, hamming_dist, entropy_avg \
+            FROM experiment \
+                NATURAL JOIN measurement_series \
+                NATURAL JOIN state_entropy \
             WHERE formula_id = ? """,
             (formula_id,),
         )
-        results = dict(
-            hamming_dist=[],
-            state_entropy=[],
-        )
-        for hamming_dist, state_entropy in rows:
-            results['hamming_dist'].append(hamming_dist)
-            results['state_entropy'].append(state_entropy)
 
-        return pandas.DataFrame.from_dict(results)
+        return pandas.DataFrame.from_record(
+            data=list(rows),
+            cols=['experiment_id','hamming_dist','state_entropy'],
+        )
+
+
+def hamming_dist_to_state_entropy_avg_and_stdev(file, formula_id):
+    with sqlite3.connect(file) as conn:
+
+        conn.create_aggregate('stdev', 1, StdevFunc)
+
+        rows = conn.cursor().execute(
+            """ SELECT hamming_dist, stdev(entropy_avg), avg(entropy_avg) \
+            FROM experiment \
+                NATURAL JOIN measurement_series \
+                NATURAL JOIN state_entropy \
+            WHERE measurement_series.formula_id = ? \
+            GROUP BY hamming_dist """,
+            (formula_id,),
+        )
+
+        return pandas.DataFrame.from_records(
+            data=list(rows),
+            columns=['hamming_dist','stdev', 'avg'],
+        )
+
 
 
 def tms_entropy(file, satisfies=None):
@@ -188,3 +216,54 @@ def tms_entropy(file, satisfies=None):
                 results['converged'].append(converged)
 
         return pandas.DataFrame.from_dict(results)
+
+
+def latest_entropy(file, field, satisfies=None):
+    with sqlite3.connect(file) as conn:
+        cursor = conn.cursor()
+        run_ids = cursor.execute(
+            """ SELECT formula_id, run_id \
+            FROM algorithm_run \
+            WHERE sat = 1 \
+            """
+        )
+        results = dict(
+            formula_id=[],
+            run_id=[],
+            success_entropy=[],
+        )
+        for formula_id, run_id in run_ids:
+            success_entropy = conn.cursor().execute(
+                f""" SELECT latest\
+                FROM search_run JOIN entropy_data ON {field} = data_id \
+                WHERE run_id = ? AND success = 1 \
+                """,
+                (run_id,)
+            )
+            success_entropy = list(success_entropy)
+            if len(success_entropy) > 0:
+                (success_entropy,), = success_entropy
+                results['formula_id'].append(formula_id)
+                results['run_id'].append(run_id)
+                results['success_entropy'].append(success_entropy)
+
+        return pandas.DataFrame.from_dict(results)
+
+
+def avg_entropy(file, field, satisfies=None):
+    with sqlite3.connect(file) as conn:
+        run_ids = conn.cursor().execute(
+            f""" SELECT formula_id, run_id, search_id, sat, latest, minimum, maximum, average \
+            FROM \
+                algorithm_run \
+                NATURAL JOIN search_run \
+                JOIN entropy_data ON {field} = data_id
+            """
+        )
+
+        results = filter(lambda row: not satisfies or satisfies(*row), run_ids)
+
+        return pandas.DataFrame.from_records(
+            data=results,
+            columns=['formula_id', 'run_id', 'search_id', 'sat', 'latest', 'minimum', 'maximum', 'average'],
+        )
