@@ -8,25 +8,16 @@ def poly1(x,c):
 def poly(br_score):
     return 1/(1+br_score)
 
-def exp1(x,c):
-    return pow(c,x)
+breaks = []
 
-def exp(br_score):
-    return 1/br_score
-
-
-functions = dict(
-    poly = (poly1,poly),
-    exp = (exp1,exp)
-)
-
-
-def probsat_distribution(max_occ, c_break, phi = 'poly'):
-    func1, func = functions[phi]
-    breaks = [func1(x,c_break) for x in range(0,max_occ+1)]
+def probsat_distribution(noise_param):
     def probsat_distr(context):
+        global breaks
+        if not breaks:
+            breaks = [poly1(x,noise_param) for x in range(0,context.formula.max_occs+1)]
+
         get_break_score = context.score.get_break_score
-        f = lambda i: func(breaks[get_break_score(i)])
+        f = lambda i: poly(breaks[get_break_score(i)])
         distr = [0] * (context.formula.num_vars + 1)
 
         false_clauses = len(context.falselist)
@@ -52,23 +43,20 @@ def probsat_distribution(max_occ, c_break, phi = 'poly'):
     return probsat_distr
 
 
-def probsat_heuristic(max_occ, c_break, phi = 'poly'):
-    assert type(c_break) == float,\
-        "c_break = {} :: {} is no float".format(c_break, type(c_break))
-    assert type(phi) == str,\
-        "phi = {} :: {} is no str".format(phi, type(phi))
-    assert phi in functions,\
-        "phi = {} is not in {}".format(phi, list(functions.keys()))
+def probsat_heuristic(noise_param):
+    assert type(noise_param) == float,\
+        "noise_param = {} :: {} is no float".format(noise_param, type(noise_param))
 
-    func1, func = functions[phi]
-
-    breaks = [func1(x,c_break) for x in range(0,max_occ+1)]
 
     def heur(context, rand_gen=random):
         assert isinstance(context,DefensiveContext),\
             "context = {} :: {} is no GSATContext".format(context, type(context))
 
-        f = lambda i: func(breaks[context.score.get_break_score(i)])
+        global breaks
+        if not breaks:
+            breaks = [poly1(x,noise_param) for x in range(0,context.formula.max_occs+1)]
+
+        f = lambda i: poly(breaks[context.score.get_break_score(i)])
 
         clause_idx = rand_gen.choice(context.falselist.lst)
         clause_vars = map(abs,context.formula.clauses[clause_idx])
@@ -92,12 +80,11 @@ def probsat(
         measurement_constructor,
         max_tries,
         max_flips,
-        c_break=2.3,
-        phi='poly',
+        noise_param=2.3,
         hamming_dist=0,
         rand_gen=random):
     return generic_sls(
-        probsat_heuristic(formula.max_occs,c_break,phi),
+        probsat_heuristic(noise_param),
         formula,
         max_tries,
         max_flips,

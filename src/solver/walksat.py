@@ -36,11 +36,11 @@ class DefensiveContext(Context):
         return len(self.falselist) == 0
 
 
-def walksat_distribution(rho):
-    assert isinstance(rho, float),\
-        "rho = {} :: {} is not a float".format(rho, type(rho))
+def walksat_distribution(noise_param):
+    assert isinstance(noise_param, float),\
+        "noise_param = {} :: {} is not a float".format(noise_param, type(noise_param))
 
-    def walksat_distr(context):
+    def dist(context):
         # empty distribution
         distr = [0] * (context.formula.num_vars + 1)
 
@@ -66,8 +66,8 @@ def walksat_distribution(rho):
             else:
                 for var in map(abs,clause):
                     # greedy and noisy step
-                    greedy = (1-rho)/len(clause_best) if var in clause_best else 0
-                    noisy = rho/len(clause)
+                    greedy = (1-noise_param)/len(clause_best) if var in clause_best else 0
+                    noisy = noise_param/len(clause)
                     # weighting
                     distr[var] += (greedy + noisy)/false_clauses
 
@@ -76,12 +76,12 @@ def walksat_distribution(rho):
 
         return distr
 
-    return walksat_distr
+    return dist
 
 
-def walksat_heuristic(rho):
-    assert isinstance(rho, float),\
-        "rho = {} :: {} is not a float".format(rho, type(rho))
+def walksat_heuristic(noise_param):
+    assert isinstance(noise_param, float),\
+        "noise_param = {} :: {} is not a float".format(noise_param, type(noise_param))
 
     def heur(context, rand_gen=random):
         assert isinstance(context, DefensiveContext),\
@@ -100,7 +100,7 @@ def walksat_heuristic(rho):
         # get random number [0,1)
         dice = rand_gen.random()
         # Greedy
-        if best_score == 0 or dice > rho:
+        if best_score == 0 or dice > noise_param:
             return abs(rand_gen.choice(list(clause_best)))
 
         # Noisy
@@ -110,10 +110,17 @@ def walksat_heuristic(rho):
     return heur
 
 
-def walksat(formula, measurement_constructor, max_tries, max_flips, rho = 0.57, hamming_dist=0, rand_gen=random):
+def walksat(
+        formula,
+        measurement_constructor,
+        max_tries,
+        max_flips,
+        noise_param=0.57,
+        hamming_dist=0,
+        rand_gen=random):
 
     return generic_sls(
-        walksat_heuristic(rho),
+        walksat_heuristic(noise_param),
         formula,
         max_tries,
         max_flips,
