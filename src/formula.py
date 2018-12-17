@@ -385,7 +385,7 @@ class Assignment:
 
     def __setitem__(self, var_index, value):
         self.number = self.number ^ ((1 if value else 0) << var_index - 1)
-        self.atoms[var_index] = True if value else False
+        self.atoms[var_index-1] = True if value else False
 
     def __delitem__(self, var_index):
         pass
