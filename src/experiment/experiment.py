@@ -41,14 +41,21 @@ VALUES (?,?,?,?)
 CREATE_FORMULA = """
 CREATE TABLE IF NOT EXISTS formula
     ( formula_id    INTEGER PRIMARY KEY
-    , formula_file  TEXT
+    , formula_file  TEXT NOT NULL
+    , num_vars      INTEGER NOT NULL
+    , num_clauses   INTEGER NOT NULL
+    , sat_assgn     TEXT NOT NULL
     )
 """
 
 SAVE_FORMULA = """
 INSERT INTO formula
-    ( formula_file )
-VALUES (?)
+    ( formula_file 
+    , num_vars
+    , num_clauses
+    , sat_assgn
+    )
+VALUES (?, ?, ?, ?)
 """
 
 CREATE_PARAMETER = """
@@ -77,9 +84,6 @@ CREATE TABLE IF NOT EXISTS algorithm_run
     ( run_id            INTEGER PRIMARY KEY
     , experiment_id     INTEGER NOT NULL
     , formula_id        INTEGER NOT NULL
-    , sat_assgn         TEXT NOT NULL
-    , clauses           INT NOT NULL
-    , vars              INT NOT NULL
     , sat               BOOL NOT NULL
     , total_runtime     INTEGER NOT NULL
     , FOREIGN KEY(experiment_id) REFERENCES experiment(experiment_id)
@@ -91,13 +95,10 @@ SAVE_ALGORITHM_RUN = """
 INSERT INTO algorithm_run
     ( experiment_id
     , formula_id
-    , sat_assgn
-    , clauses
-    , vars
     , sat
     , total_runtime
     )
-VALUES (?,?,?,?,?,?,?)
+VALUES (?,?,?,?)
 """
 
 CREATE_SEARCH_RUN = """
@@ -313,7 +314,12 @@ class AbstractExperiment:
                 if len(res) == 0:
                     c.execute(
                         SAVE_FORMULA,
-                        (file,)
+                        (
+                            file,
+                            formula.num_vars,
+                            formula.num_clauses,
+                            str(formula.sat_assgn)
+                        )
                     )
                     formula_id = c.lastrowid
                 elif len(res) > 0:
@@ -452,9 +458,6 @@ class DynamicExperiment(AbstractExperiment):
 
         return dict(
             formula_id=f_id,
-            sat_assgn=formula.satisfying_assignment,
-            num_clauses=formula.num_clauses,
-            num_vars=formula.num_vars,
             sat=True if assgn else False,
             runs=measurement.run_measurements,
         )
@@ -465,9 +468,6 @@ class DynamicExperiment(AbstractExperiment):
             SAVE_ALGORITHM_RUN,
             self.experiment_id,
             result['formula_id'],
-            str(result['sat_assgn']),
-            result['num_clauses'],
-            result['num_vars'],
             result['sat'],
             sum(iter(run['flips'] for run in result['runs'])),
         )
