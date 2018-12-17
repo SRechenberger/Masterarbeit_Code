@@ -8,10 +8,16 @@ Functions:
     add_tms_entropy
 """
 
-
+import os
 import sqlite3
+import pandas
+
+import numpy as np
+import multiprocessing as mp
 
 import src.analysis.utils as utils
+
+from functools import partial
 
 CREATE_TMS_ENTROPY = """
 CREATE TABLE IF NOT EXISTS tms_entropy
@@ -36,7 +42,13 @@ INSERT INTO tms_entropy
 VALUES (?,?,?,?,?)
 """
 
-def add_tms_entropy(file, eps_exp=20, max_loops=20000):
+UPDATE_TMS_ENTROPY = """
+UPDATE tms_entropy
+SET value = ?, converged = ?, eps_exp = ?, max_loops = ?
+WHERE series_id = ?
+"""
+
+def add_tms_entropy(file, eps_exp=15, max_loops=10000, update=True):
     """ Adds the table holding the TMS-entropy to the given database file
 
     Positionals:
@@ -52,26 +64,101 @@ def add_tms_entropy(file, eps_exp=20, max_loops=20000):
         series_ids = conn.cursor().execute(
             "SELECT series_id FROM measurement_series"
         )
-        for series_id, in series_ids:
-            print(series_id)
-            test = conn.cursor().execute(
-                "SELECT tms_entropy_id FROM tms_entropy WHERE series_id = ?",
-                (series_id,)
-            )
-            if list(test):
-                continue
-            probs = conn.cursor().execute(
-                "SELECT prob FROM improvement_probability WHERE series_id = ?",
-                (series_id,)
-            )
-            tms_entropy, converged = utils.calculate_tms_entropy(
-                list(probs),
-                eps=2**-eps_exp,
-                max_loops=max_loops
-            )
-            print(tms_entropy)
-            conn.cursor().execute(
-                SAVE_TMS_ENTROPY,
-                (series_id, tms_entropy, converged, eps_exp, max_loops)
-            )
+        with mp.Pool(processes=3) as pool:
+            future_results = []
+            updated_ids = set()
+            for series_id, in series_ids:
+                test = conn.cursor().execute(
+                    "SELECT eps_exp, max_loops FROM tms_entropy WHERE series_id = ?",
+                    (series_id,)
+                )
+                test = list(test)
+                if test and update:
+                    updated_ids.add(series_id)
+                else:
+                    continue
+
+                probs = conn.cursor().execute(
+                    "SELECT prob FROM improvement_probability WHERE series_id = ?",
+                    (series_id,)
+                )
+                future_result = pool.apply_async(
+                    partial(utils.calculate_tms_entropy, eps=2**-eps_exp, max_loops=max_loops),
+                    (
+                        list(probs),
+                    )
+                )
+                future_results.append((series_id, future_result))
+
+            for result in [(series_id, *result.get()) for (series_id, result) in future_results]:
+                series_id, tms_entropy, converged = result
+                if series_id in updated_ids:
+                    conn.cursor().execute(
+                        UPDATE_TMS_ENTROPY,
+                        (tms_entropy, converged, eps_exp, max_loops, series_id)
+                    )
+                else:
+                    conn.cursor().execute(
+                        SAVE_TMS_ENTROPY,
+                        (series_id, tms_entropy, converged, eps_exp, max_loops)
+                    )
         conn.commit()
+
+
+def tms_entropy_values(file, only_convergent=True, satisfies=None):
+    """ Returns a DataFrame of the distribution of the TMS-entropy
+
+    Positionals:
+        file: Database file to read
+
+    Keywords:
+        only_convergent: if True, only the result of convergent values will be returned
+
+    Returns:
+        DataFrame having the columns ['solver', 'noise_param', 'formula_id', 'tms_entropy']
+    """
+
+    with sqlite3.connect(file, timeout=30) as conn:
+        if only_convergent:
+            query = """ \
+                SELECT solver, noise_param, formula_id, value \
+                FROM experiment NATURAL JOIN measurement_series NATURAL JOIN tms_entropy \
+                WHERE converged = 1 \
+            """
+        else:
+            query = """ \
+                SELECT solver, noise_param, formula_id, value \
+                FROM experiment NATURAL JOIN measurement_series NATURAL JOIN tms_entropy \
+            """
+        cursor = conn.cursor().execute(query)
+        return pandas.DataFrame.from_records(
+            list(filter(lambda args: satisfies(*args) if satisfies else True, cursor)),
+            columns=['solver', 'noise_param', 'formula_id', 'tms_entropy']
+        )
+
+
+def tms_entropy_to_noise_param(folder, solver):
+    params = dict(
+        gsat=('gsat.db', np.array(0)),
+        walksat=('walksat-rho{:.1f}.db', np.concatenate(([0.57], np.arange(0, 1.1, 0.1)))),
+        probsat=('probsat-cb{:.1f}.db', np.concatenate(([2.3], np.arange(0, 4.1, 0.2)))),
+    )
+
+    template, args = params[solver]
+    files = [(arg, os.path.join(folder, template.format(arg))) for arg in args]
+
+    results = []
+
+    for arg, file in files:
+        print(file)
+        with sqlite3.connect(file, timeout=30) as conn:
+            entropies = conn.cursor().execute(
+                "SELECT value, converged FROM tms_entropy"
+            )
+            for entropy, conv_rate in entropies:
+                results.append((arg, entropy, conv_rate))
+
+    return pandas.DataFrame.from_records(
+        results,
+        columns=['noise_param', 'tms_entropy', 'conv_rate']
+    )
