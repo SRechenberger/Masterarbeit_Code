@@ -15,6 +15,6 @@ python -O run_experiment.py \
   --dynamic 600 10240 \
   --walksat $RHO \
   --poolsize 16 \
-  --database_file $WORK/output/data/walksat-rho`echo $RHO`.db \
+  --database_file $WORK/output/data/walksat-`echo $RHO`.db \
   --repeat 10 \
   --verbose
