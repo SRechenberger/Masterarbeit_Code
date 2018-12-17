@@ -14,6 +14,7 @@ from src.formula import Formula
 
 class TestExperiment(unittest.TestCase):
 
+
     def setUp(self):
         random.seed()
         self.sample_size = 10
@@ -30,11 +31,13 @@ class TestExperiment(unittest.TestCase):
         )
         self.pool = list(map(partial(os.path.join, self.pool_dir), os.listdir(self.pool_dir)))
 
+
     def doCleanups(self):
         for file in self.pool:
             os.remove(file)
         os.remove(self.db)
         os.rmdir(self.pool_dir)
+
 
     def run_test_experiment(self, solver, noise_param):
         experiment = DynamicExperiment(
