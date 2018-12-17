@@ -7,8 +7,8 @@ class TestWalkSATDistr(TestDistribution):
     def test_distr(self):
         self.generic_test_distribution_against_heuristic(
             DefensiveContext,
-            probsat_heuristic(int(self.n * self.r), 2.3),
-            probsat_distribution(int(self.n * self.r), 2.3),
+            probsat_heuristic(noise_param=2.3),
+            probsat_distribution(noise_param=2.3),
         )
 
 class TestProbSAT(TestSolver):
@@ -16,7 +16,6 @@ class TestProbSAT(TestSolver):
         self.generic_test_solver(
             partial(
                 probsat,
-                c_break = 2.3,
-                phi = 'poly',
+                noise_param=2.3,
             )
         )

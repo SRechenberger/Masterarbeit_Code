@@ -1,5 +1,8 @@
 import unittest
 import random
+import os
+
+from functools import partial
 
 from src.experiment.experiment import DynamicExperiment
 from src.experiment.measurement import EntropyMeasurement
@@ -13,28 +16,41 @@ class TestExperiment(unittest.TestCase):
 
     def setUp(self):
         random.seed()
-        self.sample_size = 3
-        self.pool_dir = 'test_files'
-        number_formulae = 10
-        self.n = 256
+        self.sample_size = 10
+        self.test_num = random.randrange(0,2**6)
+        self.pool_dir = f'TEST_EXPERIMENT_{self.test_num:04X}'
+        self.n = 64
+        self.db = f'db_{self.test_num:04X}.db'
         Formula.generate_formula_pool(
-            'test_files',
-            number_formulae,
+            self.pool_dir,
+            self.sample_size,
             self.n,
             4.2,
-            poolsize = 3
+            poolsize=3
         )
+        self.pool = list(map(partial(os.path.join, self.pool_dir), os.listdir(self.pool_dir)))
 
+    def doCleanups(self):
+        try:
+            for file in self.pool:
+                os.remove(file)
+            os.remove(self.db)
+            os.rmdir(self.pool_dir)
+        except:
+            pass
 
     def test_experiment_with_gsat(self):
         experiment = DynamicExperiment(
-            self.pool_dir,
-            self.sample_size,
+            self.pool,
             'gsat',
-            dict(),
-            10,self.n*3,
+            dict(
+                max_tries=10,
+                max_flips=self.n*5,
+                noise_param=0
+            ),
             EntropyMeasurement,
-            poolsize = 3
+            poolsize = 3,
+            database=self.db,
         )
         results = experiment()
         self.assertEqual(len(results),self.sample_size)
@@ -43,13 +59,16 @@ class TestExperiment(unittest.TestCase):
 
     def test_experiment_with_walksat(self):
         experiment = DynamicExperiment(
-            self.pool_dir,
-            self.sample_size,
+            self.pool,
             'walksat',
-            dict(rho=0.57),
-            10,self.n*3,
+            dict(
+                max_tries=10,
+                max_flips=self.n*5,
+                noise_param=0.57
+            ),
             EntropyMeasurement,
             poolsize = 3,
+            database=self.db,
         )
         results = experiment()
         self.assertEqual(len(results),self.sample_size)
@@ -58,13 +77,16 @@ class TestExperiment(unittest.TestCase):
 
     def test_experiment_with_probsat(self):
         experiment = DynamicExperiment(
-            self.pool_dir,
-            self.sample_size,
+            self.pool,
             'probsat',
-            dict(c_break=2.3,phi='poly'),
-            10,self.n*3,
+            dict(
+                max_tries=10,
+                max_flips=self.n*5,
+                noise_param=2.3
+            ),
             EntropyMeasurement,
             poolsize = 3,
+            database=self.db,
         )
         results = experiment()
         self.assertEqual(len(results),self.sample_size)

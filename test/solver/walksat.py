@@ -6,11 +6,11 @@ class TestWalkSATDistr(TestDistribution):
     def test_distr(self):
         self.generic_test_distribution_against_heuristic(
             DefensiveContext,
-            walksat_heuristic(rho = 0.57),
-            walksat_distribution(rho = 0.57)
+            walksat_heuristic(noise_param=0.57),
+            walksat_distribution(noise_param=0.57)
         )
 
 
 class TestWalkSAT(TestSolver):
     def test_solver(self):
-        self.generic_test_solver(partial(walksat,rho = 0.57))
+        self.generic_test_solver(partial(walksat,noise_param=0.57))

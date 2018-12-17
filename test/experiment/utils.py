@@ -6,7 +6,7 @@ import math
 from functools import partial
 
 from src.solver.utils import Formula
-from src.experiment.utils import FormulaSupply, Queue, WindowEntropy, entropy, mutual_information, BloomFilter
+from src.experiment.utils import FormulaSupply, Queue, WindowEntropy, entropy, mutual_information
 from src.analysis.utils import binomial_vec
 
 from scipy.stats import binom
@@ -137,45 +137,3 @@ class TestWindowEntropy(unittest.TestCase):
             i_observed = window_X.get_entropy() + window_Y.get_entropy() - window_XY.get_entropy()
             i_expected = mutual_information(dist)
             self.assertAlmostEqual(i_observed, i_expected, delta=self.eps)
-
-
-class TestBloomFilter(unittest.TestCase):
-    def setUp(self):
-        random.seed()
-        self.cases = 5 if __debug__ else 10
-        self.failure_prob = 0.1
-
-    def test_bloom_filter(self):
-        fails = 0
-        for i in range(0, self.cases):
-            n = random.randrange(2**10, 2**20)
-            eps = max(random.random()/10,0.02)
-            # print("\nCase {}: n = {}, eps = {}, ".format(i,n,eps), end='')
-            bf = BloomFilter(max_elements=n, error_rate=eps)
-            input_set = set(range(0,n*2))
-            check = set()
-            inserted = 0
-            for x in input_set.copy():
-                if random.random() <= .5:
-                    bf.add(x)
-                    check.add(x)
-                    input_set.remove(x)
-                    inserted += 1
-
-                if inserted >= n/2:
-                    break
-
-            false_positives = 0
-            for i in input_set:
-                if i in bf:
-                    false_positives += 1
-
-            # calculate G-Test statistic
-
-            if false_positives > 2*n*eps:
-                fails += 1
-            # self.assertGreaterEqual(p, 0.05)
-        p = 1-binom.cdf(fails, self.cases, self.failure_prob)
-        # print("p={} fails={} cases={} P[fail]={}".format(p, fails, self.cases, self.failure_prob))
-        self.assertGreaterEqual(p, 0.05)
-

@@ -32,7 +32,7 @@ class TestDistribution(unittest.TestCase):
         self.n = 128
         self.r = 4.2
 
-        self.significance_level = 0.01 if __debug__ else 0.05
+        self.significance_level = 0.05
         self.sample_size = 10 if __debug__ else 100
         self.repeat = 10 if __debug__ else 100
         self.max_failure = self.repeat * 0.2
@@ -99,11 +99,6 @@ class TestDistribution(unittest.TestCase):
                     if p_val < self.significance_level:
                         rejections += 1
 
-                       # if __debug__:
-                       #     print("\nX² = {}; p = {}".format(chi_s, p_val))
-                       #     print("observed:\n{}".format(observed_distr))
-                       #     print("expected:\n{}".format(expected_distr))
-
                 else:
                     self.assertAlmostEqual(observed_distr[0], expected_distr[0], delta=self.eps)
 
@@ -117,12 +112,13 @@ class TestDistribution(unittest.TestCase):
 
 
 class TestSolver(unittest.TestCase):
+
     def setUp(self):
         random.seed()
 
         cases = 1 if __debug__ else 100
 
-        n = 128 
+        n = 64
         r = 4.2
 
         formulae = [
@@ -134,7 +130,6 @@ class TestSolver(unittest.TestCase):
             max_flips     = n*5,
             max_tries     = 100,
             formulae      = formulae,
-            max_run_time  = 20,
             cases         = cases,
             min_successes = cases // 100,
         )
@@ -142,7 +137,6 @@ class TestSolver(unittest.TestCase):
 
     def generic_test_solver(self, solver):
         successes = 0
-        run_time_exceeded = 0
         for formula in self.solver_setup['formulae']:
             assgn, measurement = solver(
                 formula,
@@ -154,9 +148,6 @@ class TestSolver(unittest.TestCase):
                 self.assertGreater(measurement.flips, 0)
                 self.assertTrue(formula.is_satisfied_by(assgn))
                 successes += 1
-
-            if measurement.get_run_time() >= self.solver_setup['max_run_time']:
-                run_time_exceeded += 1
 
         self.assertGreaterEqual(successes, self.solver_setup['min_successes'])
 

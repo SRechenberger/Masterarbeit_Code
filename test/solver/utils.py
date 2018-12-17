@@ -96,10 +96,10 @@ class TestScores(unittest.TestCase):
             neg_flips = to_flips[per_side:]
 
             for pos in pos_flips:
-                assgn[pos-1] = True
+                assgn[pos] = True
 
             for neg in neg_flips:
-                assgn[neg-1] = False
+                assgn[neg] = False
 
             scores = Scores(formula, assgn, falselist)
 
