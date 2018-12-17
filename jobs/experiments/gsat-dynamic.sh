@@ -13,6 +13,6 @@ python -O run_experiment.py \
   --dynamic 600 10240 \
   --gsat \
   --poolsize 16 \
-  --database_file $WORK/output/data/gsat.db \
+  --database_file $WORK/output/data/gsat-0.db \
   --repeat 10 \
   --verbose
