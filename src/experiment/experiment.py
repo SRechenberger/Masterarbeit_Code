@@ -187,6 +187,25 @@ INSERT INTO improvement_probability
 VALUES (?,?,?)
 """
 
+CREATE_UNSAT_CLAUSES = """
+CREATE TABLE IF NOT EXISTS unsat_clauses
+    ( unsat_clauses_id  INTEGER PRIMARY KEY
+    , series_id         INTEGER NOT NULL
+    , hamming_dist      INTEGER NOT NULL
+    , unsat_clauses     REAL
+    , FOREIGN KEY(series_id) REFERENCES measurement_series(series_id)
+    )
+"""
+
+SAVE_UNSAT_CLAUSES = """
+INSERT INTO unsat_clauses
+    ( series_id
+    , hamming_dist
+    , unsat_clauses
+    )
+VALUES (?,?,?)
+"""
+
 CREATE_STATE_ENTROPY = """
 CREATE TABLE IF NOT EXISTS state_entropy
     ( state_entropy_id INTEGER PRIMARY KEY
@@ -517,6 +536,7 @@ class StaticExperiment(AbstractExperiment):
             CREATE_MEASUREMENT_SERIES,
             CREATE_IMPROVEMENT_PROB,
             CREATE_STATE_ENTROPY,
+            CREATE_UNSAT_CLAUSES,
             poolsize=poolsize,
             database=database,
         )
@@ -547,6 +567,14 @@ class StaticExperiment(AbstractExperiment):
                 series['entropy_avg'],
                 series['entropy_min'],
                 series['entropy_max'],
+            )
+
+        for series in result['unsat_clauses']:
+            execute(
+                SAVE_UNSAT_CLAUSES,
+                series_id,
+                series['hamming_dist'],
+                series['unsat_clauses'],
             )
 
 
@@ -586,6 +614,8 @@ class StaticExperiment(AbstractExperiment):
         # at the negated assignment every flip is good; on the other end, every flip is bad
         increment_prob[n] = 1
 
+        unsat_clauses = [0] * (n+1)
+
         # for each hamming distance beginning with 1
         for distance in range(1,n // 2 + 1):
             # calculate number of paths to run from this distance
@@ -601,6 +631,7 @@ class StaticExperiment(AbstractExperiment):
 
                 # init context
                 ctx = CONTEXTS[self.solver](formula, current_assgn)
+                flist = ctx.falselist
                 # variables for measured path
                 differ, same = current_assgn.hamming_sets(sat_assgn)
                 path = rand_gen.sample(differ, n - 2*distance + 1)
@@ -623,6 +654,7 @@ class StaticExperiment(AbstractExperiment):
                             prob += distr[i]
 
                         increment_prob[hamming_dist] += prob
+                        unsat_clauses[hamming_dist] += len(flist)
 
                         # calculate state entropy
                         h = arr_entropy(distr, base=n+1)
@@ -652,6 +684,9 @@ class StaticExperiment(AbstractExperiment):
         for i, (inc, c) in enumerate(zip(increment_prob, state_count)):
             increment_prob[i] = inc/c
 
+        for i, (unsat, c) in enumerate(zip(unsat_clauses, state_count)):
+            unsat_clauses[i] = unsat/c
+
         # calculate the maximum number of measured states
         total_num_states = sum(
             map(
@@ -674,4 +709,8 @@ class StaticExperiment(AbstractExperiment):
                     zip(state_entropy,state_entropy_min,state_entropy_max)
                 )
             ],
+            unsat_clauses=[
+                dict(hamming_dist=d, unsat_clauses=u)
+                for d, u in enumerate(unsat_clauses)
+            ]
         )
