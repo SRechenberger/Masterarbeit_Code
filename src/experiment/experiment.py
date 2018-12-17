@@ -22,6 +22,9 @@ CREATE TABLE IF NOT EXISTS experiment
     ( experiment_id INTEGER PRIMARY KEY
     , repetition_of INTEGER
     , solver        TEXT NOT NULL
+    , noise_param   REAL NOT NULL
+    , max_tries     INTEGER NOT NULL
+    , max_flips     INTEGER NOT NULL
     , sample_size   INT NOT NULL
     , static        BOOL NOT NULL
     , FOREIGN KEY(repetition_of) REFERENCES experiment(experiment_id)
@@ -32,10 +35,13 @@ SAVE_EXPERIMENT = """
 INSERT INTO experiment
     ( repetition_of
     , solver
+    , noise_param
+    , max_tries
+    , max_flips
     , sample_size
     , static
     )
-VALUES (?,?,?,?)
+VALUES (?,?,?,?,?,?,?)
 """
 
 CREATE_FORMULA = """
@@ -56,27 +62,6 @@ INSERT INTO formula
     , sat_assgn
     )
 VALUES (?, ?, ?, ?)
-"""
-
-CREATE_PARAMETER = """
-CREATE TABLE IF NOT EXISTS parameter
-    ( parameter_id      INTEGER PRIMARY KEY
-    , experiment_id     INTEGER NOT NULL
-    , name              TEXT NOT NULL
-    , val               TEXT NOT NULL
-    , type              TEXT NOT NULL
-    , FOREIGN KEY(experiment_id) REFERENCES experiment(experiment_id)
-    )
-"""
-
-SAVE_PARAMETER = """
-INSERT INTO parameter
-    ( experiment_id
-    , name
-    , val
-    , type
-    )
-VALUES (?,?,?,?)
 """
 
 CREATE_ALGORITHM_RUN = """
@@ -232,9 +217,9 @@ SOLVERS = dict(
 )
 
 DISTRS = dict(
-  gsat=lambda f: lambda: gsat_distribution,
-  walksat=lambda f: walksat_distribution,
-  probsat=lambda f: partial(probsat_distribution, f.max_occs),
+  gsat=gsat_distribution,
+  walksat=walksat_distribution,
+  probsat=probsat_distribution,
 )
 
 CONTEXTS = dict(
@@ -245,7 +230,6 @@ CONTEXTS = dict(
 
 
 class AbstractExperiment:
-
 
     def __init__(
             self,
@@ -297,7 +281,6 @@ class AbstractExperiment:
             # init database, if not already done
             c = conn.cursor()
             c.execute(CREATE_EXPERIMENT)
-            c.execute(CREATE_PARAMETER)
             c.execute(CREATE_FORMULA)
             for statement in init_database:
                 c.execute(statement)
@@ -318,7 +301,7 @@ class AbstractExperiment:
                             file,
                             formula.num_vars,
                             formula.num_clauses,
-                            str(formula.sat_assgn)
+                            str(formula.satisfying_assignment)
                         )
                     )
                     formula_id = c.lastrowid
@@ -332,22 +315,15 @@ class AbstractExperiment:
                 (
                     self.repetition_of,
                     solver,
+                    solver_params['noise_param'],
+                    solver_params['max_tries'],
+                    solver_params['max_flips'],
                     len(input_files),
                     is_static
                 )
             )
-            self.experiment_id = c.lastrowid
 
-            for k, v in dict(**self.solver_params).items():
-                c.execute(
-                    SAVE_PARAMETER,
-                    (
-                        self.experiment_id,
-                        k,
-                        str(v),
-                        type(v).__name__,
-                    )
-                )
+            self.experiment_id = c.lastrowid
             conn.commit()
 
 
@@ -406,8 +382,7 @@ class DynamicExperiment(AbstractExperiment):
             self,
             input_files,            # list of input files
             solver,                 # the solver to be used
-            solver_params,          # special parameters of the solver
-            max_tries, max_flips,   # generic solver parameters
+            solver_params,          # parameters of the solver
             measurement_constructor,
             poolsize=1,             # number of parallel processes
             database='experiments.db',
@@ -417,11 +392,7 @@ class DynamicExperiment(AbstractExperiment):
         super(DynamicExperiment, self).__init__(
             input_files,
             solver,
-            dict(
-                max_tries=max_tries,
-                max_flips=max_flips,
-                **solver_params,
-            ),
+            solver_params,
             False,
             repetition_of,
             CREATE_ALGORITHM_RUN,
@@ -536,7 +507,11 @@ class StaticExperiment(AbstractExperiment):
         super(StaticExperiment,self).__init__(
             input_files,
             solver,
-            solver_params,
+            dict(
+                max_tries=0,
+                max_flips=0,
+                noise_param=solver_params['noise_param'],
+            ),
             True,
             repetition_of,
             CREATE_MEASUREMENT_SERIES,
@@ -584,7 +559,7 @@ class StaticExperiment(AbstractExperiment):
         # calculate the assignment with maximum hamming distance to the satisfying one
         furthest_assgn = sat_assgn.negation()
         # init distribution function
-        distr_f = DISTRS[self.solver](formula)(**self.solver_params)
+        distr_f = DISTRS[self.solver](self.solver_params['noise_param'])
 
         path_count = lambda i: max(1, i // 3 * 2)
 
