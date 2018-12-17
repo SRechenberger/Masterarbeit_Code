@@ -14,5 +14,5 @@ python -O run_experiment.py $WORK/input/n512 \
   --static \
   --probsat $CB \
   --poolsize 16 \
-  --database_file $WORK/output/data/probsat-rho`echo $CB`.db \
+  --database_file $WORK/output/data/probsat-cb`echo $CB`.db \
   --verbose
