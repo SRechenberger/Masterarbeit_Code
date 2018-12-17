@@ -187,7 +187,6 @@ def hamming_dist_to_state_entropy_avg_and_stdev(file, formula_id):
         )
 
 
-
 def tms_entropy(file, satisfies=None):
     with sqlite3.connect(file) as conn:
         cursor = conn.cursor()
