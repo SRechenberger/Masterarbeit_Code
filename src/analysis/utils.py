@@ -5,8 +5,6 @@ import pandas
 import numpy as np
 import numpy.linalg as la
 
-import seaborn as sns
-
 from scipy.special import binom
 from scipy.optimize import minimize
 from scipy.stats import beta
