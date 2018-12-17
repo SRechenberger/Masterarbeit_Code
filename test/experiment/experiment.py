@@ -31,22 +31,19 @@ class TestExperiment(unittest.TestCase):
         self.pool = list(map(partial(os.path.join, self.pool_dir), os.listdir(self.pool_dir)))
 
     def doCleanups(self):
-        try:
-            for file in self.pool:
-                os.remove(file)
-            os.remove(self.db)
-            os.rmdir(self.pool_dir)
-        except:
-            pass
+        for file in self.pool:
+            os.remove(file)
+        os.remove(self.db)
+        os.rmdir(self.pool_dir)
 
-    def test_experiment_with_gsat(self):
+    def run_test_experiment(self, solver, noise_param):
         experiment = DynamicExperiment(
             self.pool,
-            'gsat',
+            solver,
             dict(
                 max_tries=10,
                 max_flips=self.n*5,
-                noise_param=0
+                noise_param=noise_param
             ),
             EntropyMeasurement,
             poolsize = 3,
@@ -55,40 +52,15 @@ class TestExperiment(unittest.TestCase):
         results = experiment()
         self.assertEqual(len(results),self.sample_size)
         experiment.save_results()
+
+
+    def test_experiment_with_gsat(self):
+        self.run_test_experiment('gsat',0)
 
 
     def test_experiment_with_walksat(self):
-        experiment = DynamicExperiment(
-            self.pool,
-            'walksat',
-            dict(
-                max_tries=10,
-                max_flips=self.n*5,
-                noise_param=0.57
-            ),
-            EntropyMeasurement,
-            poolsize = 3,
-            database=self.db,
-        )
-        results = experiment()
-        self.assertEqual(len(results),self.sample_size)
-        experiment.save_results()
+        self.run_test_experiment('walksat', 0.57)
 
 
     def test_experiment_with_probsat(self):
-        experiment = DynamicExperiment(
-            self.pool,
-            'probsat',
-            dict(
-                max_tries=10,
-                max_flips=self.n*5,
-                noise_param=2.3
-            ),
-            EntropyMeasurement,
-            poolsize = 3,
-            database=self.db,
-        )
-        results = experiment()
-        self.assertEqual(len(results),self.sample_size)
-        experiment.save_results()
-
+        self.run_test_experiment('probsat', 2.3)
