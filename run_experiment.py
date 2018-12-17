@@ -107,18 +107,13 @@ if __name__ == '__main__':
 
     if args.gsat:
         solver = 'gsat'
-        setup = dict()
+        setup = dict(noise_param=0)
     elif args.walksat:
         solver = 'walksat'
-        setup = dict(rho = args.walksat[0])
+        setup = dict(noise_param=args.walksat[0])
     elif args.probsat:
         solver = 'probsat'
-        setup = dict(
-            c_break = args.probsat[0],
-            phi = 'poly'
-        )
-
-    seedtest = {}
+        setup = dict(noise_param=args.probsat[0])
 
     experiment_id = None
     count = 0
@@ -136,6 +131,8 @@ if __name__ == '__main__':
         random.seed(seed)
 
         if args.dynamic:
+            setup['max_tries'] = args.dynamic[0]
+            setup['max_flips'] = args.dynamic[1]
             e = DynamicExperiment(
                 list(map(
                     partial(os.path.join, args.input_dir),
@@ -143,8 +140,6 @@ if __name__ == '__main__':
                 )),
                 solver,
                 setup,
-                args.dynamic[0],
-                args.dynamic[1],
                 EntropyMeasurement,
                 poolsize=args.poolsize,
                 database=args.database_file,
