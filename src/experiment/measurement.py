@@ -1,6 +1,6 @@
 import math
 from src.solver.utils import Formula, Assignment
-from src.experiment.utils import entropy, mutual_information, eta, WindowEntropy
+from src.experiment.utils import entropy, mutual_information, WindowEntropy
 
 
 class Measurement:
@@ -80,6 +80,7 @@ class EntropyMeasurement(Measurement):
 
         self.sat_assgn = formula.satisfying_assignment
         self.formula   = formula
+        self.base      = formula.num_vars
         self.tms_steps = {}
 
         self.last_step = None
@@ -148,13 +149,13 @@ class EntropyMeasurement(Measurement):
 
         self.steps = 0
         # path entropy
-        self.simple_entropy_tracker = WindowEntropy(self.window_width)
+        self.simple_entropy_tracker = WindowEntropy(self.window_width, base=self.base)
         self.simple_entropy_data = entropy_data(self.window_width)
 
         # joint path entropy
-        self.joint_entropy_tracker = WindowEntropy(self.window_width)
-        self.left_entropy_tracker = WindowEntropy(self.window_width)
-        self.right_entropy_tracker = WindowEntropy(self.window_width)
+        self.joint_entropy_tracker = WindowEntropy(self.window_width, base=self.base)
+        self.left_entropy_tracker = WindowEntropy(self.window_width, base=self.base)
+        self.right_entropy_tracker = WindowEntropy(self.window_width, base=self.base)
         self.joint_entropy_data = entropy_data(self.window_width-1)
         self.mutual_information_data = entropy_data(self.window_width-1)
         self.last_step = None

@@ -650,7 +650,7 @@ class StaticExperiment(AbstractExperiment):
                         increment_prob[hamming_dist] += prob
 
                         # calculate state entropy
-                        h = arr_entropy(distr)
+                        h = arr_entropy(distr, base=n+1)
                         state_entropy[hamming_dist] += h
                         state_entropy_max[hamming_dist] = max(state_entropy_max[hamming_dist],h)
                         state_entropy_min[hamming_dist] = min(state_entropy_min[hamming_dist],h)

@@ -2,29 +2,30 @@ import src.solver.utils as s_utils
 import math
 import sys
 from src.solver.utils import Formula, Assignment
+from functools import partial
 
 
-def eta(p):
+def eta(p, base=2):
     if p  <= 0:
         return 0
     elif p >= 1:
         return 0
     else:
-        return -p * math.log(p,2)
+        return -p * math.log(p,base)
 
 
-def arr_entropy(distr):
-    return sum(map(eta,distr))
+def arr_entropy(distr, base=2):
+    return sum(map(partial(eta, base=base), distr))
 
 
-def entropy(distr):
+def entropy(distr, base=2):
     total = 0
     for _, count in distr.items():
         total += count
 
     h = 0
     for symbol, count in distr.items():
-        h += eta(count/total)
+        h += eta(count/total, base=base)
 
     return h
 
@@ -99,12 +100,13 @@ class Queue:
 
 
 class WindowEntropy:
-    def __init__(self, window_width, blank = None):
+    def __init__(self, window_width, base=2, blank=None):
         self.queue = Queue(window_width, default = blank)
         self.window_width = window_width
         self.symbol_count = {}
         self.current_entropy = 0
         self.blank = None
+        self.base = base
 
 
     def count(self, x):
@@ -125,10 +127,10 @@ class WindowEntropy:
                 "self.symbol_count[{}] = {} <= 0".format(dropped,self.symbol_count[dropped])
 
             # the old share of the dropped symbol
-            h_old = eta(self.symbol_count[dropped] / self.window_width)
+            h_old = eta(self.symbol_count[dropped] / self.window_width, self.base)
 
             # the new share of the dropped symbol
-            h_new = eta((self.symbol_count[dropped] - 1) / self.window_width)
+            h_new = eta((self.symbol_count[dropped] - 1) / self.window_width, self.base)
 
             # update the counter
             self.symbol_count[dropped] -= 1
@@ -142,8 +144,8 @@ class WindowEntropy:
             self.symbol_count[x] = 0
 
         # calculate new and old share of the new symbol
-        h_old = eta(self.symbol_count[x]/self.window_width)
-        h_new = eta((self.symbol_count[x]+1)/self.window_width)
+        h_old = eta(self.symbol_count[x]/self.window_width, self.base)
+        h_new = eta((self.symbol_count[x]+1)/self.window_width, self.base)
 
         # update counter and entropy
         self.symbol_count[x] += 1

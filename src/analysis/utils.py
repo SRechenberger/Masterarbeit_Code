@@ -23,12 +23,14 @@ class StdevFunc:
     def finalize(self):
         return np.std(self.values)
 
+
 def flatten(xss):
     return [
         x
         for xs in xss
         for x in xs
     ]
+
 
 def bin_h(p):
     return eta(p) + eta(1-p)
