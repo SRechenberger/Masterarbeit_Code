@@ -13,5 +13,5 @@ python -O run_experiment.py $WORK/input/n512 \
   --static \
   --gsat \
   --poolsize 16 \
-  --database_file $WORK/output/data/gsat.db \
+  --database_file $WORK/output/data/gsat-0.db \
   --verbose
