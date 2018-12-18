@@ -420,14 +420,16 @@ class DynamicExperiment(AbstractExperiment):
             poolsize=poolsize,
             database=database,
         )
-        assert isinstance(max_tries, int),\
-            "max_tries = {} :: {} is no int".format(max_tries, type(max_tries))
-        assert max_tries > 0,\
-            "max_tries = {} <= 0".format(max_tries)
-        assert isinstance(max_flips, int),\
-            "max_flips = {} :: {} is no int".format(max_flips, type(max_flips))
-        assert max_flips > 0,\
-            "max_flips = {} <= 0".format(max_flips)
+        assert 'max_tries' in solver_params and 'max_flips' in solver_params and 'noise_param' in solver_params,\
+            f"max_tries, max_flips or noise_param is not in {solver_params}"
+        assert isinstance(solver_params['max_tries'], int),\
+            "max_tries = {} :: {} is no int".format(solver_params['max_tries'], type(solver_params['max_tries']))
+        assert solver_params['max_tries'] > 0,\
+            "max_tries = {} <= 0".format(solver_params['max_tries'])
+        assert isinstance(solver_params['max_flips'], int),\
+            "max_flips = {} :: {} is no int".format(solver_params['max_flips'], type(solver_params['max_flips']))
+        assert solver_params['max_flips'] > 0,\
+            "max_flips = {} <= 0".format(solver_params['max_flips'])
         assert callable(measurement_constructor),\
             "measurement_constructor = {} is not callable".format(measurement_constructor)
 
