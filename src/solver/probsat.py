@@ -8,12 +8,11 @@ def poly1(x,c):
 def poly(br_score):
     return 1/(1+br_score)
 
-
+breaks = []
 
 def probsat_distribution(noise_param):
-    breaks = []
     def probsat_distr(context):
-        nonlocal breaks
+        global breaks
         if not breaks:
             breaks = [poly1(x,noise_param) for x in range(0,context.formula.max_occs*2)]
 
@@ -47,14 +46,12 @@ def probsat_distribution(noise_param):
 def probsat_heuristic(noise_param):
     assert type(noise_param) == float,\
         "noise_param = {} :: {} is no float".format(noise_param, type(noise_param))
-    
-    breaks = []
 
     def heur(context, rand_gen=random):
         assert isinstance(context,DefensiveContext),\
             "context = {} :: {} is no GSATContext".format(context, type(context))
 
-        nonlocal breaks
+        global breaks
         if not breaks:
             breaks = [poly1(x,noise_param) for x in range(0,context.formula.max_occs*2)]
         
