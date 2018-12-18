@@ -14,7 +14,7 @@ def probsat_distribution(noise_param):
     def probsat_distr(context):
         global breaks
         if not breaks:
-            breaks = [poly1(x,noise_param) for x in range(0,context.formula.max_occs+1)]
+            breaks = [poly1(x,noise_param) for x in range(0,context.formula.max_occs*2)]
 
         get_break_score = context.score.get_break_score
         f = lambda i: poly(breaks[get_break_score(i)])
@@ -54,9 +54,10 @@ def probsat_heuristic(noise_param):
 
         global breaks
         if not breaks:
-            breaks = [poly1(x,noise_param) for x in range(0,context.formula.max_occs+1)]
-
-        f = lambda i: poly(breaks[context.score.get_break_score(i)])
+            breaks = [poly1(x,noise_param) for x in range(0,context.formula.max_occs*2)]
+        
+        get_break_score = context.score.get_break_score
+        f = lambda i: poly(breaks[get_break_score(i)])
 
         clause_idx = rand_gen.choice(context.falselist.lst)
         clause_vars = map(abs,context.formula.clauses[clause_idx])
