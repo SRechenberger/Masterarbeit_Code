@@ -75,7 +75,7 @@ def add_tms_entropy(file, eps_exp=15, max_loops=10000, update=True):
                 test = list(test)
                 if test and update:
                     updated_ids.add(series_id)
-                else:
+                elif test:
                     continue
 
                 probs = conn.cursor().execute(
@@ -162,3 +162,21 @@ def tms_entropy_to_noise_param(folder, solver):
         results,
         columns=['noise_param', 'tms_entropy', 'conv_rate']
     )
+
+def tms_entropy_to_performance(file):
+    with sqlite3.connect(file, timeout=30) as conn:
+        rows = conn.cursor().execute(
+            """ SELECT measurement_series.formula_id, avg(tms_entropy.converged), avg(tms_entropy.value), avg(algorithm_run.total_runtime), avg(algorithm_run.sat) \
+            FROM tms_entropy NATURAL JOIN measurement_series JOIN algorithm_run ON measurement_series.formula_id = algorithm_run.formula_id \
+            GROUP BY measurement_series.formula_id \
+            """
+        )
+        results = []
+        for f_id, avg_conv, tms_h, avg_rt, avg_succ in rows:
+            results.append((f_id, avg_conv, tms_h, avg_rt, avg_succ))
+
+        return pandas.DataFrame.from_records(
+            results,
+            columns=['formula_id', 'avg_converged', 'tms_entropy', 'avg_runtime', 'avg_sat']
+        )
+
