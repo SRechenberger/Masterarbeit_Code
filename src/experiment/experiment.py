@@ -421,7 +421,7 @@ class DynamicExperiment(AbstractExperiment):
             database=database,
         )
         assert 'max_tries' in solver_params and 'max_flips' in solver_params and 'noise_param' in solver_params,\
-            f"max_tries, max_flips or noise_param is not in {solver_params}"
+            "max_tries, max_flips or noise_param is not in {}".format(solver_params)
         assert isinstance(solver_params['max_tries'], int),\
             "max_tries = {} :: {} is no int".format(solver_params['max_tries'], type(solver_params['max_tries']))
         assert solver_params['max_tries'] > 0,\
