@@ -150,7 +150,6 @@ def tms_entropy_to_noise_param(folder, solver):
     results = []
 
     for arg, file in files:
-        print(file)
         with sqlite3.connect(file, timeout=30) as conn:
             entropies = conn.cursor().execute(
                 "SELECT value, converged FROM tms_entropy"
