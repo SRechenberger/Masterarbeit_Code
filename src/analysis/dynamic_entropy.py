@@ -25,7 +25,7 @@ def path_entropy_to_performance(file, entropy, field):
 def noise_param_to_path_entropy(folder, solver, entropy, field):
     params = dict(
         gsat=('gsat.db', np.array(0)),
-        walksat=('walksat-{:.2f}.db', np.concatenate(([], np.arange(0, 1.1, 0.1)))),
+        walksat=('walksat-{}.db', [0.1, 0.2, 0.3, 0.4, 0.5, 0.57, 0.6, 0.7, 0.8, 0.9, 1]),
         probsat=('probsat-cb{:.1f}.db', np.concatenate(([2.3], np.arange(0, 4.1, 0.2)))),
     )
 
