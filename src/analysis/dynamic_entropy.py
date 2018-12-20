@@ -1,9 +1,11 @@
 import sqlite3
 import pandas
 import os
+import sys
 
 import numpy as np
 
+from functools import partial
 
 def path_entropy_to_performance(file, entropy, field):
     with sqlite3.connect(file) as conn:
@@ -22,30 +24,46 @@ def path_entropy_to_performance(file, entropy, field):
         )
 
 
-def noise_param_to_path_entropy(folder, solver, entropy, field):
-    params = dict(
-        gsat=('gsat.db', np.array(0)),
-        walksat=('walksat-{}.db', [0.1, 0.2, 0.3, 0.4, 0.5, 0.57, 0.6, 0.7, 0.8, 0.9, 1]),
-        probsat=('probsat-cb{:.1f}.db', np.concatenate(([2.3], np.arange(0, 4.1, 0.2)))),
-    )
-
-    template, args = params[solver]
-    files = [(arg, os.path.join(folder, template.format(arg))) for arg in args]
-
+def noise_param_to_path_entropy(folder, entropy, field):
     results = []
-
-    for arg, file in files:
+    files = map(partial(os.path.join, folder), os.listdir(folder))
+    for file in files:
         #print(file)
         with sqlite3.connect(file, timeout=30) as conn:
-            rows = conn.cursor().execute(
-                f""" SELECT formula_id, avg({field}), sat, total_runtime \
-                FROM algorithm_run NATURAL JOIN search_run JOIN entropy_data ON {entropy} = data_id \
-                GROUP BY formula_id \
-                """
-            )
-            for f_id, avg_v, sat, rt in rows:
-                results.append((arg, f_id, avg_v, sat, rt))
+            try:
+                rows = conn.cursor().execute(
+                    f""" SELECT
+                        experiment_id,
+                        solver,
+                        noise_param,
+                        formula_id,
+                        avg({field}),
+                        avg(sat),
+                        avg(total_runtime) \
+                    FROM
+                        experiment
+                        NATURAL JOIN algorithm_run
+                        NATURAL JOIN search_run
+                        JOIN entropy_data ON {entropy} = data_id \
+                    GROUP BY formula_id
+                    """
+                )
+            except sqlite3.OperationalError as e:
+                print(f'Skipped file {file} because of: {e}', file=sys.stderr)
+                continue
+
+            for row in rows:
+                results.append(row)
+
     return pandas.DataFrame.from_records(
         results,
-        columns=['noise_param', 'formula_id', 'value', 'sat', 'runtime']
+        columns=[
+            'experiment_id',
+            'solver',
+            'noise_param',
+            'formula_id',
+            'avg_value',
+            'sat',
+            'runtime'
+        ]
     )
