@@ -13,7 +13,8 @@ def get_state_entropy_to_hamming_dist(file, formula=None):
         cursor = conn.cursor()
         cursor.execute(
             """ SELECT formula_id, hamming_dist, avg(entropy_avg) \
-            FROM measurement_series NATURAL JOIN state_entropy \
+            FROM formula NATURAL JOIN measurement_series NATURAL JOIN state_entropy \
+            WHERE num_vars > hamming_dist \
             GROUP BY formula_id, hamming_dist """,
         )
         results = []
@@ -22,7 +23,7 @@ def get_state_entropy_to_hamming_dist(file, formula=None):
                 results.append((formula_id, hamming_dist, entropy_avg))
 
         return pandas.DataFrame.from_records(
-            results[:-1],
+            results,
             columns=['formula_id', 'hamming_dist', 'entropy_avg']
         )
 
@@ -58,7 +59,8 @@ def get_state_entropy_avg_to_hamming_dist(file):
     with sqlite3.connect(file) as conn:
         rows = conn.cursor().execute(
             """ SELECT hamming_dist, avg(entropy_avg) \
-            FROM measurement_series NATURAL JOIN state_entropy \
+            FROM formula NATURAL JOIN measurement_series NATURAL JOIN state_entropy \
+            WHERE num_vars > hamming_dist \
             GROUP BY hamming_dist """
         )
 
@@ -76,7 +78,8 @@ def get_unsat_clause_avg_to_hamming_dist(file):
     with sqlite3.connect(file) as conn:
         rows = conn.cursor().execute(
             """ SELECT hamming_dist, avg(unsat_clauses) \
-            FROM measurement_series NATURAL JOIN unsat_clauses \
+            FROM formula NATURAL JOIN measurement_series NATURAL JOIN unsat_clauses \
+            WHERE num_vars > hamming_dist \
             GROUP BY hamming_dist """
         )
 
@@ -93,7 +96,8 @@ def get_unsat_clause_to_hamming_dist(file):
     with sqlite3.connect(file) as conn:
         rows = conn.cursor().execute(
             """ SELECT hamming_dist, unsat_clauses \
-            FROM measurement_series NATURAL JOIN unsat_clauses \
+            FROM formula NATURAL JOIN measurement_series NATURAL JOIN unsat_clauses \
+            WHERE num_vars > hamming_dist \
             """
         )
 
