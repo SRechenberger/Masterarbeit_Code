@@ -360,3 +360,4 @@ TSWLatexianTemp*
 
 # standalone packages
 *.sta
+tex_folder
