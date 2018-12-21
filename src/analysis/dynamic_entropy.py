@@ -24,28 +24,31 @@ def path_entropy_to_performance(file, entropy, field):
         )
 
 
-def noise_param_to_path_entropy(folder, entropy, field):
+def noise_param_to_path_entropy(folder, entropy, field, verbose=False):
     results = []
     files = map(partial(os.path.join, folder), os.listdir(folder))
     for file in files:
-        #print(file)
+        if verbose:
+            print(f"Loading from {file}")
         with sqlite3.connect(file, timeout=30) as conn:
             try:
                 rows = conn.cursor().execute(
-                    f""" SELECT
-                        experiment_id,
-                        solver,
-                        noise_param,
-                        formula_id,
-                        avg({field}),
-                        avg(sat),
-                        avg(total_runtime) \
-                    FROM
-                        experiment
-                        NATURAL JOIN algorithm_run
-                        NATURAL JOIN search_run
-                        JOIN entropy_data ON {entropy} = data_id \
-                    GROUP BY formula_id
+                    f"""
+                    WITH average_runtime AS (
+                        SELECT formula_id, avg(sat) as sat_avg, avg(total_runtime) as rt_avg
+                        FROM algorithm_run
+                        GROUP BY formula_id
+                    ),
+                    average_entropy AS (
+                        SELECT noise_param, formula_id, avg({field}) as entropy_avg
+                        FROM experiment
+                            NATURAL JOIN algorithm_run
+                            NATURAL JOIN search_run
+                            JOIN entropy_data ON {entropy} = data_id
+                        GROUP BY formula_id
+                    )
+                    SELECT noise_param, formula_id, entropy_avg, sat_avg, rt_avg
+                    FROM average_entropy NATURAL JOIN average_runtime
                     """
                 )
             except sqlite3.OperationalError as e:
@@ -58,12 +61,10 @@ def noise_param_to_path_entropy(folder, entropy, field):
     return pandas.DataFrame.from_records(
         results,
         columns=[
-            'experiment_id',
-            'solver',
             'noise_param',
             'formula_id',
             'avg_value',
-            'sat',
-            'runtime'
+            'avg_sat',
+            'avg_runtime'
         ]
     )
