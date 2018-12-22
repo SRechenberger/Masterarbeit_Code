@@ -94,6 +94,12 @@ pyplt.rc(
     preamble=preamble
 )
 
+FIX_NORM_FACTOR = dict(
+    single_entropy = 1.125,
+    joint_entropy = math.log(512,2)/math.log(255,2),
+    mutual_information = math.log(512,2)/math.log(255,2),
+)
+
 def load_dynamic_data(in_filepath, field, solvers, metrics, verbose=False):
     all_data = {}
     for solver in solvers:
@@ -104,8 +110,58 @@ def load_dynamic_data(in_filepath, field, solvers, metrics, verbose=False):
                 verbose=verbose,
             )
 
+    for key, data in all_data.items():
+        all_data[key]['avg_value'] = data['avg_value'] * FIX_NORM_FACTOR[metric]
+
     return all_data
 
+
+def plot_noise_to_performance(in_filepath, outfile=DEFAULT_OUTFILE, verbose=False):
+    solvers = ['WalkSAT', 'ProbSAT']
+    xlims = dict(
+        WalkSAT=[0,1],
+        ProbSAT=[0,4],
+    )
+    opt_value = dict(
+        WalkSAT=(r'$\rho$', 0.4),
+        ProbSAT=(r'$c_b$', 2.4),
+    )
+    metric_label = dict(
+        avg_runtime=r'$T_F$',
+        avg_sat=r'$\prob{\mbox{„Erfolg“}}$',
+    )
+    seaborn.set()
+    seaborn.set_style('ticks', {'axes.grid': True, 'grid.linestyle': '-'})
+    seaborn.set_context('paper')
+    fig, ((ax11,ax12),(ax21,ax22)) = pyplt.subplots(2, 2, figsize=A4_DIMS)
+    axes={
+        ('WalkSAT', 'avg_runtime'): ax11,
+        ('WalkSAT', 'avg_sat'): ax21,
+        ('ProbSAT', 'avg_runtime'): ax12,
+        ('ProbSAT', 'avg_sat'): ax22
+    }
+
+    for solver in solvers:
+        data = path_entropy.noise_to_performance(
+            os.path.join(in_filepath, solver),
+            verbose
+        )
+        for metric in ['avg_runtime', 'avg_sat']:
+            ax = axes[solver, metric]
+            ax.set_xlim(xlims[solver])
+            seaborn.lineplot(
+                x='noise_param',
+                y=metric,
+                data=data,
+                marker='+',
+                ax=ax,
+                estimator=numpy.mean,
+            )
+            ax.set_xlabel(opt_value[solver][0])
+            ax.set_ylabel(metric_label[metric])
+
+    seaborn.despine()
+    fig.savefig(outfile)
 
 
 def plot_noise_entropy_overview(in_filepath, metric, outfile=DEFAULT_OUTFILE, field='average', verbose=False):
@@ -115,8 +171,8 @@ def plot_noise_entropy_overview(in_filepath, metric, outfile=DEFAULT_OUTFILE, fi
         ProbSAT=[0,4],
     )
     opt_value = dict(
-        WalkSAT=(r'$\rho$', 0.57),
-        ProbSAT=(r'$c_b$', 2.3),
+        WalkSAT=(r'$\rho$', 0.4),
+        ProbSAT=(r'$c_b$', 2.4),
     )
     metric_label = dict(
         single_entropy=r'$H_1$',
@@ -129,6 +185,9 @@ def plot_noise_entropy_overview(in_filepath, metric, outfile=DEFAULT_OUTFILE, fi
     all_data = load_dynamic_data(in_filepath, field, solvers, [metric], verbose=verbose)
 
     # plot data
+    seaborn.set()
+    seaborn.set_style('ticks', {'axes.grid': True, 'grid.linestyle': '-'})
+    seaborn.set_context('paper')
     fig, axes = pyplt.subplots(1, 2, sharey=True, figsize=A4_DIMS)
     for y, solver in enumerate(solvers):
 
@@ -186,8 +245,8 @@ def plot_path_entropy_to_performance(in_filepath, metric, outfile=DEFAULT_OUTFIL
         raise RuntimeError(f'metric = {metric} not in {metrics}')
 
     opt_value = dict(
-        WalkSAT_Opt=(r'$\rho$', 0.57),
-        ProbSAT_Opt=(r'$c_b$', 2.3),
+        WalkSAT_Opt=(r'$\rho$', 0.4),
+        ProbSAT_Opt=(r'$c_b$', 2.4),
     )
     metric_label = dict(
         single_entropy=r'$H_1$',
@@ -203,8 +262,6 @@ def plot_path_entropy_to_performance(in_filepath, metric, outfile=DEFAULT_OUTFIL
     seaborn.set_style('ticks', {'axes.grid': True, 'grid.linestyle': '-'})
     seaborn.set_context('paper')
     fig, axes = pyplt.subplots(1, 3, sharex=True, sharey=True, figsize=A4_DIMS)
-    seaborn.set_style('whitegrid')
-    seaborn.set_context('paper')
     for x, solver in enumerate(solvers):
 
         ax = axes[x]
@@ -268,6 +325,13 @@ argparser.add_argument(
     help='Plots figure to compare entropy and performance'
 )
 
+
+argparser.add_argument(
+    '--noise_to_performance',
+    action='store_true',
+    help='Plot Performance as function of noise-param. for WalkSAT and ProbSAT'
+)
+
 args = argparser.parse_args()
 
 if __name__ == '__main__':
@@ -277,6 +341,12 @@ if __name__ == '__main__':
     else:
         outfile = DEFAULT_OUTFILE
 
+    if args.noise_to_performance:
+        plot_noise_to_performance(
+            args.data_folder,
+            outfile=outfile,
+            verbose=args.verbose,
+        )
 
     if args.noise_to_entropy_overview:
         plot_noise_entropy_overview(

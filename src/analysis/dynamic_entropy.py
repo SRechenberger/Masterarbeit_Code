@@ -24,6 +24,43 @@ def path_entropy_to_performance(file, entropy, field):
         )
 
 
+def noise_to_performance(folder, verbose=False):
+    results = []
+    files = map(partial(os.path.join, folder), os.listdir(folder))
+    for file in files:
+        if verbose:
+            print(f'Loading Perfomance from {file}')
+
+        try:
+            with sqlite3.connect(file, timeout=30) as conn:
+                rows = conn.cursor().execute(f""" \
+                    SELECT
+                        noise_param, \
+                        formula_id, \
+                        avg(sat) as avg_sat, \
+                        avg(total_runtime) as avg_runtime \
+                    FROM experiment NATURAL JOIN algorithm_run \
+                    GROUP BY formula_id \
+                    """
+                )
+        except sqlite3.OperationalError as e:
+            print(f'Skipped file {file} because of: {e}', file=sys.stderr)
+            continue
+
+        for row in rows:
+            results.append(row)
+
+    return pandas.DataFrame.from_records(
+        results,
+        columns=[
+            'noise_param',
+            'formula_id',
+            'avg_sat',
+            'avg_runtime',
+        ]
+    )
+
+
 def noise_param_to_path_entropy(folder, entropy, field, verbose=False):
     results = []
     files = map(partial(os.path.join, folder), os.listdir(folder))
