@@ -26,18 +26,16 @@ def plot_noise_to_performance(in_filepath, outfile=DEFAULT_OUTFILE, verbose=Fals
         ProbSAT=r'$c_b$',
     )
     metric_label = dict(
-        avg_runtime=r'$T_F$',
-        avg_sat=r'$\prob{\mbox{„Erfolg“}}$',
+        runtime=r'$T_F$',
+        sat=r'$\prob{\mbox{„Erfolg“}}$',
     )
     seaborn.set()
     seaborn.set_style('ticks', {'axes.grid': True, 'grid.linestyle': ':'})
     seaborn.set_context('paper')
-    fig, ((ax11,ax12),(ax21,ax22)) = pyplt.subplots(2, 2, figsize=(11,11))
+    fig, (ax11,ax12) = pyplt.subplots(1, 2, figsize=(10,5), sharey=True)
     axes={
-        ('WalkSAT', 'avg_runtime'): ax11,
-        ('WalkSAT', 'avg_sat'): ax21,
-        ('ProbSAT', 'avg_runtime'): ax12,
-        ('ProbSAT', 'avg_sat'): ax22
+        'WalkSAT': ax11,
+        'ProbSAT': ax12,
     }
 
     for solver in solvers:
@@ -45,34 +43,32 @@ def plot_noise_to_performance(in_filepath, outfile=DEFAULT_OUTFILE, verbose=Fals
             os.path.join(in_filepath, solver),
             verbose
         )
-        for metric in ['avg_runtime', 'avg_sat']:
-            ax = axes[solver, metric]
-            ax.set_xlim(xlims[solver])
-            seaborn.lineplot(
-                x='noise_param',
-                y=metric,
-                data=data,
-                marker='o',
-                ax=ax,
-                estimator=numpy.mean,
-                legend='full',
-               # err_style='bars',
-            )
 
-            g = data.groupby('noise_param').apply(numpy.mean)
-            opt_metric_value = (g.max() if metric == 'avg_sat' else g.min())[metric]
-            opt_param_value = g.loc[g[metric] == opt_metric_value, 'noise_param'].values[0]
-            ax.axvline(
-                x=opt_param_value,
-                label=opt_value[solver] + f'$ = {opt_param_value:.1f}$',
-                color='r',
-                linestyle=':',
-            )
+        ax = axes[solver]
+        ax.set_xlim(xlims[solver])
+        seaborn.lineplot(
+            x='noise_param',
+            y='runtime',
+            data=data,
+            marker='o',
+            ax=ax,
+            estimator=numpy.mean,
+            legend='full',
+        )
 
+        g = data.groupby('noise_param').apply(numpy.mean)
+        opt_metric_value = g.min()['runtime']
+        opt_param_value = g.loc[g['runtime'] == opt_metric_value, 'noise_param'].values[0]
+        ax.axvline(
+            x=opt_param_value,
+            label=opt_value[solver] + f'$ = {opt_param_value:.1f}$',
+            color='r',
+            linestyle=':',
+        )
 
-            ax.set_xlabel(opt_value[solver])
-            ax.set_ylabel(metric_label[metric])
-            ax.legend(loc='upper right')
+        ax.set_xlabel(opt_value[solver])
+        ax.set_ylabel(metric_label['runtime'])
+        ax.legend(loc='upper right')
 
     seaborn.despine()
     fig.savefig(outfile)
