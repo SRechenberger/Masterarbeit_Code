@@ -15,7 +15,7 @@ pyplt.rc(
 )
 
 
-def plot_noise_to_joint_entropy_ks_test(in_filepath, outfile=DEFAULT_OUTFILE, field='average', verbose=False):
+def plot_noise_to_entropy_ks_test(in_filepath, metric, outfile=DEFAULT_OUTFILE, field='average', verbose=False):
     solvers = ['WalkSAT', 'ProbSAT']
     xlims = dict(
         WalkSAT=[0,1],
@@ -36,7 +36,7 @@ def plot_noise_to_joint_entropy_ks_test(in_filepath, outfile=DEFAULT_OUTFILE, fi
         in_filepath,
         field,
         solvers,
-        ['joint_entropy'],
+        [metric],
         verbose=verbose
     )
 
@@ -48,13 +48,13 @@ def plot_noise_to_joint_entropy_ks_test(in_filepath, outfile=DEFAULT_OUTFILE, fi
     for y, solver in enumerate(solvers):
         ax = axes[y]
 
-        data = all_data[solver, 'joint_entropy']
+        data = all_data[solver, metric]
 
         data = data.groupby('noise_param', as_index=False).agg(
             lambda df: scipy.stats.kstest(
                 df['avg_value'],
-                'beta',
-                scipy.stats.beta.fit(df['avg_value']),
+                'skewnorm',
+                scipy.stats.skewnorm.fit(df['avg_value']),
             )[0]
         )
 
@@ -66,9 +66,12 @@ def plot_noise_to_joint_entropy_ks_test(in_filepath, outfile=DEFAULT_OUTFILE, fi
             legend='full',
         )
 
+        opt_d = data[data['noise_param'] == opt_value[solver][1]]['avg_value'].iloc[0]
+        print(opt_d)
+
         ax.axvline(
             x=opt_value[solver][1],
-            label=f'${opt_value[solver][0]} = {opt_value[solver][1]}$',
+            label=f'${opt_value[solver][0]} = {opt_value[solver][1]}$ ' + r'$D_\alpha = {:.2f}$'.format(opt_d),
             color='#aaaaaa',
             linestyle=':',
         )
@@ -85,7 +88,7 @@ def plot_noise_to_joint_entropy_ks_test(in_filepath, outfile=DEFAULT_OUTFILE, fi
 
         ax.set_xlabel(f'${opt_value[solver][0]}$')
         ax.set_ylabel(r'$D_\alpha$')
-        ax.legend(loc='upper right')
+        ax.legend(loc='upper left')
 
     seaborn.despine()
 

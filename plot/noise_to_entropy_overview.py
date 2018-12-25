@@ -36,7 +36,7 @@ def plot_noise_to_entropy_overview(in_filepath, metric, outfile=DEFAULT_OUTFILE,
     seaborn.set()
     seaborn.set_style('ticks', {'axes.grid': True, 'grid.linestyle': '-'})
     seaborn.set_context('paper')
-    fig, axes = pyplt.subplots(1, 2, sharey=True, figsize=(12,6))
+    fig, axes = pyplt.subplots(1, 2, sharey=True, figsize=(10,5))
     for y, solver in enumerate(solvers):
 
         # Scatterplot, if x1 == x2
@@ -47,8 +47,9 @@ def plot_noise_to_entropy_overview(in_filepath, metric, outfile=DEFAULT_OUTFILE,
             x='noise_param',
             y='avg_value',
             data=data,
-            marker='+',
+            # marker='o',
             ax=ax,
+            alpha=0.8,
         )
         ax.axvline(
             x=opt_value[solver][1],

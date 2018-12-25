@@ -13,10 +13,11 @@ import matplotlib.pyplot as pyplt
 
 
 from plot.noise_to_entropy_overview import plot_noise_to_entropy_overview
-from plot.noise_to_joint_entropy_ks_test import plot_noise_to_joint_entropy_ks_test
+from plot.noise_to_entropy_ks_test import plot_noise_to_entropy_ks_test
 from plot.noise_to_performance import plot_noise_to_performance
 from plot.path_entropy_to_performance import plot_path_entropy_to_performance
 from plot.noise_to_cond_entropy import plot_noise_to_cond_entropy
+from plot.entropy_distr import plot_entropy_distr
 
 from mpl_toolkits.axisartist.axislines import SubplotZero
 
@@ -72,11 +73,19 @@ argparser.add_argument(
 )
 
 argparser.add_argument(
-    '--noise_to_joint_entropy_ks_test',
+    '--noise_to_entropy_ks_test',
     type=str,
-    nargs=1,
-    metavar='FIELD',
+    nargs=2,
+    metavar=['METRIC', 'FIELD'],
     help='Plots figure of ks-test'
+)
+
+argparser.add_argument(
+    '--entropy_distr',
+    type=str,
+    nargs=2,
+    metavar=['METRIC', 'FIELD'],
+    help='Plots figure of dist of entropy'
 )
 
 args = argparser.parse_args()
@@ -127,11 +136,23 @@ if __name__ == '__main__':
         if args.verbose:
             print('Done.')
 
-    if args.noise_to_joint_entropy_ks_test:
-        plot_noise_to_joint_entropy_ks_test(
+    if args.noise_to_entropy_ks_test:
+        plot_noise_to_entropy_ks_test(
             args.data_folder,
+            args.noise_to_entropy_ks_test[0],
             outfile=outfile,
-            field=args.noise_to_joint_entropy_ks_test[0],
+            field=args.noise_to_entropy_ks_test[1],
+            verbose=args.verbose,
+        )
+        if args.verbose:
+            print('Done.')
+
+    if args.entropy_distr:
+        plot_entropy_distr(
+            args.data_folder,
+            args.entropy_distr[0],
+            outfile=outfile,
+            field=args.entropy_distr[1],
             verbose=args.verbose,
         )
         if args.verbose:
