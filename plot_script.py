@@ -13,9 +13,10 @@ import matplotlib.pyplot as pyplt
 
 
 from plot.noise_to_entropy_overview import plot_noise_to_entropy_overview
+from plot.noise_to_joint_entropy_ks_test import plot_noise_to_joint_entropy_ks_test
 from plot.noise_to_performance import plot_noise_to_performance
 from plot.path_entropy_to_performance import plot_path_entropy_to_performance
-from plot.noise_to_transferred_information import plot_noise_to_transferred_information
+from plot.noise_to_cond_entropy import plot_noise_to_cond_entropy
 
 from mpl_toolkits.axisartist.axislines import SubplotZero
 
@@ -63,11 +64,19 @@ argparser.add_argument(
 )
 
 argparser.add_argument(
-    '--noise_to_transferred_information',
+    '--noise_to_cond_entropy',
     type=str,
     nargs=1,
     metavar='FIELD',
-    help='Plots figure of transfered information ratio'
+    help='Plots figure of conditional information'
+)
+
+argparser.add_argument(
+    '--noise_to_joint_entropy_ks_test',
+    type=str,
+    nargs=1,
+    metavar='FIELD',
+    help='Plots figure of ks-test'
 )
 
 args = argparser.parse_args()
@@ -108,11 +117,21 @@ if __name__ == '__main__':
         if args.verbose:
             print('Done.')
 
-    if args.noise_to_transferred_information:
-        plot_noise_to_transferred_information(
+    if args.noise_to_cond_entropy:
+        plot_noise_to_cond_entropy(
             args.data_folder,
             outfile=outfile,
-            field=args.noise_to_transferred_information[0],
+            field=args.noise_to_cond_entropy[0],
+            verbose=args.verbose,
+        )
+        if args.verbose:
+            print('Done.')
+
+    if args.noise_to_joint_entropy_ks_test:
+        plot_noise_to_joint_entropy_ks_test(
+            args.data_folder,
+            outfile=outfile,
+            field=args.noise_to_joint_entropy_ks_test[0],
             verbose=args.verbose,
         )
         if args.verbose:
