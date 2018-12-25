@@ -80,7 +80,7 @@ class EntropyMeasurement(Measurement):
 
         self.sat_assgn = formula.satisfying_assignment
         self.formula   = formula
-        self.base      = formula.num_vars
+        self.base      = 2
         self.tms_steps = {}
 
         self.last_step = None
