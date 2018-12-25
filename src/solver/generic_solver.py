@@ -47,7 +47,7 @@ def generic_sls(
 
 
     #initialize measurement object
-    measurement = measurement_constructor(formula, formula.num_vars // 2)
+    measurement = measurement_constructor(formula, formula.num_vars)
 
     t = 0
     while t < max_tries:
