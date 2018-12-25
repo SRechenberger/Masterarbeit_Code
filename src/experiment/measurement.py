@@ -123,6 +123,11 @@ class EntropyMeasurement(Measurement):
                     l_tmp + r_tmp - h_tmp,
                     self.curr_hamming_dist
                 )
+                update_entropy_data(
+                    self.cond_entropy,
+                    h_tmp - l_tmp,
+                    self.curr_hamming_dist
+                )
         self.last_step = flip
 
         # TMS entropy
@@ -158,6 +163,7 @@ class EntropyMeasurement(Measurement):
         self.right_entropy_tracker = WindowEntropy(self.window_width, base=self.base)
         self.joint_entropy_data = entropy_data(self.window_width-1)
         self.mutual_information_data = entropy_data(self.window_width-1)
+        self.cond_entropy = entropy_data(self.window_width-1)
         self.last_step = None
 
         # TMS entropy
@@ -174,6 +180,7 @@ class EntropyMeasurement(Measurement):
                 single_entropy=self.simple_entropy_data,
                 joint_entropy=self.joint_entropy_data,
                 mutual_information=self.mutual_information_data,
+                cond_entropy=self.cond_entropy,
                 hamming_dist=self.formula.satisfying_assignment.hamming_dist(self.start_assgn),
                 start_assgn=str(self.start_assgn),
                 final_assgn=str(self.curr_assgn),

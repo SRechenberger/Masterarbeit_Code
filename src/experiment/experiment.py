@@ -94,6 +94,7 @@ CREATE TABLE IF NOT EXISTS search_run
     , single_entropy        INTEGER
     , joint_entropy         INTEGER
     , mutual_information    INTEGER
+    , cond_entropy          INTEGER
     , hamming_dist          INT NOT NULL
     , start_assgn           TEXT NOT NULL
     , end_assgn             TEXT NOT NULL
@@ -112,12 +113,13 @@ INSERT INTO search_run
     , single_entropy
     , joint_entropy
     , mutual_information
+    , cond_entropy
     , hamming_dist
     , start_assgn
     , end_assgn
     , success
     )
-VALUES (?,?,?,?,?,?,?,?,?)
+VALUES (?,?,?,?,?,?,?,?,?,?)
 """
 
 CREATE_ENTROPY_DATA = """
@@ -467,6 +469,7 @@ class DynamicExperiment(AbstractExperiment):
             single_entropy_id = DynamicExperiment.__save_entropy_data(execute, run['single_entropy'])
             joint_entropy_id = DynamicExperiment.__save_entropy_data(execute, run['joint_entropy'])
             mutual_information_id = DynamicExperiment.__save_entropy_data(execute, run['mutual_information'])
+            cond_entropy = DynamicExperiment.__save_entropy_data(execute, run['cond_entropy'])
 
             execute(
                 SAVE_SEARCH_RUN,
@@ -475,6 +478,7 @@ class DynamicExperiment(AbstractExperiment):
                 single_entropy_id,
                 joint_entropy_id,
                 mutual_information_id,
+                cond_entropy,
                 run['hamming_dist'],
                 run['start_assgn'],
                 run['final_assgn'],
