@@ -37,26 +37,31 @@ def noise_to_performance(folder, verbose=False):
                     SELECT
                         noise_param, \
                         formula_id, \
-                        avg(sat) as avg_sat, \
-                        avg(total_runtime) as avg_runtime \
+                        sat, \
+                        total_runtime \
                     FROM experiment NATURAL JOIN algorithm_run \
-                    GROUP BY formula_id \
                     """
                 )
         except sqlite3.OperationalError as e:
             print(f'Skipped file {file} because of: {e}', file=sys.stderr)
             continue
 
-        for row in rows:
-            results.append(row)
+        for noise_param, formula_id, sat, runtime in rows:
+            results.append(
+                (
+                    noise_param,
+                    formula_id,
+                    runtime * (1 if sat else 10),
+                )
+            )
+
 
     return pandas.DataFrame.from_records(
         results,
         columns=[
             'noise_param',
             'formula_id',
-            'avg_sat',
-            'avg_runtime',
+            'runtime',
         ]
     )
 
