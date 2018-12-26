@@ -14,8 +14,9 @@ pyplt.rc(
     preamble=PREAMBLE
 )
 
-def plot_entropy_distr(in_filepath, metric, figsize=(10,5), outfile=DEFAULT_OUTFILE, field='average', verbose=False):
+def plot_entropy_distr(in_filepath, figsize=(10,12), outfile=DEFAULT_OUTFILE, field='average', verbose=False):
     solvers = ['GSAT', 'WalkSAT', 'ProbSAT']
+    metrics = ['single_entropy', 'joint_entropy', 'cond_entropy', 'mutual_information']
     dirs = dict(
         GSAT='GSAT',
         WalkSAT='WalkSAT_Opt',
@@ -23,12 +24,13 @@ def plot_entropy_distr(in_filepath, metric, figsize=(10,5), outfile=DEFAULT_OUTF
     )
     opt_value = dict(
         WalkSAT=(r'\rho', 0.4),
-        ProbSAT=(r'c_b', 2.4),
+        ProbSAT=(r'c_b', 2.6),
     )
     metric_label = dict(
-        single_entropy=r'$H_1$',
-        joint_entropy=r'$H_2$',
-        mutual_information=r'$I$',
+        single_entropy=r'H_1',
+        joint_entropy=r'H_2',
+        cond_entropy=r'H_c',
+        mutual_information=r'I',
     )
     # load data
 
@@ -36,7 +38,6 @@ def plot_entropy_distr(in_filepath, metric, figsize=(10,5), outfile=DEFAULT_OUTF
         in_filepath,
         field,
         dirs.values(),
-        [metric],
         verbose=verbose
     )
 
@@ -44,34 +45,33 @@ def plot_entropy_distr(in_filepath, metric, figsize=(10,5), outfile=DEFAULT_OUTF
     seaborn.set_style('ticks', {'axes.grid': True, 'grid.linestyle': '-'})
     seaborn.set_context('paper')
 
-    fig, axes = pyplt.subplots(1, 3, figsize=figsize)
+    fig, axes = pyplt.subplots(
+        len(metrics),
+        len(solvers),
+        figsize=figsize
+    )
     fig.tight_layout()
     for y, solver in enumerate(solvers):
-        ax = axes[y]
+        data = all_data[dirs[solver]]
+        for x, metric in enumerate(metrics):
+            ax = axes[x][y]
 
-        data = all_data[dirs[solver], metric]
+            gamma, mu, sigma = scipy.stats.skewnorm.fit(data[metric])
+            D, p = scipy.stats.kstest(
+                data[metric],
+                'skewnorm',
+                (gamma, mu, sigma),
+            )
 
-        print(data.min())
+            seaborn.distplot(
+                data[metric],
+                label=r'$\mu = {:.2f}$, $\sigma = {:.2f}$, $\gamma = {:.2f}$, $D = {:.2f}$'.format(mu, sigma, gamma, D),
+                fit=scipy.stats.skewnorm,
+                ax=ax,
+            )
 
-        gamma, mu, sigma = scipy.stats.skewnorm.fit(data['avg_value'])
-        D, p = scipy.stats.kstest(
-            data['avg_value'],
-            'skewnorm',
-            (gamma, mu, sigma),
-        )
-
-        print(solver, D)
-
-
-        seaborn.distplot(
-            data['avg_value'],
-            label=r'$\mu = {:.2f}$, $\sigma = {:.2f}$, $\gamma = {:.2f}$, $D = {:.2f}$'.format(mu, sigma, gamma, D),
-            fit=scipy.stats.skewnorm,
-            ax=ax,
-        )
-
-        ax.set_xlabel(f'${metric_label[metric]}$')
-        ax.legend(loc='upper left')
+            ax.set_xlabel(f'${metric_label[metric]}$')
+            ax.legend(loc='upper left')
 
     seaborn.despine()
 

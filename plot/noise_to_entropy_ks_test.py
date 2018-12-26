@@ -15,19 +15,21 @@ pyplt.rc(
 )
 
 
-def plot_noise_to_entropy_ks_test(in_filepath, metric, figsize=(10,5), outfile=DEFAULT_OUTFILE, field='average', verbose=False):
+def plot_noise_to_entropy_ks_test(in_filepath, figsize=(10,12), outfile=DEFAULT_OUTFILE, field='average', verbose=False):
     solvers = ['WalkSAT', 'ProbSAT']
+    metrics = ['single_entropy', 'joint_entropy', 'cond_entropy', 'mutual_information']
     xlims = dict(
         WalkSAT=[0,1],
         ProbSAT=[0,4],
     )
     opt_value = dict(
         WalkSAT=(r'\rho', 0.4),
-        ProbSAT=(r'c_b', 2.4),
+        ProbSAT=(r'c_b', 2.6),
     )
     metric_label = dict(
         single_entropy=r'$H_1$',
         joint_entropy=r'$H_2$',
+        cond_entropy=r'$H_c$',
         mutual_information=r'$I$',
     )
     # load data
@@ -36,7 +38,6 @@ def plot_noise_to_entropy_ks_test(in_filepath, metric, figsize=(10,5), outfile=D
         in_filepath,
         field,
         solvers,
-        [metric],
         verbose=verbose
     )
 
@@ -44,52 +45,66 @@ def plot_noise_to_entropy_ks_test(in_filepath, metric, figsize=(10,5), outfile=D
     seaborn.set_style('ticks', {'axes.grid': True, 'grid.linestyle': '-'})
     seaborn.set_context('paper')
 
-    fig, axes = pyplt.subplots(1, 2, sharey=True, figsize=figsize)
+    fig, axes = pyplt.subplots(
+        len(metrics),
+        len(solvers),
+        sharey=True,
+        figsize=figsize
+    )
     fig.tight_layout()
+    no_label_yet = True
     for y, solver in enumerate(solvers):
-        ax = axes[y]
+        solver_data = all_data[solver]
+        for x, metric in enumerate(metrics):
+            ax = axes[x][y]
 
-        data = all_data[solver, metric]
-
-        data = data.groupby('noise_param', as_index=False).agg(
-            lambda df: scipy.stats.kstest(
-                df['avg_value'],
-                'skewnorm',
-                scipy.stats.skewnorm.fit(df['avg_value']),
-            )[0]
-        )
-
-        seaborn.scatterplot(
-            x='noise_param',
-            y='avg_value',
-            data=data,
-            ax=ax,
-            legend='full',
-        )
-
-        opt_d = data[data['noise_param'] == opt_value[solver][1]]['avg_value'].iloc[0]
-        print(opt_d)
-
-        ax.axvline(
-            x=opt_value[solver][1],
-            label=f'${opt_value[solver][0]} = {opt_value[solver][1]}$ ' + r'$D_\alpha = {:.2f}$'.format(opt_d),
-            color='#aaaaaa',
-            linestyle=':',
-        )
-        for color, alpha in zip(['b','g','r','y'], [0.01, 0.05, 0.1, 0.2]):
-            D = math.sqrt(-0.5*math.log(alpha/2)/100)
-
-            ax.axhline(
-                y=D,
-                label=r'$\alpha = {:.2f}$ $D_\alpha \leq {:.2f}$'.format(alpha, D),
-                color=color,
-                linestyle='-.',
-                alpha=0.5,
+            data = solver_data.groupby('noise_param', as_index=False).agg(
+                lambda df: scipy.stats.kstest(
+                    df[metric],
+                    'skewnorm',
+                    scipy.stats.skewnorm.fit(df[metric]),
+                )[0]
             )
 
-        ax.set_xlabel(f'${opt_value[solver][0]}$')
-        ax.set_ylabel(r'$D_\alpha$')
-        ax.legend(loc='upper left')
+            seaborn.scatterplot(
+                x='noise_param',
+                y=metric,
+                data=data,
+                ax=ax,
+                legend='full',
+            )
+
+            opt_d = data[data['noise_param'] == opt_value[solver][1]][metric].iloc[0]
+            print(opt_d)
+
+            ax.axvline(
+                x=opt_value[solver][1],
+                label=f'${opt_value[solver][0]} = {opt_value[solver][1]}$ ' + r'$D_\alpha = {:.2f}$'.format(opt_d),
+                color='g',
+                linestyle=':',
+            )
+            if no_label_yet:
+                label = lambda alpha, D: dict(
+                    label=f'$\\alpha = {alpha:.2f}$ $D_\\alpha \\leq {D:.2f}$'
+                )
+                no_label_yet = False
+            else:
+                label = lambda *args: dict()
+
+            for color, alpha in zip(['b','g','r','y'], [0.01, 0.05, 0.1, 0.2]):
+                D = math.sqrt(-0.5*math.log(alpha/2)/100)
+
+                ax.axhline(
+                    y=D,
+                    color=color,
+                    linestyle='-.',
+                    alpha=0.5,
+                    **label(alpha, D),
+                )
+
+            ax.set_xlabel(f'${opt_value[solver][0]}$')
+            ax.set_ylabel(r'$D_\alpha$')
+            ax.legend()#loc='upper left')
 
     seaborn.despine()
 

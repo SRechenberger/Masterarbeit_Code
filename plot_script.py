@@ -44,8 +44,8 @@ argparser.add_argument(
 argparser.add_argument(
     '--noise_to_entropy_overview',
     type=str,
-    nargs=2,
-    metavar=('METRIC','FIELD'),
+    nargs=1,
+    metavar='FIELD',
     help='Plots figure to compare noise parameter and entropy for a specific field FIELD'
 )
 
@@ -65,26 +65,18 @@ argparser.add_argument(
 )
 
 argparser.add_argument(
-    '--noise_to_cond_entropy',
+    '--noise_to_entropy_ks_test',
     type=str,
     nargs=1,
     metavar='FIELD',
-    help='Plots figure of conditional information'
-)
-
-argparser.add_argument(
-    '--noise_to_entropy_ks_test',
-    type=str,
-    nargs=2,
-    metavar=('METRIC', 'FIELD'),
     help='Plots figure of ks-test'
 )
 
 argparser.add_argument(
     '--entropy_distr',
     type=str,
-    nargs=2,
-    metavar=('METRIC', 'FIELD'),
+    nargs=1,
+    metavar='FIELD',
     help='Plots figure of dist of entropy'
 )
 
@@ -116,10 +108,9 @@ if __name__ == '__main__':
     if args.noise_to_entropy_overview:
         plot_noise_to_entropy_overview(
             args.data_folder,
-            args.noise_to_entropy_overview[0],
             figsize=args.figsize,
             outfile=outfile,
-            field=args.noise_to_entropy_overview[1],
+            field=args.noise_to_entropy_overview[0],
             verbose=args.verbose,
         )
         if args.verbose:
@@ -137,24 +128,12 @@ if __name__ == '__main__':
         if args.verbose:
             print('Done.')
 
-    if args.noise_to_cond_entropy:
-        plot_noise_to_cond_entropy(
-            args.data_folder,
-            figsize=args.figsize,
-            outfile=outfile,
-            field=args.noise_to_cond_entropy[0],
-            verbose=args.verbose,
-        )
-        if args.verbose:
-            print('Done.')
-
     if args.noise_to_entropy_ks_test:
         plot_noise_to_entropy_ks_test(
             args.data_folder,
-            args.noise_to_entropy_ks_test[0],
             figsize=args.figsize,
             outfile=outfile,
-            field=args.noise_to_entropy_ks_test[1],
+            field=args.noise_to_entropy_ks_test[0],
             verbose=args.verbose,
         )
         if args.verbose:
@@ -163,10 +142,9 @@ if __name__ == '__main__':
     if args.entropy_distr:
         plot_entropy_distr(
             args.data_folder,
-            args.entropy_distr[0],
             figsize=args.figsize,
             outfile=outfile,
-            field=args.entropy_distr[1],
+            field=args.entropy_distr[0],
             verbose=args.verbose,
         )
         if args.verbose:

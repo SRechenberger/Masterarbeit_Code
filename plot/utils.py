@@ -71,24 +71,14 @@ PREAMBLE = r"""
                      =}
 """
 
-FIX_NORM_FACTOR = dict(
-    single_entropy = math.log(512,2),
-    joint_entropy = math.log(512,2),
-    mutual_information = math.log(512,2),
-)
-
-def load_dynamic_data(in_filepath, field, solvers, metrics, verbose=False):
+def load_dynamic_data(in_filepath, field, solvers, verbose=False):
     all_data = {}
     for solver in solvers:
         path = os.path.join(in_filepath, solver)
-        for metric in metrics:
-            all_data[solver, metric] = path_entropy.noise_param_to_path_entropy(
-                path, f'{metric}', f'{field}',
-                verbose=verbose,
-            )
-
-    for key, data in all_data.items():
-        all_data[key]['avg_value'] = data['avg_value'] * FIX_NORM_FACTOR[metric]
+        all_data[solver] = path_entropy.noise_param_to_path_entropy(
+            path,
+            f'{field}',
+            verbose=verbose,
+        )
 
     return all_data
-
