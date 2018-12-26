@@ -66,7 +66,7 @@ def noise_to_performance(folder, verbose=False):
     )
 
 
-def noise_param_to_path_entropy(folder, entropy, field, verbose=False):
+def noise_param_to_path_entropy(folder, field, verbose=False):
     results = []
     files = map(partial(os.path.join, folder), os.listdir(folder))
     for file in files:
@@ -76,11 +76,21 @@ def noise_param_to_path_entropy(folder, entropy, field, verbose=False):
             try:
                 rows = conn.cursor().execute(
                     f"""
-                    SELECT noise_param, formula_id, avg({field})
-                    FROM experiment
+                    SELECT
+                        noise_param,
+                        formula_id,
+                        avg(h1.{field}) as single_entropy,
+                        avg(h2.{field}) as joint_entropy,
+                        avg(h3.{field}) as cond_entropy,
+                        avg(h4.{field}) as mutual_information
+                    FROM
+                        experiment
                         NATURAL JOIN algorithm_run
                         NATURAL JOIN search_run
-                        JOIN entropy_data ON {entropy} = data_id
+                        JOIN entropy_data h1 ON single_entropy = h1.data_id
+                        JOIN entropy_data h2 ON joint_entropy = h2.data_id
+                        JOIN entropy_data h3 ON cond_entropy = h3.data_id
+                        JOIN entropy_data h4 ON mutual_information = h4.data_id
                     GROUP BY formula_id
                     """
                 )
@@ -96,6 +106,9 @@ def noise_param_to_path_entropy(folder, entropy, field, verbose=False):
         columns=[
             'noise_param',
             'formula_id',
-            'avg_value',
+            'single_entropy',
+            'joint_entropy',
+            'cond_entropy',
+            'mutual_information',
         ]
     )
