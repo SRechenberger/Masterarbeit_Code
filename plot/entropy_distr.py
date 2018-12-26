@@ -14,7 +14,7 @@ pyplt.rc(
     preamble=PREAMBLE
 )
 
-def plot_entropy_distr(in_filepath, metric, outfile=DEFAULT_OUTFILE, field='average', verbose=False):
+def plot_entropy_distr(in_filepath, metric, figsize=(10,5), outfile=DEFAULT_OUTFILE, field='average', verbose=False):
     solvers = ['GSAT', 'WalkSAT', 'ProbSAT']
     dirs = dict(
         GSAT='GSAT',
@@ -44,7 +44,8 @@ def plot_entropy_distr(in_filepath, metric, outfile=DEFAULT_OUTFILE, field='aver
     seaborn.set_style('ticks', {'axes.grid': True, 'grid.linestyle': '-'})
     seaborn.set_context('paper')
 
-    fig, axes = pyplt.subplots(1, 3, figsize=(12,6))
+    fig, axes = pyplt.subplots(1, 3, figsize=figsize)
+    fig.tight_layout()
     for y, solver in enumerate(solvers):
         ax = axes[y]
 
@@ -74,4 +75,4 @@ def plot_entropy_distr(in_filepath, metric, outfile=DEFAULT_OUTFILE, field='aver
 
     seaborn.despine()
 
-    fig.savefig(outfile)
+    fig.savefig(outfile, bbox_inches='tight')

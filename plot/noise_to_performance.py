@@ -15,7 +15,7 @@ pyplt.rc(
     preamble=PREAMBLE
 )
 
-def plot_noise_to_performance(in_filepath, outfile=DEFAULT_OUTFILE, verbose=False):
+def plot_noise_to_performance(in_filepath, figsize=(10,5), outfile=DEFAULT_OUTFILE, verbose=False):
     solvers = ['WalkSAT', 'ProbSAT']
     xlims = dict(
         WalkSAT=[0,1],
@@ -32,7 +32,8 @@ def plot_noise_to_performance(in_filepath, outfile=DEFAULT_OUTFILE, verbose=Fals
     seaborn.set()
     seaborn.set_style('ticks', {'axes.grid': True, 'grid.linestyle': ':'})
     seaborn.set_context('paper')
-    fig, (ax11,ax12) = pyplt.subplots(1, 2, figsize=(10,5), sharey=True)
+    fig, (ax11,ax12) = pyplt.subplots(1, 2, figsize=figsize, sharey=True)
+    fig.tight_layout()
     axes={
         'WalkSAT': ax11,
         'ProbSAT': ax12,
@@ -71,4 +72,4 @@ def plot_noise_to_performance(in_filepath, outfile=DEFAULT_OUTFILE, verbose=Fals
         ax.legend(loc='upper right')
 
     seaborn.despine()
-    fig.savefig(outfile)
+    fig.savefig(outfile, bbox_inches='tight')

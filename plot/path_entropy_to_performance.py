@@ -37,6 +37,7 @@ def plot_path_entropy_to_performance(in_filepath, metric, outfile=DEFAULT_OUTFIL
     seaborn.set_style('ticks', {'axes.grid': True, 'grid.linestyle': '-'})
     seaborn.set_context('paper')
     fig, axes = pyplt.subplots(1, 3, sharex=True, sharey=True)
+    fig.tight_layout()
     for x, solver in enumerate(solvers):
 
         ax = axes[x]
@@ -60,4 +61,4 @@ def plot_path_entropy_to_performance(in_filepath, metric, outfile=DEFAULT_OUTFIL
 
     seaborn.despine()
 
-    fig.savefig(outfile)
+    fig.savefig(outfile, bbox_inches='tight')
