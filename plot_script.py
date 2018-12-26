@@ -76,7 +76,7 @@ argparser.add_argument(
     '--noise_to_entropy_ks_test',
     type=str,
     nargs=2,
-    metavar=['METRIC', 'FIELD'],
+    metavar=('METRIC', 'FIELD'),
     help='Plots figure of ks-test'
 )
 
@@ -84,8 +84,16 @@ argparser.add_argument(
     '--entropy_distr',
     type=str,
     nargs=2,
-    metavar=['METRIC', 'FIELD'],
+    metavar=('METRIC', 'FIELD'),
     help='Plots figure of dist of entropy'
+)
+
+argparser.add_argument(
+    '--figsize',
+    type=float,
+    nargs=2,
+    metavar=('HEIGHT', 'WIDTH'),
+    help='Set width and height of the plott',
 )
 
 args = argparser.parse_args()
@@ -100,6 +108,7 @@ if __name__ == '__main__':
     if args.noise_to_performance:
         plot_noise_to_performance(
             args.data_folder,
+            figsize=args.figsize,
             outfile=outfile,
             verbose=args.verbose,
         )
@@ -108,6 +117,7 @@ if __name__ == '__main__':
         plot_noise_to_entropy_overview(
             args.data_folder,
             args.noise_to_entropy_overview[0],
+            figsize=args.figsize,
             outfile=outfile,
             field=args.noise_to_entropy_overview[1],
             verbose=args.verbose,
@@ -119,6 +129,7 @@ if __name__ == '__main__':
         plot_path_entropy_to_performance(
             args.data_folder,
             args.path_entropy_to_performance[0],
+            figsize=args.figsize,
             outfile=outfile,
             field=args.path_entropy_to_performance[1],
             verbose=args.verbose,
@@ -129,6 +140,7 @@ if __name__ == '__main__':
     if args.noise_to_cond_entropy:
         plot_noise_to_cond_entropy(
             args.data_folder,
+            figsize=args.figsize,
             outfile=outfile,
             field=args.noise_to_cond_entropy[0],
             verbose=args.verbose,
@@ -140,6 +152,7 @@ if __name__ == '__main__':
         plot_noise_to_entropy_ks_test(
             args.data_folder,
             args.noise_to_entropy_ks_test[0],
+            figsize=args.figsize,
             outfile=outfile,
             field=args.noise_to_entropy_ks_test[1],
             verbose=args.verbose,
@@ -151,6 +164,7 @@ if __name__ == '__main__':
         plot_entropy_distr(
             args.data_folder,
             args.entropy_distr[0],
+            figsize=args.figsize,
             outfile=outfile,
             field=args.entropy_distr[1],
             verbose=args.verbose,
