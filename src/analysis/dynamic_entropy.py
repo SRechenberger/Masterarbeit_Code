@@ -76,21 +76,12 @@ def noise_param_to_path_entropy(folder, entropy, field, verbose=False):
             try:
                 rows = conn.cursor().execute(
                     f"""
-                    WITH average_runtime AS (
-                        SELECT formula_id, avg(sat) as sat_avg, avg(total_runtime) as rt_avg
-                        FROM algorithm_run
-                        GROUP BY formula_id
-                    ),
-                    average_entropy AS (
-                        SELECT noise_param, formula_id, avg({field}) as entropy_avg
-                        FROM experiment
-                            NATURAL JOIN algorithm_run
-                            NATURAL JOIN search_run
-                            JOIN entropy_data ON {entropy} = data_id
-                        GROUP BY formula_id
-                    )
-                    SELECT noise_param, formula_id, entropy_avg, sat_avg, rt_avg
-                    FROM average_entropy NATURAL JOIN average_runtime
+                    SELECT noise_param, formula_id, avg({field})
+                    FROM experiment
+                        NATURAL JOIN algorithm_run
+                        NATURAL JOIN search_run
+                        JOIN entropy_data ON {entropy} = data_id
+                    GROUP BY formula_id
                     """
                 )
             except sqlite3.OperationalError as e:
@@ -106,7 +97,5 @@ def noise_param_to_path_entropy(folder, entropy, field, verbose=False):
             'noise_param',
             'formula_id',
             'avg_value',
-            'avg_sat',
-            'avg_runtime'
         ]
     )
