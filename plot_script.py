@@ -52,8 +52,8 @@ argparser.add_argument(
 argparser.add_argument(
     '--path_entropy_to_performance',
     type=str,
-    nargs=2,
-    metavar=('METRIC','FIELD'),
+    nargs=1,
+    metavar='FIELD',
     help='Plots figure to compare entropy and performance'
 )
 
@@ -119,10 +119,9 @@ if __name__ == '__main__':
     if args.path_entropy_to_performance:
         plot_path_entropy_to_performance(
             args.data_folder,
-            args.path_entropy_to_performance[0],
             figsize=args.figsize,
             outfile=outfile,
-            field=args.path_entropy_to_performance[1],
+            field=args.path_entropy_to_performance[0],
             verbose=args.verbose,
         )
         if args.verbose:
