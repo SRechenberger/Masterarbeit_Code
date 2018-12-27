@@ -61,8 +61,8 @@ def plot_path_entropy_to_performance(
                 color='r',
                 linestyle=':'
             )
-            ax.set_xlabel(r'\Large' + metric_label[metric])
-            ax.set_ylabel(r'\Large $\expect{T_f}$')
+            ax.set_xlabel(metric_label[metric])
+            ax.set_ylabel(r'$\overline{T_F}$')
 
     seaborn.despine()
 
