@@ -21,6 +21,11 @@ def plot_path_entropy_to_performance(
     ):
     solvers = ['GSAT', 'WalkSAT_Opt', 'ProbSAT_Opt']
     metrics = ['single_entropy', 'joint_entropy', 'cond_entropy', 'mutual_information']
+    solver_label = dict(
+        GSAT='GSAT',
+        WalkSAT_Opt='WalkSAT',
+        ProbSAT_Opt='ProbSAT',
+    )
 
     metric_label = dict(
         single_entropy=r'$H_1$',
@@ -42,11 +47,13 @@ def plot_path_entropy_to_performance(
         figsize=figsize,
     )
     fig.tight_layout()
+    titles_given = []
     for y, solver in enumerate(solvers):
         data = all_data[solver]
         for x, metric in enumerate(metrics):
 
             ax = axes[x][y]
+
             seaborn.scatterplot(
                 x=metric,
                 y='runtime',
@@ -63,6 +70,9 @@ def plot_path_entropy_to_performance(
             )
             ax.set_xlabel(metric_label[metric])
             ax.set_ylabel(r'$\overline{T_F}$')
+            if solver not in titles_given:
+                ax.set_title(r'\Large {}'.format(solver_label[solver]))
+                titles_given.append(solver)
 
     seaborn.despine()
 
