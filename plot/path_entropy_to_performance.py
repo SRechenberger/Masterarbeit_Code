@@ -14,13 +14,19 @@ pyplt.rc(
 
 def plot_path_entropy_to_performance(
         in_filepath,
+        metrics,
         outfile=DEFAULT_OUTFILE,
         field='average',
         figsize=(10, 12),
-        verbose=False
+        verbose=False,
     ):
     solvers = ['GSAT', 'WalkSAT_Opt', 'ProbSAT_Opt']
-    metrics = ['single_entropy', 'joint_entropy', 'cond_entropy', 'mutual_information']
+
+    figsize = (
+        figsize[0],
+        figsize[1]/4 * len(metrics),
+    )
+
     solver_label = dict(
         GSAT='GSAT',
         WalkSAT_Opt='WalkSAT',

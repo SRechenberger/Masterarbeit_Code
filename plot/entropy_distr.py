@@ -14,9 +14,21 @@ pyplt.rc(
     preamble=PREAMBLE
 )
 
-def plot_entropy_distr(in_filepath, figsize=(10,12), outfile=DEFAULT_OUTFILE, field='average', verbose=False):
+def plot_entropy_distr(
+        in_filepath,
+        metrics,
+        figsize=(10,12),
+        outfile=DEFAULT_OUTFILE,
+        field='average',
+        verbose=False,
+        complete=True):
     solvers = ['GSAT', 'WalkSAT', 'ProbSAT']
-    metrics = ['single_entropy', 'joint_entropy', 'cond_entropy', 'mutual_information']
+
+    figsize = (
+        figsize[0],
+        figsize[1]/4 * len(metrics),
+    )
+
     dirs = dict(
         GSAT='GSAT',
         WalkSAT='WalkSAT_Opt',

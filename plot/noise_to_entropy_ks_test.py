@@ -15,9 +15,20 @@ pyplt.rc(
 )
 
 
-def plot_noise_to_entropy_ks_test(in_filepath, figsize=(10,12), outfile=DEFAULT_OUTFILE, field='average', verbose=False):
+def plot_noise_to_entropy_ks_test(
+        in_filepath,
+        metrics,
+        figsize=(10,12),
+        outfile=DEFAULT_OUTFILE,
+        field='average',
+        verbose=False):
     solvers = ['WalkSAT', 'ProbSAT']
-    metrics = ['single_entropy', 'joint_entropy', 'cond_entropy', 'mutual_information']
+
+    figsize = (
+        figsize[0],
+        figsize[1]/4 * len(metrics),
+    )
+
     xlims = dict(
         WalkSAT=[0,1],
         ProbSAT=[0,4],

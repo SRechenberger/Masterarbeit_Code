@@ -88,6 +88,14 @@ argparser.add_argument(
     help='Set width and height of the plott',
 )
 
+argparser.add_argument(
+    '--metrics',
+    type=str,
+    nargs='+',
+    metavar='METRICS',
+    help='Metrics to Plot; default: all',
+)
+
 args = argparser.parse_args()
 
 if __name__ == '__main__':
@@ -96,6 +104,10 @@ if __name__ == '__main__':
         outfile = args.outfile
     else:
         outfile = DEFAULT_OUTFILE
+    if args.metrics:
+        metrics=args.metrics
+    else:
+        metrics = ['single_entropy', 'joint_entropy', 'cond_entropy', 'mutual_information']
 
     if args.noise_to_performance:
         plot_noise_to_performance(
@@ -108,6 +120,7 @@ if __name__ == '__main__':
     if args.noise_to_entropy_overview:
         plot_noise_to_entropy_overview(
             args.data_folder,
+            metrics,
             figsize=args.figsize,
             outfile=outfile,
             field=args.noise_to_entropy_overview[0],
@@ -119,6 +132,7 @@ if __name__ == '__main__':
     if args.path_entropy_to_performance:
         plot_path_entropy_to_performance(
             args.data_folder,
+            metrics,
             figsize=args.figsize,
             outfile=outfile,
             field=args.path_entropy_to_performance[0],
@@ -130,6 +144,7 @@ if __name__ == '__main__':
     if args.noise_to_entropy_ks_test:
         plot_noise_to_entropy_ks_test(
             args.data_folder,
+            metrics,
             figsize=args.figsize,
             outfile=outfile,
             field=args.noise_to_entropy_ks_test[0],
@@ -141,6 +156,7 @@ if __name__ == '__main__':
     if args.entropy_distr:
         plot_entropy_distr(
             args.data_folder,
+            metrics,
             figsize=args.figsize,
             outfile=outfile,
             field=args.entropy_distr[0],

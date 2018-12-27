@@ -14,11 +14,19 @@ pyplt.rc(
 
 def plot_noise_to_entropy_overview(
         in_filepath,
+        metrics,
         outfile=DEFAULT_OUTFILE,
         field='average',
         figsize=(10,12),
-        verbose=False):
+        verbose=False,
+    ):
     solvers = ['WalkSAT', 'ProbSAT']
+
+    figsize = (
+        figsize[0],
+        figsize[1]/4 * len(metrics),
+    )
+
     xlims = dict(
         WalkSAT=[0,1],
         ProbSAT=[0,4],
@@ -39,7 +47,6 @@ def plot_noise_to_entropy_overview(
         cond_entropy=r'H_c',
         mutual_information=r'I',
     )
-    metrics = ['single_entropy', 'joint_entropy', 'cond_entropy', 'mutual_information']
     # load data
 
     all_data = load_dynamic_data(in_filepath, field, solvers, verbose=verbose)
