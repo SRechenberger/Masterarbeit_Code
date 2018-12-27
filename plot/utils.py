@@ -82,3 +82,16 @@ def load_dynamic_data(in_filepath, field, solvers, verbose=False):
         )
 
     return all_data
+
+def load_runtime_to_entropy(in_filepath, field, solvers, verbose=False):
+    all_data = {}
+    for solver in solvers:
+        path = os.path.join(in_filepath, solver)
+        print(path)
+        all_data[solver] = path_entropy.path_entropy_to_runtime(
+            path,
+            f'{field}',
+            verbose=verbose,
+        )
+
+    return all_data
