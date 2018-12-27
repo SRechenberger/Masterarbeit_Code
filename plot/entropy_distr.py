@@ -68,6 +68,8 @@ def plot_entropy_distr(in_filepath, figsize=(10,12), outfile=DEFAULT_OUTFILE, fi
                 label=r'$\mu = {:.2f}$, $\sigma = {:.2f}$, $\gamma = {:.2f}$, $D = {:.2f}$'.format(mu, sigma, gamma, D),
                 fit=scipy.stats.skewnorm,
                 ax=ax,
+                kde=False,
+                rug=True,
             )
 
             ax.set_xlabel(f'${metric_label[metric]}$')

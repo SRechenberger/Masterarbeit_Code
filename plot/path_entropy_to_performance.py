@@ -61,11 +61,18 @@ def plot_path_entropy_to_performance(
                 marker='o',
                 ax=ax,
             )
-            opt_mean = numpy.mean(data[metric])
+            h_mean = numpy.mean(data[metric])
+            t_mean = numpy.mean(data['runtime'])
             ax.axvline(
-                x=opt_mean,
+                x=h_mean,
                 # label=r'$\expect{h}=' + f'{opt_mean:.3f}$',
                 color='r',
+                linestyle=':'
+            )
+            ax.axhline(
+                y=t_mean,
+                # label=r'$\expect{h}=' + f'{opt_mean:.3f}$',
+                color='g',
                 linestyle=':'
             )
             ax.set_xlabel(metric_label[metric])
