@@ -48,7 +48,7 @@ SET value = ?, converged = ?, eps_exp = ?, max_loops = ?
 WHERE series_id = ?
 """
 
-def add_tms_entropy(file, eps_exp=15, max_loops=10000, update=True):
+def add_tms_entropy(file, eps_exp=15, max_loops=10000, update=True, poolsize=3):
     """ Adds the table holding the TMS-entropy to the given database file
 
     Positionals:
@@ -64,7 +64,7 @@ def add_tms_entropy(file, eps_exp=15, max_loops=10000, update=True):
         series_ids = conn.cursor().execute(
             "SELECT series_id FROM measurement_series"
         )
-        with mp.Pool(processes=3) as pool:
+        with mp.Pool(processes=poolsize) as pool:
             future_results = []
             updated_ids = set()
             for series_id, in series_ids:
