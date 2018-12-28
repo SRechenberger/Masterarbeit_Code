@@ -89,7 +89,7 @@ def get_unsat_clause_avg_to_hamming_dist(file):
 
         return pandas.DataFrame.from_records(
             results[:-1],
-            columns=['hamming_dist', 'unsat_clause_avg']
+            columns=['hamming_dist', 'unsat_clauses']
         )
 
 def get_unsat_clause_to_hamming_dist(file):
@@ -107,5 +107,5 @@ def get_unsat_clause_to_hamming_dist(file):
 
         return pandas.DataFrame.from_records(
             results[:-1],
-            columns=['hamming_dist', 'unsat_clause']
+            columns=['hamming_dist', 'unsat_clauses']
         )
