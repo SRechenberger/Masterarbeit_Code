@@ -24,7 +24,7 @@ def get_state_entropy_to_hamming_dist(file, formula=None):
 
         return pandas.DataFrame.from_records(
             results,
-            columns=['formula_id', 'hamming_dist', 'entropy_avg']
+            columns=['formula_id', 'hamming_dist', 'state_entropy']
         )
 
 

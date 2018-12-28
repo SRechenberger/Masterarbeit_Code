@@ -18,6 +18,7 @@ from plot.noise_to_performance import plot_noise_to_performance
 from plot.path_entropy_to_performance import plot_path_entropy_to_performance
 from plot.noise_to_cond_entropy import plot_noise_to_cond_entropy
 from plot.entropy_distr import plot_entropy_distr
+from plot.hamming_dist_to_state_entropy import plot_hamming_dist_to_state_entropy
 
 from mpl_toolkits.axisartist.axislines import SubplotZero
 
@@ -57,11 +58,18 @@ argparser.add_argument(
     help='Plots figure to compare entropy and performance'
 )
 
-
 argparser.add_argument(
     '--noise_to_performance',
     action='store_true',
     help='Plot Performance as function of noise-param. for WalkSAT and ProbSAT'
+)
+
+argparser.add_argument(
+    '--hamming_dist_to_state_entropy',
+    type=int,
+    metavar='TYPE',
+    nargs=1,
+    help='Plots hamming_dist against state_entropy',
 )
 
 argparser.add_argument(
@@ -164,6 +172,25 @@ if __name__ == '__main__':
         )
         if args.verbose:
             print('Done.')
+
+    if args.hamming_dist_to_state_entropy:
+        types = {
+            0: dict(
+                gsat=[0],
+                walksat=[0.0, 0.4, 1.0],
+                probsat=[0.0, 2.6, 4.0],
+            )
+        }
+        plot_hamming_dist_to_state_entropy(
+            args.data_folder,
+            types[args.hamming_dist_to_state_entropy[0]],
+            outfile=outfile,
+            figsize=args.figsize,
+            verbose=args.verbose,
+        )
+        if args.verbose:
+            print('Done.')
+
 
 
 
