@@ -105,7 +105,7 @@ def add_tms_entropy(file, eps_exp=15, max_loops=10000, update=True, poolsize=3):
         conn.commit()
 
 
-def tms_entropy_values(file, only_convergent=True, satisfies=None):
+def tms_entropy_values(in_filepath, only_convergent=True, verbose=False):
     """ Returns a DataFrame of the distribution of the TMS-entropy
 
     Positionals:
@@ -117,24 +117,30 @@ def tms_entropy_values(file, only_convergent=True, satisfies=None):
     Returns:
         DataFrame having the columns ['solver', 'noise_param', 'formula_id', 'tms_entropy']
     """
+    results = []
+    for file in map(partial(os.path.join,in_filepath), os.listdir(in_filepath)):
+        if verbose:
+            print(f'Loading from {file}... ', end='', flush=True)
+        with sqlite3.connect(file, timeout=30) as conn:
+            if only_convergent:
+                query = """ \
+                    SELECT solver, noise_param, formula_id, value \
+                    FROM experiment NATURAL JOIN measurement_series NATURAL JOIN tms_entropy \
+                    WHERE converged = 1 \
+                """
+            else:
+                query = """ \
+                    SELECT solver, noise_param, formula_id, value \
+                    FROM experiment NATURAL JOIN measurement_series NATURAL JOIN tms_entropy \
+                """
+            results += list(conn.cursor().execute(query))
+        if verbose:
+            print('Done.')
 
-    with sqlite3.connect(file, timeout=30) as conn:
-        if only_convergent:
-            query = """ \
-                SELECT solver, noise_param, formula_id, value \
-                FROM experiment NATURAL JOIN measurement_series NATURAL JOIN tms_entropy \
-                WHERE converged = 1 \
-            """
-        else:
-            query = """ \
-                SELECT solver, noise_param, formula_id, value \
-                FROM experiment NATURAL JOIN measurement_series NATURAL JOIN tms_entropy \
-            """
-        cursor = conn.cursor().execute(query)
-        return pandas.DataFrame.from_records(
-            list(filter(lambda args: satisfies(*args) if satisfies else True, cursor)),
-            columns=['solver', 'noise_param', 'formula_id', 'tms_entropy']
-        )
+    return pandas.DataFrame.from_records(
+        results,
+        columns=['solver', 'noise_param', 'formula_id', 'tms_entropy'],
+    )
 
 
 def tms_entropy_to_noise_param(folder, solver):
