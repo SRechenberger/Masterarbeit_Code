@@ -1,6 +1,7 @@
 import math
 import os
 import src.analysis.dynamic_entropy as path_entropy
+import src.analysis.tms_entropy as tms_entropy
 
 
 DEFAULT_OUTFILE = 'plot.pdf'
@@ -83,6 +84,30 @@ def load_dynamic_data(in_filepath, field, solvers, verbose=False):
 
     return all_data
 
+def load_runtime_to_entropy(in_filepath, field, solvers, verbose=False):
+    all_data = {}
+    for solver in solvers:
+        path = os.path.join(in_filepath, solver)
+        print(path)
+        all_data[solver] = path_entropy.path_entropy_to_runtime(
+            path,
+            f'{field}',
+            verbose=verbose,
+        )
+
+    return all_data
+
+def load_noise_to_tms_entropy(in_filepath, solvers, only_convergent=True, verbose=False):
+    all_data = {}
+    for solver in solvers:
+        path = os.path.join(in_filepath, solver)
+        all_data[solver] = tms_entropy.tms_entropy_values(
+            path,
+            only_convergent=only_convergent,
+            verbose=verbose,
+        )
+
+    return all_data
 def load_runtime_to_entropy(in_filepath, field, solvers, verbose=False):
     all_data = {}
     for solver in solvers:
