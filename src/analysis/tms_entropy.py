@@ -168,20 +168,39 @@ def tms_entropy_to_noise_param(folder, solver):
         columns=['noise_param', 'tms_entropy', 'conv_rate']
     )
 
-def tms_entropy_to_performance(file):
-    with sqlite3.connect(file, timeout=30) as conn:
-        rows = conn.cursor().execute(
-            """ SELECT measurement_series.formula_id, avg(tms_entropy.converged), avg(tms_entropy.value), avg(algorithm_run.total_runtime), avg(algorithm_run.sat) \
-            FROM tms_entropy NATURAL JOIN measurement_series JOIN algorithm_run ON measurement_series.formula_id = algorithm_run.formula_id \
-            GROUP BY measurement_series.formula_id \
-            """
-        )
-        results = []
-        for f_id, avg_conv, tms_h, avg_rt, avg_succ in rows:
-            results.append((f_id, avg_conv, tms_h, avg_rt, avg_succ))
 
-        return pandas.DataFrame.from_records(
-            results,
-            columns=['formula_id', 'avg_converged', 'tms_entropy', 'avg_runtime', 'avg_sat']
-        )
+def tms_entropy_to_performance(folder, only_convergend=True):
+    results = []
+    for file in os.listdir(folder):
+        with sqlite3.connect(os.path.join(folder, file), timeout=30) as conn:
+            print(file)
+            rows = conn.cursor().execute(
+                f""" WITH runtime AS (
+                    SELECT formula_id, avg(total_runtime) AS runtime, avg(sat) AS sat
+                    FROM algorithm_run
+                    GROUP BY formula_id
+                ),
+                tms AS (
+                    SELECT formula_id, value
+                    FROM measurement_series NATURAL JOIN tms_entropy
+                    WHERE NOT {1 if only_convergend else 0} OR converged = 1
+                    GROUP BY formula_id
+                )
+                SELECT formula_id, runtime, sat, value
+                FROM runtime NATURAL JOIN tms
+                """
+            )
+            for f_id, runtime, sat, tms_entropy in rows:
+                results.append(
+                    (
+                        f_id,
+                        max(1, 10*sat) * runtime,
+                        tms_entropy,
+                    )
+                )
+
+    return pandas.DataFrame.from_records(
+        results,
+        columns=['formula_id', 'runtime', 'tms_entropy'],
+    )
 

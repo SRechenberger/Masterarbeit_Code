@@ -17,6 +17,7 @@ from plot.noise_to_entropy_ks_test import plot_noise_to_entropy_ks_test
 from plot.noise_to_performance import plot_noise_to_performance
 from plot.path_entropy_to_performance import plot_path_entropy_to_performance
 from plot.noise_to_tms_entropy import plot_noise_to_tms_entropy
+from plot.tms_entropy_to_performance import plot_tms_entropy_to_performance
 from plot.entropy_distr import plot_entropy_distr
 from plot.hamming_dist_to_state_entropy import plot_hamming_dist_to_state_entropy
 from plot.hamming_dist_to_unsat_clauses import plot_hamming_dist_to_unsat_clauses
@@ -84,6 +85,12 @@ argparser.add_argument(
     '--noise_to_tms_entropy',
     action='store_true',
     help='Plots noise against tms-entropy',
+)
+
+argparser.add_argument(
+    '--tms_entropy_to_performance',
+    action='store_true',
+    help='Plots tms-entropy against performance',
 )
 
 argparser.add_argument(
@@ -224,6 +231,15 @@ if __name__ == '__main__':
         if args.verbose:
             print('Done.')
 
+    if args.tms_entropy_to_performance:
+        plot_tms_entropy_to_performance(
+            args.data_folder,
+            outfile=outfile,
+            figsize=args.figsize,
+            verbose=args.verbose,
+        )
+        if args.verbose:
+            print('Done.')
 
 
 

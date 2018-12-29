@@ -72,13 +72,33 @@ PREAMBLE = r"""
                      =}
 """
 
+
+def load_from_all_subfolders(load_function, in_filepath, subfolders, *args, verbose=False, **kwargs):
+    all_data = {}
+    for subfolder in subfolders:
+        path = os.path.join(in_filepath, subfolder)
+        if verbose:
+            print(f'Loading from {path}... ', end='', flush=True)
+
+        try:
+            all_data[subfolder] = load_function(path, *args, **kwargs)
+
+        except Exception as e:
+            print(f'Failed: {type(e).__name__} {e}.')
+            raise e
+
+        if verbose:
+            print('Done.')
+
+    return all_data
+
 def load_dynamic_data(in_filepath, field, solvers, verbose=False):
     all_data = {}
     for solver in solvers:
         path = os.path.join(in_filepath, solver)
         all_data[solver] = path_entropy.noise_param_to_path_entropy(
             path,
-            f'{field}',
+            field,
             verbose=verbose,
         )
 
@@ -91,7 +111,7 @@ def load_runtime_to_entropy(in_filepath, field, solvers, verbose=False):
         print(path)
         all_data[solver] = path_entropy.path_entropy_to_runtime(
             path,
-            f'{field}',
+            field,
             verbose=verbose,
         )
 
@@ -115,7 +135,7 @@ def load_runtime_to_entropy(in_filepath, field, solvers, verbose=False):
         print(path)
         all_data[solver] = path_entropy.path_entropy_to_runtime(
             path,
-            f'{field}',
+            field,
             verbose=verbose,
         )
 
