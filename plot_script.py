@@ -19,6 +19,7 @@ from plot.path_entropy_to_performance import plot_path_entropy_to_performance
 from plot.noise_to_tms_entropy import plot_noise_to_tms_entropy
 from plot.tms_entropy_to_performance import plot_tms_entropy_to_performance
 from plot.entropy_distr import plot_entropy_distr
+from plot.tms_distr import plot_tms_distr
 from plot.hamming_dist_to_state_entropy import plot_hamming_dist_to_state_entropy
 from plot.hamming_dist_to_unsat_clauses import plot_hamming_dist_to_unsat_clauses
 
@@ -107,6 +108,12 @@ argparser.add_argument(
     nargs=1,
     metavar='FIELD',
     help='Plots figure of dist of entropy'
+)
+
+argparser.add_argument(
+    '--tms_distr',
+    action='store_true',
+    help='Plots figure of dist of tms entropy'
 )
 
 argparser.add_argument(
@@ -236,6 +243,16 @@ if __name__ == '__main__':
             args.data_folder,
             outfile=outfile,
             figsize=args.figsize,
+            verbose=args.verbose,
+        )
+        if args.verbose:
+            print('Done.')
+
+    if args.tms_distr:
+        plot_tms_distr(
+            args.data_folder,
+            figsize=args.figsize,
+            outfile=outfile,
             verbose=args.verbose,
         )
         if args.verbose:
