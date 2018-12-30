@@ -26,6 +26,7 @@ def plot_noise_to_tms_entropy(
     )
     ylims = dict(
         tms_entropy=[0, 1],
+        converged=[0,1],
     )
     opt_value = dict(
         WalkSAT=(r'$\rho$', 0.4),
@@ -39,7 +40,7 @@ def plot_noise_to_tms_entropy(
     all_data = load_noise_to_tms_entropy(
         in_filepath,
         solvers,
-        only_convergent=True,
+        only_convergent=False,
         verbose=verbose
     )
 
@@ -48,7 +49,7 @@ def plot_noise_to_tms_entropy(
     seaborn.set_style('ticks', {'axes.grid': True, 'grid.linestyle': '-'})
     seaborn.set_context('paper')
     fig, axes = pyplt.subplots(
-        1,
+        2,
         len(solvers),
         figsize=figsize
     )
@@ -56,14 +57,14 @@ def plot_noise_to_tms_entropy(
     for y, solver in enumerate(solvers):
         data = all_data[solver]
         # Scatterplot, if x1 == x2
-        ax = axes[y]
+        ax = axes[0][y]
         ax.set_xlim(xlims[solver])
         ax.set_ylim(ylims['tms_entropy'])
         seaborn.scatterplot(
             x='noise_param',
             y='tms_entropy',
-            data=data,
-            # marker='o',
+            data=data[data['converged'] == 1],
+            marker='+',
             ax=ax,
             alpha=0.8,
         )
@@ -82,14 +83,25 @@ def plot_noise_to_tms_entropy(
             linestyle=':'
         )
         # Average lineplot in any case
+        data_tmp = data[data['converged'] == 1]
         seaborn.lineplot(
             x='noise_param',
             y='tms_entropy',
-            data=data,
+            data=data_tmp,
             estimator=numpy.mean,
             ax=ax,
            # label='Mittelwert',
             color='g'
+        )
+        seaborn.lineplot(
+            x='noise_param',
+            y='tms_entropy',
+            data=data_tmp[data['tms_entropy'].between(0.1,0.9)],
+            estimator=numpy.mean,
+            ax=ax,
+           # label='Mittelwert',
+            linestyle=':',
+            color='y'
         )
         ax.set_xlabel(opt_value[solver][0])
         if solver == 'WalkSAT':
@@ -97,6 +109,27 @@ def plot_noise_to_tms_entropy(
         else:
             ax.set_ylabel('')
             ax.yaxis.set_major_formatter(pyplt.NullFormatter())
+
+
+        ax = axes[1][y]
+        ax.set_xlim(xlims[solver])
+        ax.set_ylim(ylims['converged'])
+        conv_data = data.groupby('noise_param', as_index=False)['converged'].mean()
+        seaborn.scatterplot(
+            x='noise_param',
+            y='converged',
+            data=conv_data,
+            ax=ax,
+        )
+        ax.set_xlabel(opt_value[solver][0])
+        if solver == 'WalkSAT':
+            ax.set_ylabel(r'$\frac{\# \mbox{konvergent}}{\# \mbox{Formeln}}$')
+        else:
+            ax.set_ylabel('')
+            ax.yaxis.set_major_formatter(pyplt.NullFormatter())
+
+
+
 
     seaborn.despine()
     fig.savefig(outfile, bbox_inches='tight')

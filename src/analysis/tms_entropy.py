@@ -124,13 +124,13 @@ def tms_entropy_values(in_filepath, only_convergent=True, verbose=False):
         with sqlite3.connect(file, timeout=30) as conn:
             if only_convergent:
                 query = """ \
-                    SELECT solver, noise_param, formula_id, value \
+                    SELECT solver, noise_param, formula_id, value, converged\
                     FROM experiment NATURAL JOIN measurement_series NATURAL JOIN tms_entropy \
                     WHERE converged = 1 \
                 """
             else:
                 query = """ \
-                    SELECT solver, noise_param, formula_id, value \
+                    SELECT solver, noise_param, formula_id, value, converged\
                     FROM experiment NATURAL JOIN measurement_series NATURAL JOIN tms_entropy \
                 """
             results += list(conn.cursor().execute(query))
@@ -139,7 +139,7 @@ def tms_entropy_values(in_filepath, only_convergent=True, verbose=False):
 
     return pandas.DataFrame.from_records(
         results,
-        columns=['solver', 'noise_param', 'formula_id', 'tms_entropy'],
+        columns=['solver', 'noise_param', 'formula_id', 'tms_entropy', 'converged'],
     )
 
 
@@ -181,26 +181,27 @@ def tms_entropy_to_performance(folder, only_convergend=True):
                     GROUP BY formula_id
                 ),
                 tms AS (
-                    SELECT formula_id, value
+                    SELECT formula_id, value, converged
                     FROM measurement_series NATURAL JOIN tms_entropy
                     WHERE NOT {1 if only_convergend else 0} OR converged = 1
                     GROUP BY formula_id
                 )
-                SELECT formula_id, runtime, sat, value
+                SELECT formula_id, runtime, sat, value, converged
                 FROM runtime NATURAL JOIN tms
                 """
             )
-            for f_id, runtime, sat, tms_entropy in rows:
+            for f_id, runtime, sat, tms_entropy, converged, in rows:
                 results.append(
                     (
                         f_id,
-                        max(1, 10*sat) * runtime,
+                        (10*(1-sat) if sat < 1 else 1) * runtime,
                         tms_entropy,
+                        converged, 
                     )
                 )
 
     return pandas.DataFrame.from_records(
         results,
-        columns=['formula_id', 'runtime', 'tms_entropy'],
+        columns=['formula_id', 'runtime', 'tms_entropy', 'converged'],
     )
 

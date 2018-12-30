@@ -33,7 +33,7 @@ def plot_tms_entropy_to_performance(
     )
 
     labels = dict(
-        tms_entropy=r'$H\!\parens{M_F}$',
+        tms_entropy=r'$\hat H\!\parens{M_F}$',
         runtime=r'$\overline{T_F}$',
     )
 
@@ -65,8 +65,9 @@ def plot_tms_entropy_to_performance(
         seaborn.scatterplot(
             x='tms_entropy',
             y='runtime',
+           #  hue='converged',
             data=data,
-            marker='o',
+            marker='+',
             ax=ax,
         )
         h_mean = numpy.mean(data['tms_entropy'])

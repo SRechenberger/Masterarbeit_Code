@@ -51,7 +51,11 @@ def path_entropy_to_runtime(folder, field, verbose=False):
             continue
 
         for f_id, avg_sat, avg_rt, *avg_hs in rows:
-            results.append((f_id, max(1, 10 * (1-avg_sat) * avg_rt), *avg_hs))
+            results.append((
+                f_id,
+                (10 * (1-avg_sat) if avg_sat < 1 else 1) * avg_rg,
+                *avg_hs
+            ))
 
     return pandas.DataFrame.from_records(
         results,
