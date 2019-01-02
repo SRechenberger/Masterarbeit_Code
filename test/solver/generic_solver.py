@@ -33,7 +33,7 @@ class TestDistribution(unittest.TestCase):
         self.r = 4.2
 
         self.significance_level = 0.10 if __debug__ else 0.05
-        self.sample_size = 500 if __debug__ else 1000
+        self.sample_size = 1000
         self.repeat = 10 if __debug__ else 100
         self.max_failure = self.repeat * 0.2
         self.jump_range = self.n // 10
