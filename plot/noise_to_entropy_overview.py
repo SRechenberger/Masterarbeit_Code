@@ -44,7 +44,7 @@ def plot_noise_to_entropy_overview(
     metric_label = dict(
         single_entropy=r'H_1',
         joint_entropy=r'H_2',
-        cond_entropy=r'H_c',
+        cond_entropy=r'H_S',
         mutual_information=r'I',
     )
     # load data
