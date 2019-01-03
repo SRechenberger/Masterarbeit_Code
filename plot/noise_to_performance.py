@@ -7,7 +7,7 @@ import src.analysis.dynamic_entropy as path_entropy
 
 import matplotlib.pyplot as pyplt
 
-from plot.utils import PREAMBLE, DEFAULT_OUTFILE, load_dynamic_data
+from plot.utils import PREAMBLE, DEFAULT_OUTFILE, load_dynamic_data, LABELS, OPT_VALUE
 
 pyplt.rc('text', usetex=True)
 pyplt.rc(
@@ -21,14 +21,7 @@ def plot_noise_to_performance(in_filepath, figsize=(10,5), outfile=DEFAULT_OUTFI
         WalkSAT=[0,1],
         ProbSAT=[0,4],
     )
-    opt_value = dict(
-        WalkSAT=r'$\rho$',
-        ProbSAT=r'$c_b$',
-    )
-    metric_label = dict(
-        runtime=r'$T_F$',
-        sat=r'$\prob{\mbox{„Erfolg“}}$',
-    )
+
     seaborn.set()
     seaborn.set_style('ticks', {'axes.grid': True, 'grid.linestyle': ':'})
     seaborn.set_context('paper')
@@ -62,13 +55,13 @@ def plot_noise_to_performance(in_filepath, figsize=(10,5), outfile=DEFAULT_OUTFI
         opt_param_value = g.loc[g['runtime'] == opt_metric_value, 'noise_param'].values[0]
         ax.axvline(
             x=opt_param_value,
-            label=opt_value[solver] + f'$ = {opt_param_value:.1f}$',
+            label=f'${LABELS[solver]} = {opt_param_value:.1f}$',
             color='r',
             linestyle=':',
         )
 
-        ax.set_xlabel(opt_value[solver])
-        ax.set_ylabel(metric_label['runtime'])
+        ax.set_xlabel(f'${LABELS[solver]}$')
+        ax.set_ylabel(f'${LABELS["runtime"]}$')
         ax.legend(loc='upper right')
 
     seaborn.despine()

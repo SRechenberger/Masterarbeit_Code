@@ -4,7 +4,8 @@ import math
 
 import matplotlib.pyplot as pyplt
 
-from plot.utils import PREAMBLE, DEFAULT_OUTFILE, load_runtime_to_entropy
+from plot.utils import \
+    PREAMBLE, DEFAULT_OUTFILE, load_runtime_to_entropy, LABELS, SOLVER_LABELS, SOLVER_OPT_LABELS
 
 pyplt.rc('text', usetex=True)
 pyplt.rc(
@@ -20,28 +21,21 @@ def plot_path_entropy_to_performance(
         figsize=(10, 12),
         verbose=False,
     ):
-    solvers = ['GSAT', 'WalkSAT_Opt', 'ProbSAT_Opt']
+    solvers = ['gsat', 'walksat', 'probsat']
 
     figsize = (
         figsize[0],
         figsize[1]/4 * len(metrics),
     )
 
-    solver_label = dict(
-        GSAT='GSAT',
-        WalkSAT_Opt='WalkSAT',
-        ProbSAT_Opt='ProbSAT',
-    )
-
-    metric_label = dict(
-        single_entropy=r'$H_1$',
-        joint_entropy=r'$H_2$',
-        cond_entropy=r'$H_c$',
-        mutual_information=r'$I$',
-    )
-
     # load data
-    all_data = load_runtime_to_entropy(in_filepath, field, solvers, verbose=verbose)
+    all_data = load_runtime_to_entropy(
+        in_filepath,
+        field,
+        solvers,
+        mapping=SOLVER_OPT_LABELS,
+        verbose=verbose,
+    )
 
     seaborn.set()
     seaborn.set_style('ticks', {'axes.grid': True, 'grid.linestyle': '-'})
@@ -81,10 +75,10 @@ def plot_path_entropy_to_performance(
                 color='g',
                 linestyle=':'
             )
-            ax.set_xlabel(metric_label[metric])
-            ax.set_ylabel(r'$\overline{T_F}$')
+            ax.set_xlabel(f'${LABELS[metric]}$')
+            ax.set_ylabel(f'${LABELS["runtime"]}$')
             if solver not in titles_given:
-                ax.set_title(r'\Large {}'.format(solver_label[solver]))
+                ax.set_title(f'\Large {SOLVER_LABELS[solver]}')
                 titles_given.append(solver)
 
     seaborn.despine()

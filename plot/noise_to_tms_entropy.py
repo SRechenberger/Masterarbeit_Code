@@ -4,7 +4,7 @@ import math
 
 import matplotlib.pyplot as pyplt
 
-from plot.utils import PREAMBLE, DEFAULT_OUTFILE, load_noise_to_tms_entropy
+from plot.utils import PREAMBLE, DEFAULT_OUTFILE, load_noise_to_tms_entropy, LABELS, OPT_VALUE
 
 pyplt.rc('text', usetex=True)
 pyplt.rc(
@@ -27,13 +27,6 @@ def plot_noise_to_tms_entropy(
     ylims = dict(
         tms_entropy=[0, 1],
         converged=[0,1],
-    )
-    opt_value = dict(
-        WalkSAT=(r'$\rho$', 0.4),
-        ProbSAT=(r'$c_b$', 2.6),
-    )
-    metric_label = dict(
-        tms_entropy=r'\overline{H\!\parens{M_F}}',
     )
     # load data
 
@@ -69,16 +62,16 @@ def plot_noise_to_tms_entropy(
             alpha=0.8,
         )
         ax.axvline(
-            x=opt_value[solver][1],
+            x=OPT_VALUE[solver],
            # label=opt_value[solver][0],
             color='g',
             linestyle=':'
         )
-        at_opt_mean = data['noise_param'] == opt_value[solver][1]
+        at_opt_mean = data['noise_param'] == OPT_VALUE[solver]
         opt_mean = numpy.mean(data[at_opt_mean]['tms_entropy'])
         ax.axhline(
             y=opt_mean,
-            label=f'${metric_label["tms_entropy"]} = {opt_mean:.3f}$',
+            label=f'${LABELS["tms_entropy"]} = {opt_mean:.3f}$',
             color='r',
             linestyle=':'
         )
@@ -103,9 +96,9 @@ def plot_noise_to_tms_entropy(
             linestyle=':',
             color='y'
         )
-        ax.set_xlabel(opt_value[solver][0])
+        ax.set_xlabel(f'${LABELS[solver]}$')
         if solver == 'WalkSAT':
-            ax.set_ylabel(f'${metric_label["tms_entropy"]}$')
+            ax.set_ylabel(f'${LABELS["tms_entropy"]}$')
         else:
             ax.set_ylabel('')
             ax.yaxis.set_major_formatter(pyplt.NullFormatter())
@@ -121,9 +114,9 @@ def plot_noise_to_tms_entropy(
             data=conv_data,
             ax=ax,
         )
-        ax.set_xlabel(opt_value[solver][0])
+        ax.set_xlabel(f'${LABELS[solver]}$')
         if solver == 'WalkSAT':
-            ax.set_ylabel(r'$\frac{\# \mbox{konvergent}}{\# \mbox{Formeln}}$')
+            ax.set_ylabel(f'${LABELS["conv"]}$')
         else:
             ax.set_ylabel('')
             ax.yaxis.set_major_formatter(pyplt.NullFormatter())

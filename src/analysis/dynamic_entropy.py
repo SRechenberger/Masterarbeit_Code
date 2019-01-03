@@ -53,7 +53,7 @@ def path_entropy_to_runtime(folder, field, verbose=False):
         for f_id, avg_sat, avg_rt, *avg_hs in rows:
             results.append((
                 f_id,
-                (10 * (1-avg_sat) if avg_sat < 1 else 1) * avg_rg,
+                (10 * (1-avg_sat) if avg_sat < 1 else 1) * avg_rt,
                 *avg_hs
             ))
 

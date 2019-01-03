@@ -6,7 +6,7 @@ import pandas
 
 import matplotlib.pyplot as pyplt
 
-from plot.utils import PREAMBLE, DEFAULT_OUTFILE, load_dynamic_data
+from plot.utils import PREAMBLE, DEFAULT_OUTFILE, load_dynamic_data, LABELS, OPT_VALUE
 
 pyplt.rc('text', usetex=True)
 pyplt.rc(
@@ -32,16 +32,6 @@ def plot_noise_to_entropy_ks_test(
     xlims = dict(
         WalkSAT=[0,1],
         ProbSAT=[0,4],
-    )
-    opt_value = dict(
-        WalkSAT=(r'\rho', 0.4),
-        ProbSAT=(r'c_b', 2.6),
-    )
-    metric_label = dict(
-        single_entropy=r'$H_1$',
-        joint_entropy=r'$H_2$',
-        cond_entropy=r'$H_c$',
-        mutual_information=r'$I$',
     )
     # load data
 
@@ -85,18 +75,18 @@ def plot_noise_to_entropy_ks_test(
                 legend='full',
             )
 
-            opt_d = data[data['noise_param'] == opt_value[solver][1]][metric].iloc[0]
+            opt_d = data[data['noise_param'] == OPT_VALUE[solver]][metric].iloc[0]
             print(opt_d)
 
             ax.axvline(
-                x=opt_value[solver][1],
-                label=f'${opt_value[solver][0]} = {opt_value[solver][1]}$ ' + r'$D_\alpha = {:.2f}$'.format(opt_d),
+                x=OPT_VALUE[solver],
+                label=f'${LABELS[solver]} = {OPT_VALUE[solver]}$,${LABELS["ks_stat"]} = {opt_d:.2f}$',
                 color='g',
                 linestyle=':',
             )
             if no_label_yet:
                 label = lambda alpha, D: dict(
-                    label=f'$\\alpha = {alpha:.2f}$ $D_\\alpha \\leq {D:.2f}$'
+                    label=f'$\\alpha = {alpha:.2f}$ ${LABELS["ks_stat"]} \\leq {D:.2f}$'
                 )
                 no_label_yet = False
             else:
@@ -113,8 +103,8 @@ def plot_noise_to_entropy_ks_test(
                     **label(alpha, D),
                 )
 
-            ax.set_xlabel(f'${opt_value[solver][0]}$')
-            ax.set_ylabel(r'$D_\alpha$')
+            ax.set_xlabel(f'${LABELS[solver]}$')
+            ax.set_ylabel(f'${LABELS["ks_stat"]}$')
             ax.legend()#loc='upper left')
 
     seaborn.despine()

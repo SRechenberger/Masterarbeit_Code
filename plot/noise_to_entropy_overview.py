@@ -4,7 +4,7 @@ import math
 
 import matplotlib.pyplot as pyplt
 
-from plot.utils import PREAMBLE, DEFAULT_OUTFILE, load_dynamic_data
+from plot.utils import PREAMBLE, DEFAULT_OUTFILE, load_dynamic_data, LABELS, OPT_VALUE
 
 pyplt.rc('text', usetex=True)
 pyplt.rc(
@@ -37,16 +37,6 @@ def plot_noise_to_entropy_overview(
         cond_entropy=[1, 4],
         mutual_information=[0,7],
     )
-    opt_value = dict(
-        WalkSAT=(r'$\rho$', 0.4),
-        ProbSAT=(r'$c_b$', 2.6),
-    )
-    metric_label = dict(
-        single_entropy=r'H_1',
-        joint_entropy=r'H_2',
-        cond_entropy=r'H_S',
-        mutual_information=r'I',
-    )
     # load data
 
     all_data = load_dynamic_data(in_filepath, field, solvers, verbose=verbose)
@@ -77,16 +67,16 @@ def plot_noise_to_entropy_overview(
                 alpha=0.8,
             )
             ax.axvline(
-                x=opt_value[solver][1],
+                x=OPT_VALUE[solver],
                # label=opt_value[solver][0],
                 color='g',
                 linestyle=':'
             )
-            at_opt_mean = data['noise_param'] == opt_value[solver][1]
+            at_opt_mean = data['noise_param'] == OPT_VALUE[solver]
             opt_mean = numpy.mean(data[at_opt_mean][metric])
             ax.axhline(
                 y=opt_mean,
-                label=f'${metric_label[metric]} = {opt_mean:.3f}$',
+                label=f'${LABELS[metric]} = {opt_mean:.3f}$',
                 color='r',
                 linestyle=':'
             )
@@ -100,9 +90,9 @@ def plot_noise_to_entropy_overview(
                # label='Mittelwert',
                 color='g'
             )
-            ax.set_xlabel(opt_value[solver][0])
+            ax.set_xlabel(f'${OPT_VALUE[solver]}$')
             if solver == 'WalkSAT':
-                ax.set_ylabel(f'${metric_label[metric]}$')
+                ax.set_ylabel(f'${LABELS[metric]}$')
             else:
                 ax.set_ylabel('')
                 ax.yaxis.set_major_formatter(pyplt.NullFormatter())

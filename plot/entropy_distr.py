@@ -6,7 +6,7 @@ import pandas
 
 import matplotlib.pyplot as pyplt
 
-from plot.utils import PREAMBLE, DEFAULT_OUTFILE, load_dynamic_data
+from plot.utils import PREAMBLE, DEFAULT_OUTFILE, load_dynamic_data, LABELS
 
 pyplt.rc('text', usetex=True)
 pyplt.rc(
@@ -33,16 +33,6 @@ def plot_entropy_distr(
         GSAT='GSAT',
         WalkSAT='WalkSAT_Opt',
         ProbSAT='ProbSAT_Opt',
-    )
-    opt_value = dict(
-        WalkSAT=(r'\rho', 0.4),
-        ProbSAT=(r'c_b', 2.6),
-    )
-    metric_label = dict(
-        single_entropy=r'H_1',
-        joint_entropy=r'H_2',
-        cond_entropy=r'H_c',
-        mutual_information=r'I',
     )
     # load data
 
@@ -84,7 +74,7 @@ def plot_entropy_distr(
                 rug=True,
             )
 
-            ax.set_xlabel(f'${metric_label[metric]}$')
+            ax.set_xlabel(f'${LABELS[metric]}$')
             ax.legend(loc='upper left')
 
     seaborn.despine()

@@ -7,9 +7,8 @@ import src.analysis.tms_entropy as tms_entropy
 DEFAULT_OUTFILE = 'plot.pdf'
 
 PREAMBLE = r"""
-\usepackage{fourier}
-
 \usepackage{amsthm}
+\usepackage{amsmath}
 \usepackage{amsfonts}
 \usepackage{amssymb}
 \usepackage{mathtools}
@@ -20,14 +19,17 @@ PREAMBLE = r"""
 \usepackage{bbm}
 \numberwithin{equation}{subsection}
 
+\usepackage{fourier}
+\usepackage{fouriernc}
+
 \newcommand{\negate}[1]{\bar{#1}}
 \newcommand{\formulae}[0]{\mathcal{F}}
 \newcommand{\knf}[0]{\mathrm{KNF}}
 \newcommand{\kknf}[1]{#1\mathrm{KNF}}
 \newcommand{\refsym}[2]{#1_{\mbox{\tiny{\ref{#2}}}}}
-\newcommand{\var}[1]{\mathit{Var}\left(#1\right)}
-\newcommand{\sat}[2]{\mathit{sat}\left(#1,#2\right)}
-\newcommand{\unsat}[2]{\mathit{unsat}\left(#1,#2\right)}
+\newcommand{\var}[1]{\mathit{Var}\!\left(#1\right)}
+\newcommand{\sat}[2]{\mathit{sat}\!\left(#1,#2\right)}
+\newcommand{\unsat}[2]{\mathit{unsat}\!\left(#1,#2\right)}
 
 \newcommand{\red}[1]{{\color{red}#1}}
 \newcommand{\green}[1]{{\color{OliveGreen}#1}}
@@ -73,6 +75,42 @@ PREAMBLE = r"""
 """
 
 
+LABELS = dict(
+    single_entropy=r'\overline{\hat H_1\!\parens{P}}',
+    joint_entropy=r'\overline{\hat H_2\!\parens{P}}',
+    cond_entropy=r'\overline{\hat H_S\!\parens{P}}',
+    mutual_information=r'\overline{\hat I\!\parens{P}}',
+    state_entropy=r'\overline{H\!\parens{Q_A | F, h}}',
+    state_entropy_square=r'2^{\overline{H\!\parens{Q_A | F, h}}}',
+    unsat=r'\overline{\card{\unsat{F}{A}}}',
+    tms_entropy=r'\hat H\!\parens{M_F}',
+    runtime=r'\overline{T_F}',
+    ks_stat=r'D_\alpha',
+    WalkSAT=r'\rho',
+    ProbSAT=r'c_b',
+    conv=r'\frac{\# \mbox{konvergent}}{\# \mbox{Formeln}}',
+    hamming_dist=r'$\frac{d\!\parens{A_F^*, A}}{N_F}$',
+)
+
+OPT_VALUE = dict(
+    WalkSAT=0.4,
+    ProbSAT=2.4,
+)
+
+SOLVER_LABELS = dict(
+    gsat='GSAT',
+    walksat='WalkSAT',
+    probsat='ProbSAT',
+)
+
+SOLVER_OPT_LABELS = dict(
+    gsat='GSAT',
+    walksat='WalkSAT_Opt',
+    probsat='ProbSAT_Opt',
+)
+
+
+
 def load_from_all_subfolders(load_function, in_filepath, subfolders, *args, verbose=False, **kwargs):
     all_data = {}
     for subfolder in subfolders:
@@ -104,10 +142,13 @@ def load_dynamic_data(in_filepath, field, solvers, verbose=False):
 
     return all_data
 
-def load_runtime_to_entropy(in_filepath, field, solvers, verbose=False):
+def load_runtime_to_entropy(in_filepath, field, solvers, mapping=None, verbose=False):
     all_data = {}
     for solver in solvers:
-        path = os.path.join(in_filepath, solver)
+        if mapping:
+            path = os.path.join(in_filepath, mapping[solver])
+        else:
+            path = os.path.join(in_filepath, solver)
         print(path)
         all_data[solver] = path_entropy.path_entropy_to_runtime(
             path,
@@ -124,18 +165,6 @@ def load_noise_to_tms_entropy(in_filepath, solvers, only_convergent=True, verbos
         all_data[solver] = tms_entropy.tms_entropy_values(
             path,
             only_convergent=only_convergent,
-            verbose=verbose,
-        )
-
-    return all_data
-def load_runtime_to_entropy(in_filepath, field, solvers, verbose=False):
-    all_data = {}
-    for solver in solvers:
-        path = os.path.join(in_filepath, solver)
-        print(path)
-        all_data[solver] = path_entropy.path_entropy_to_runtime(
-            path,
-            field,
             verbose=verbose,
         )
 

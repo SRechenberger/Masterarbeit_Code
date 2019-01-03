@@ -5,7 +5,7 @@ import os
 
 import matplotlib.pyplot as pyplt
 
-from plot.utils import PREAMBLE, DEFAULT_OUTFILE
+from plot.utils import PREAMBLE, DEFAULT_OUTFILE, LABELS, SOLVER_LABELS
 from src.analysis.state_entropy import get_state_entropy_to_hamming_dist
 
 pyplt.rc('text', usetex=True)
@@ -35,31 +35,13 @@ def plot_hamming_dist_to_state_entropy(
 
     }
 
-
     solvers = types[type_idx]
 
-    solver_folders = dict(
-        walksat='WalkSAT',
-        probsat='ProbSAT',
-        gsat='GSAT',
-    )
-
-    solver_params = dict(
-        walksat=r'\rho',
-        probsat=r'c_b',
-    )
-
     if type_idx in [0]:
-        labels = dict(
-            state_entropy=r'$\overline{H\!\parens{Q_A | F}}$',
-            hamming_dist=r'$\frac{d\!\parens{A_F^*, A}}{N_F}$',
-        )
-    elif type_idx in [1]:
-        labels = dict(
-            state_entropy=r'$2^{\overline{H\!\parens{Q_A | F}}}$',
-            hamming_dist=r'$\frac{d\!\parens{A_F^*, A}}{N_F}$',
-        )
+        entropy_label = LABELS['state_entropy']
 
+    elif type_idx in [1]:
+        entropy_label = LABELS['state_entropy_square']
 
     seaborn.set()
     seaborn.set_style('ticks', {'axes.grid': True, 'grid.linestyle': '-'})
@@ -78,7 +60,7 @@ def plot_hamming_dist_to_state_entropy(
         ax=axes[y]
         line_drawn = False
         for noise in noises:
-            file = os.path.join(filepath, solver_folders[solver], f'{solver}-{noise}.db')
+            file = os.path.join(filepath, SOLVER_LABELS[solver], f'{solver}-{noise}.db')
             if verbose:
                 print(f'Loading from {file}... ', end='', flush=True)
             data = get_state_entropy_to_hamming_dist(file)
@@ -94,7 +76,7 @@ def plot_hamming_dist_to_state_entropy(
                 noise_labels = dict()
             else:
                 noise_labels = dict(
-                    label=f'${solver_params[solver]} = {noise}$',
+                    label=f'${LABELS[SOLVER_LABELS[solver]]} = {noise}$',
                 )
 
             if not line_drawn:
@@ -118,8 +100,8 @@ def plot_hamming_dist_to_state_entropy(
                 **noise_labels
             )
 
-            ax.set_xlabel(labels['hamming_dist'])
-            ax.set_ylabel(labels['state_entropy'])
+            ax.set_xlabel(f'${LABELS["hamming_dist"]}$')
+            ax.set_ylabel(f'${entropy_label}$')
 
     seaborn.despine()
     fig.savefig(outfile, bbox_inches='tight')

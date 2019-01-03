@@ -7,7 +7,7 @@ import sys
 
 import matplotlib.pyplot as pyplt
 
-from plot.utils import PREAMBLE, DEFAULT_OUTFILE
+from plot.utils import PREAMBLE, DEFAULT_OUTFILE, LABELS
 from src.analysis.state_entropy import get_unsat_clause_to_hamming_dist
 
 pyplt.rc('text', usetex=True)
@@ -24,11 +24,6 @@ def plot_hamming_dist_to_unsat_clauses(
     ):
 
     xlim=[0,512]
-
-    labels = dict(
-        hamming_dist=r'$\frac{d\!\parens{\alpha^*, A}}{N_F}$',
-        unsat_clauses=r'$\card{\unsat{F}{A}}$',
-    )
 
     seaborn.set()
     seaborn.set_style('ticks', {'axes.grid': True, 'grid.linestyle': '-'})
@@ -74,8 +69,8 @@ def plot_hamming_dist_to_unsat_clauses(
         color='g',
     )
 
-    ax.set_xlabel(labels['hamming_dist'])
-    ax.set_ylabel(labels['unsat_clauses'])
+    ax.set_xlabel(f'${LABELS["hamming_dist"]}$')
+    ax.set_ylabel(f'${LABELS["unsat"]}$')
 
     seaborn.despine()
     fig.savefig(outfile, bbox_inches='tight')
