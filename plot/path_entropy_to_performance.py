@@ -47,7 +47,6 @@ def plot_path_entropy_to_performance(
         figsize=figsize,
     )
     fig.tight_layout()
-    titles_given = []
     for y, solver in enumerate(solvers):
         data = all_data[solver]
         for x, metric in enumerate(metrics):
@@ -77,9 +76,6 @@ def plot_path_entropy_to_performance(
             )
             ax.set_xlabel(f'${LABELS[metric]}$')
             ax.set_ylabel(f'${LABELS["runtime"]}$')
-            if solver not in titles_given:
-                ax.set_title(f'\Large {SOLVER_LABELS[solver]}')
-                titles_given.append(solver)
 
     seaborn.despine()
 

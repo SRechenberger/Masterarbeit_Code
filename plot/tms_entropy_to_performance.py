@@ -56,7 +56,6 @@ def plot_tms_entropy_to_performance(
         figsize=figsize,
     )
     fig.tight_layout()
-    titles_given = []
     for y, solver in enumerate(solvers):
         data = all_data[solver]
 
@@ -86,9 +85,6 @@ def plot_tms_entropy_to_performance(
         )
         ax.set_xlabel(labels['tms_entropy'])
         ax.set_ylabel(r'$\overline{T_F}$')
-        if solver not in titles_given:
-            ax.set_title(r'\Large {}'.format(solver_label[solver]))
-            titles_given.append(solver)
 
     seaborn.despine()
 
