@@ -22,21 +22,6 @@ PREAMBLE = r"""
 \usepackage{fourier}
 \usepackage{fouriernc}
 
-\newcommand{\negate}[1]{\bar{#1}}
-\newcommand{\formulae}[0]{\mathcal{F}}
-\newcommand{\knf}[0]{\mathrm{KNF}}
-\newcommand{\kknf}[1]{#1\mathrm{KNF}}
-\newcommand{\refsym}[2]{#1_{\mbox{\tiny{\ref{#2}}}}}
-\newcommand{\var}[1]{\mathit{Var}\!\left(#1\right)}
-\newcommand{\sat}[2]{\mathit{sat}\!\left(#1,#2\right)}
-\newcommand{\unsat}[2]{\mathit{unsat}\!\left(#1,#2\right)}
-
-\newcommand{\red}[1]{{\color{red}#1}}
-\newcommand{\green}[1]{{\color{OliveGreen}#1}}
-
-\newcommand{\name}[1]{\mathit{#1}}
-
-\newcommand{\unif}[0]{\gets_{\Unif}}
 
 \newcommand{\2}[0]{\frac{1}{2}}
 \newcommand{\4}[0]{\frac{1}{4}}
@@ -50,6 +35,8 @@ PREAMBLE = r"""
 \DeclareMathOperator*{\Exp}{E}
 \DeclareMathOperator*{\Unif}{uniform}
 \DeclareMathOperator*{\Lang}{\mathcal{L}}
+\DeclareMathOperator*{\Unsat}{unsat}
+\DeclareMathOperator*{\Sat}{sat}
 \DeclareRobustCommand{\bigO}{%
   \text{\usefont{OMS}{cmsy}{m}{n}O}%
 }
@@ -66,6 +53,21 @@ PREAMBLE = r"""
 \newcommand{\equivp}[1]{\stackrel{#1}{\equiv}}
 %\newcommand{\equivp}[1]{\stackrel{\equiv}{#1}}
 \newcommand{\lang}[1]{\Lang\!\left[#1\right]}
+\newcommand{\negate}[1]{\bar{#1}}
+\newcommand{\formulae}[0]{\mathcal{F}}
+\newcommand{\knf}[0]{\mathrm{KNF}}
+\newcommand{\kknf}[1]{#1\mathrm{KNF}}
+\newcommand{\refsym}[2]{#1_{\mbox{\tiny{\ref{#2}}}}}
+\newcommand{\var}[1]{\mathit{Var}\!\left(#1\right)}
+\newcommand{\sat}[2]{\Sat_{#1}\!\parens{#2}}
+\newcommand{\unsat}[2]{\Unsat_{#1}\!\parens{#2}}
+
+\newcommand{\red}[1]{{\color{red}#1}}
+\newcommand{\green}[1]{{\color{OliveGreen}#1}}
+
+\newcommand{\name}[1]{\mathit{#1}}
+
+\newcommand{\unif}[0]{\gets_{\Unif}}
 
 % \newcommand{\vpair}[2]{\left(\begin{matrix}#1\\#2\end{matrix}\right)}
 \newcommand{\vpair}[2]{\left(#1,#2\right)}
@@ -88,7 +90,7 @@ LABELS = dict(
     ks_stat=r'D_\alpha',
     WalkSAT=r'\rho',
     ProbSAT=r'c_b',
-    conv=r'\frac{\# \mbox{konvergent}}{\# \mbox{Formeln}}',
+    conv=r'\kappa',
     hamming_dist=r'$\frac{d\!\parens{A_F^*, A}}{N_F}$',
 )
 
