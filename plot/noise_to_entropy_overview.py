@@ -90,7 +90,7 @@ def plot_noise_to_entropy_overview(
                # label='Mittelwert',
                 color='g'
             )
-            ax.set_xlabel(f'${OPT_VALUE[solver]}$')
+            ax.set_xlabel(f'${LABELS[solver]}$')
             if solver == 'WalkSAT':
                 ax.set_ylabel(f'${LABELS[metric]}$')
             else:
