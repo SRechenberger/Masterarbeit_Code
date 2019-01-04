@@ -92,14 +92,13 @@ def plot_noise_to_entropy_ks_test(
             else:
                 label = lambda *args: dict()
 
-            for color, alpha in zip(['b','g','r','y'], [0.01, 0.05, 0.1, 0.2]):
+            for color, alpha in zip(['b','g','r','k'], [0.01, 0.05, 0.1, 0.2]):
                 D = math.sqrt(-0.5*math.log(alpha/2)/100)
 
                 ax.axhline(
                     y=D,
                     color=color,
                     linestyle='-.',
-                    alpha=0.5,
                     **label(alpha, D),
                 )
 

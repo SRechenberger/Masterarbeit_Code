@@ -99,10 +99,10 @@ CREATE TABLE IF NOT EXISTS search_run
     , start_assgn           TEXT NOT NULL
     , end_assgn             TEXT NOT NULL
     , success               BOOL NOT NULL
-    , FOREIGN KEY(run_id) REFERENCES algorithm_rum(id)
-    , FOREIGN KEY(single_entropy) REFERENCES entropy_data(id)
-    , FOREIGN KEY(joint_entropy) REFERENCES entropy_data(id)
-    , FOREIGN KEY(mutual_information) REFERENCES entropy_data(id)
+    , FOREIGN KEY(run_id) REFERENCES algorithm_run(run_id)
+    , FOREIGN KEY(single_entropy) REFERENCES entropy_data(data_id)
+    , FOREIGN KEY(joint_entropy) REFERENCES entropy_data(data_id)
+    , FOREIGN KEY(mutual_information) REFERENCES entropy_data(data_id)
     )
 """
 
