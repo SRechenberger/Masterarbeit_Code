@@ -9,12 +9,13 @@ from functools import partial
 
 from src.formula import Formula
 
-from src.solver.gsat import gsat, GSATContext, gsat_distribution
-from src.solver.walksat import walksat, DefensiveContext, walksat_distribution
+from src.solver.utils import DiffScores, Scores
+from src.solver.generic_solver import Context
+from src.solver.gsat import gsat, gsat_distribution
+from src.solver.walksat import walksat, walksat_distribution
 from src.solver.probsat import probsat, probsat_distribution
 
-from src.experiment.utils import FormulaSupply, arr_entropy
-from src.experiment.measurement import RuntimeMeasurement
+from src.experiment.utils import arr_entropy
 
 
 CREATE_EXPERIMENT = """
@@ -232,25 +233,26 @@ VALUES (?,?,?,?,?)
 """
 
 SOLVERS = dict(
-  gsat=gsat,
-  walksat=walksat,
-  probsat=probsat,
+    gsat=gsat,
+    walksat=walksat,
+    probsat=probsat,
 )
 
 DISTRS = dict(
-  gsat=gsat_distribution,
-  walksat=walksat_distribution,
-  probsat=probsat_distribution,
+    gsat=gsat_distribution,
+    walksat=walksat_distribution,
+    probsat=probsat_distribution,
 )
 
 CONTEXTS = dict(
-  gsat=GSATContext,
-  walksat=DefensiveContext,
-  probsat=DefensiveContext,
+    gsat=partial(Context, DiffScores),
+    walksat=partial(Context, Scores),
+    probsat=partial(Context, Scores),
 )
 
 
 class AbstractExperiment:
+    """ Abstract Experiment class, managing file loading, saving and multiprocessing """
 
     def __init__(
             self,
@@ -268,7 +270,7 @@ class AbstractExperiment:
         assert isinstance(solver, str),\
             "solver = {} :: {} is no str".format(solver, type(solver))
         assert solver in SOLVERS,\
-            "solver = {} not in {}".format(solver, solvers.keys())
+            "solver = {} not in {}".format(solver, SOLVERS.keys())
         assert isinstance(solver_params, dict),\
             "solver_params = {} :: {} is no dict".format(solver_params, type(solver_params))
         assert isinstance(poolsize, int),\
@@ -277,20 +279,13 @@ class AbstractExperiment:
             "poolsize = {} <= 0".format(poolsize)
         assert isinstance(database, str),\
             "database = {} :: {} is no str"
-        assert all(isinstance(query,str) for query in init_database),\
+        assert all(isinstance(query, str) for query in init_database),\
             "init_database = {} is not a list of str"
 
         # get solver functions
         self.solver = solver
         self.solver_params = solver_params
         self.repetition_of = repetition_of
-        # load formulae
-        #self.formulae = FormulaSupply(
-        #    input_files,
-        #    buffsize=min(len(input_files), poolsize * 10)
-        #)
-
-
 
         # save poolsize
         self.poolsize = poolsize
@@ -315,7 +310,7 @@ class AbstractExperiment:
                     (file,)
                 )
                 res = list(res)
-                if len(res) == 0:
+                if not res:
                     c.execute(
                         SAVE_FORMULA,
                         (
@@ -326,7 +321,7 @@ class AbstractExperiment:
                         )
                     )
                     formula_id = c.lastrowid
-                elif len(res) > 0:
+                elif res:
                     formula_id, = res[0]
 
                 self.formulae.append((formula_id, formula))
@@ -358,13 +353,13 @@ class AbstractExperiment:
             raise RuntimeError('Experiment already performed')
 
         rand_gens = iter(
-          random.Random()
-          for _ in range(0,len(self.formulae))
+            random.Random()
+            for _ in range(0, len(self.formulae))
         )
 
         arg_iter = iter(
-          (f_id, formula, rg)
-          for (f_id, formula), rg in zip(self.formulae, rand_gens)
+            (f_id, formula, rg)
+            for (f_id, formula), rg in zip(self.formulae, rand_gens)
         )
 
 
@@ -378,6 +373,7 @@ class AbstractExperiment:
 
 
     def save_result(self, execute, result):
+        """ Override this """
         raise RuntimeError("Abstract Class!")
 
 
@@ -389,7 +385,7 @@ class AbstractExperiment:
             def execute(query, *args):
                 c.execute(
                     query,
-                    ( *args, )
+                    (*args,)
                 )
                 return c.lastrowid
             for result in self.results:
@@ -398,7 +394,7 @@ class AbstractExperiment:
 
 
 class DynamicExperiment(AbstractExperiment):
-    """ Random experiment on a set of input formulae """
+    """ Experiments to measure path entropies """
     def __init__(
             self,
             input_files,            # list of input files
@@ -422,22 +418,30 @@ class DynamicExperiment(AbstractExperiment):
             poolsize=poolsize,
             database=database,
         )
-        assert 'max_tries' in solver_params and 'max_flips' in solver_params and 'noise_param' in solver_params,\
+        assert 'max_tries' in solver_params and\
+               'max_flips' in solver_params and\
+               'noise_param' in solver_params,\
             "max_tries, max_flips or noise_param is not in {}".format(solver_params)
         assert isinstance(solver_params['max_tries'], int),\
-            "max_tries = {} :: {} is no int".format(solver_params['max_tries'], type(solver_params['max_tries']))
+            "max_tries = {} :: {} is no int".format(
+                solver_params['max_tries'],
+                type(solver_params['max_tries'])
+            )
         assert solver_params['max_tries'] > 0,\
             "max_tries = {} <= 0".format(solver_params['max_tries'])
         assert isinstance(solver_params['max_flips'], int),\
-            "max_flips = {} :: {} is no int".format(solver_params['max_flips'], type(solver_params['max_flips']))
+            "max_flips = {} :: {} is no int".format(
+                solver_params['max_flips'],
+                type(solver_params['max_flips'])
+            )
         assert solver_params['max_flips'] > 0,\
             "max_flips = {} <= 0".format(solver_params['max_flips'])
         assert callable(measurement_constructor),\
             "measurement_constructor = {} is not callable".format(measurement_constructor)
 
         self.meta = dict(
-            measurement_constructor = measurement_constructor,
-            hamming_dist = hamming_dist,
+            measurement_constructor=measurement_constructor,
+            hamming_dist=hamming_dist,
         )
 
 
@@ -452,7 +456,7 @@ class DynamicExperiment(AbstractExperiment):
 
         return dict(
             formula_id=f_id,
-            sat=True if assgn else False,
+            sat=bool(assgn),
             runs=measurement.run_measurements,
         )
 
@@ -466,10 +470,22 @@ class DynamicExperiment(AbstractExperiment):
             sum(iter(run['flips'] for run in result['runs'])),
         )
         for run in result['runs']:
-            single_entropy_id = DynamicExperiment.__save_entropy_data(execute, run['single_entropy'])
-            joint_entropy_id = DynamicExperiment.__save_entropy_data(execute, run['joint_entropy'])
-            mutual_information_id = DynamicExperiment.__save_entropy_data(execute, run['mutual_information'])
-            cond_entropy = DynamicExperiment.__save_entropy_data(execute, run['cond_entropy'])
+            single_entropy_id = DynamicExperiment.__save_entropy_data(
+                execute,
+                run['single_entropy']
+            )
+            joint_entropy_id = DynamicExperiment.__save_entropy_data(
+                execute,
+                run['joint_entropy']
+            )
+            mutual_information_id = DynamicExperiment.__save_entropy_data(
+                execute,
+                run['mutual_information']
+            )
+            cond_entropy = DynamicExperiment.__save_entropy_data(
+                execute,
+                run['cond_entropy']
+            )
 
             execute(
                 SAVE_SEARCH_RUN,
@@ -485,9 +501,9 @@ class DynamicExperiment(AbstractExperiment):
                 run['success'],
             )
 
-
+    @staticmethod
     def __save_entropy_data(execute, data):
-        assert isinstance(data,dict),\
+        assert isinstance(data, dict),\
             "data = {} :: {} is no dict".format(data, type(data))
         assert 'minimum' in data,\
             "minimum not in data = {}".format(data)
@@ -519,6 +535,7 @@ class DynamicExperiment(AbstractExperiment):
 
 
 class StaticExperiment(AbstractExperiment):
+    """ Experiments to measure State- and TMS-Entropy """
 
     def __init__(
             self,
@@ -529,7 +546,7 @@ class StaticExperiment(AbstractExperiment):
             database='experiments.db',
             repetition_of=None):
 
-        super(StaticExperiment,self).__init__(
+        super(StaticExperiment, self).__init__(
             input_files,
             solver,
             dict(
@@ -611,7 +628,7 @@ class StaticExperiment(AbstractExperiment):
         # one state at each end
         state_count[0], state_count[n] = 1, 1
         state_entropy = [0] * (n+1)
-        state_entropy_min = [math.log(n,2)] * (n+1)
+        state_entropy_min = [math.log(n, 2)] * (n+1)
         state_entropy_max = [0] * (n+1)
         state_entropy_min[0], state_entropy_max[0] = 0, 0
         state_entropy_min[n], state_entropy_max[n] = 0, 0
@@ -623,16 +640,16 @@ class StaticExperiment(AbstractExperiment):
         unsat_clauses = [0] * (n+1)
 
         # for each hamming distance beginning with 1
-        for distance in range(1,n // 2 + 1):
+        for distance in range(1, n // 2 + 1):
             # calculate number of paths to run from this distance
             num_paths = path_count(distance)
             # for each path
-            for i in range(0,num_paths):
+            for i in range(0, num_paths):
                 # copy the left end assignment
                 current_assgn = furthest_assgn.copy()
                 # get a path to a random node 'distance' steps away
                 # walk to the start node of the path
-                for step in rand_gen.sample(range(1,n+1), distance):
+                for step in rand_gen.sample(range(1, n+1), distance):
                     current_assgn.flip(step)
 
                 # init context
@@ -665,8 +682,8 @@ class StaticExperiment(AbstractExperiment):
                         # calculate state entropy
                         h = arr_entropy(distr, base=n+1)
                         state_entropy[hamming_dist] += h
-                        state_entropy_max[hamming_dist] = max(state_entropy_max[hamming_dist],h)
-                        state_entropy_min[hamming_dist] = min(state_entropy_min[hamming_dist],h)
+                        state_entropy_max[hamming_dist] = max(state_entropy_max[hamming_dist], h)
+                        state_entropy_min[hamming_dist] = min(state_entropy_min[hamming_dist], h)
 
                         # add this assignment to the set of measured states
                         measured_states.add(assgn_num)
@@ -684,7 +701,7 @@ class StaticExperiment(AbstractExperiment):
         #        "increment_prob[{}] + decrement_prob[{}] = {} + {} <= 0".format(
         #            i, i, increment_prob[i], decrement_prob[i]
         #        )
-        for i, (h,c) in enumerate(zip(state_entropy, state_count)):
+        for i, (h, c) in enumerate(zip(state_entropy, state_count)):
             state_entropy[i] = h/c
 
         for i, (inc, c) in enumerate(zip(increment_prob, state_count)):
@@ -707,12 +724,12 @@ class StaticExperiment(AbstractExperiment):
             max_measured_states=total_num_states,
             improvement_prob=[
                 dict(hamming_dist=d, prob=p)
-                for d,p in enumerate(increment_prob)
+                for d, p in enumerate(increment_prob)
             ],
             avg_state_entropy=[
                 dict(hamming_dist=d, entropy_avg=h, entropy_max=h_max, entropy_min=h_min)
-                for d,(h,h_min,h_max) in enumerate(
-                    zip(state_entropy,state_entropy_min,state_entropy_max)
+                for d, (h, h_min, h_max) in enumerate(
+                    zip(state_entropy, state_entropy_min, state_entropy_max)
                 )
             ],
             unsat_clauses=[

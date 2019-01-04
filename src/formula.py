@@ -481,5 +481,4 @@ class Assignment:
 
     def copy(self):
         """ Copies the assignment """
-        # TODO isn't there a built in protocol?
         return type(self)(self.atoms.copy(), self.num_vars)

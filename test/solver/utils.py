@@ -4,8 +4,6 @@ import os
 
 from src.formula import Formula, Assignment
 from src.solver.utils import Falselist, Scores, DiffScores
-from src.experiment.utils import FormulaSupply
-from src.solver.walksat import DefensiveContext
 
 
 class TestFalselist(unittest.TestCase):
@@ -42,36 +40,28 @@ class TestScores(unittest.TestCase):
         random.seed()
         dirname = 'test_files'
         num_vars = random.randrange(10,512)
+        samples = 5
         Formula.generate_formula_pool(
             dirname,
-            5,
+            samples,
             num_vars,
             4.2,
             poolsize=3,
         )
-        self.paths = random.sample(
-            list(
-                map(
-                    lambda fname: os.path.join(dirname, fname),
-                    filter(
-                        lambda fname: fname.endswith('.cnf'),
-                        os.listdir(dirname)
-                    )
-                )
-            ),
-            10
-        )
-        self.buffsize = 5
+        self.formulae = [
+            Formula.generate_satisfiable_formula(num_vars, 4.2)
+            for _ in range(samples)
+        ]
 
 
     def test_diff_score(self):
-        for _, formula in FormulaSupply(self.paths, self.buffsize):
+        for formula in self.formulae:
             n = formula.num_vars
             assgn = Assignment.generate_random_assignment(n)
             falselist = Falselist()
             diff_score = DiffScores(formula,assgn,falselist)
 
-            self.assertTrue(diff_score.self_test(formula, assgn, falselist))
+            self.assertTrue(diff_score.self_test(formula, assgn))
 
             to_flips = [
                 i
@@ -82,10 +72,10 @@ class TestScores(unittest.TestCase):
             for to_flip in to_flips:
                 diff_score.flip(to_flip, formula, assgn, falselist)
 
-            self.assertTrue(diff_score.self_test(formula, assgn, falselist))
+            self.assertTrue(diff_score.self_test(formula, assgn))
 
     def test_score(self):
-        for _, formula in FormulaSupply(self.paths, self.buffsize):
+        for formula in self.formulae:
             n = formula.num_vars
             falselist = Falselist()
             assgn = Assignment.generate_random_assignment(n)
@@ -104,10 +94,10 @@ class TestScores(unittest.TestCase):
             scores = Scores(formula, assgn, falselist)
 
             # first check after creation
-            self.assertTrue(scores.self_test(formula, assgn, falselist))
+            self.assertTrue(scores.self_test(formula, assgn))
 
 
             for to_flip in to_flips:
                 scores.flip(to_flip, formula, assgn, falselist)
 
-                self.assertTrue(scores.self_test(formula, assgn, falselist))
+                self.assertTrue(scores.self_test(formula, assgn))

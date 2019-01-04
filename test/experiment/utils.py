@@ -6,7 +6,7 @@ import math
 from functools import partial
 
 from src.solver.utils import Formula
-from src.experiment.utils import FormulaSupply, Queue, WindowEntropy, entropy, mutual_information
+from src.experiment.utils import Queue, WindowEntropy, entropy, mutual_information
 from src.analysis.utils import binomial_vec
 
 from scipy.stats import binom

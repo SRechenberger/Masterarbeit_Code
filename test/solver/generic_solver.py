@@ -7,10 +7,9 @@ from scipy.stats import chisquare
 
 from src.formula import Formula, Assignment
 from src.solver.utils import Falselist
-from src.experiment.measurement import Measurement
 
 
-class TestMeasurement(Measurement):
+class TestMeasurement:
     def __init__(self, formula, *more_args):
         self.flips = 0
         self.begin_time = time.time()
@@ -20,6 +19,12 @@ class TestMeasurement(Measurement):
 
     def get_run_time(self):
         return time.time() - self.begin_time
+
+    def init_run(self, assgn):
+        pass
+
+    def end_run(self, success=False):
+        pass
 
 
 class TestDistribution(unittest.TestCase):

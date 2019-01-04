@@ -6,9 +6,6 @@ from functools import partial
 
 from src.formula import Formula
 from src.experiment.measurement import EntropyMeasurement
-from src.experiment.utils import FormulaSupply
-
-
 
 class TestEntropyMeasurement(unittest.TestCase):
     def setUp(self):
@@ -16,26 +13,14 @@ class TestEntropyMeasurement(unittest.TestCase):
         self.sample_size = 3
         self.pool_dir = 'test_files'
         number_formulae = 10
-        Formula.generate_formula_pool(
-            'test_files',
-            number_formulae,
-            10,
-            4.2,
-            poolsize = 3
-        )
-        self.dirs = random.sample(
-            list(
-                map(
-                    partial(os.path.join, self.pool_dir),
-                    os.listdir(self.pool_dir)
-                )
-            ),
-            10
-        )
+        self.formulae = [
+            Formula.generate_satisfiable_formula(20, 4.2)
+            for _ in range(number_formulae)
+        ]
 
 
     def test_measure_tms_count(self):
-        for _,f in FormulaSupply(self.dirs):
+        for f in self.formulae:
             m = EntropyMeasurement(f,f.num_vars)
             m.init_run(f.satisfying_assignment)
             d = m.tms_steps

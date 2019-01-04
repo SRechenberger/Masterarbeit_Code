@@ -14,7 +14,6 @@ from src.formula import Formula
 
 class TestExperiment(unittest.TestCase):
 
-
     def setUp(self):
         random.seed()
         self.sample_size = 10

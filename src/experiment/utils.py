@@ -1,39 +1,58 @@
-import src.solver.utils as s_utils
+"""
+## Module src.experiment.utils
+
+### Contents
+    - function eta
+    - function arr_entropy
+    - function entropy
+    - function mutual_information
+    - class Queue
+    - class WindowEntropy
+"""
+
+
 import math
-import sys
-from src.solver.utils import Formula, Assignment
 from functools import partial
 
 
 def eta(p, base=2):
-    if p  <= 0:
+    """ eta function to calculate entropy """
+
+    if p <= 0:
         return 0
-    elif p >= 1:
+    if p >= 1:
         return 0
-    else:
-        return -p * math.log(p,base)
+    return -p * math.log(p, base)
 
 
 def arr_entropy(distr, base=2):
+    """ Calculate entropy from a probability distribution given as an array """
+
     return sum(map(partial(eta, base=base), distr))
 
 
 def entropy(distr, base=2):
+    """ calculate entropy from a measured distribution given as a dict """
+
     total = 0
     for _, count in distr.items():
         total += count
 
     h = 0
-    for symbol, count in distr.items():
+    for _, count in distr.items():
         h += eta(count/total, base=base)
 
     return h
 
 
 def mutual_information(distr):
+    """ Calculate the mututal information from a measured distribution
+    of joint symbols given as a dict
+    """
+
     X = {}
     Y = {}
-    for (x,y),v in distr.items():
+    for (x, y), v in distr.items():
         if x in X:
             X[x] += v
         else:
@@ -48,15 +67,17 @@ def mutual_information(distr):
 
 
 class Queue:
-    def __init__(self, buffsize, default = None):
+    """ FIFO storage """
+    def __init__(self, buffsize, default=None):
         self.buffsize = buffsize
         self.default = default
-        self.buffer = [self.default for _ in range(0,self.buffsize)]
+        self.buffer = [self.default for _ in range(0, self.buffsize)]
         self.length = 0
         self.begin = 0
 
 
     def push(self, x):
+        """ Push a value into the queue """
         assert self.length >= 0,\
             "self.length = {} < 0".format(self.length)
 
@@ -64,44 +85,47 @@ class Queue:
             self.buffer[(self.begin + self.length) % self.buffsize] = x
             self.length += 1
             return self.default
-        else:
-            ret = self.buffer[self.begin]
-            self.buffer[(self.begin + self.length) % self.buffsize] = x
-            self.begin += 1
-            self.begin %= self.buffsize
-            return ret
+
+        ret = self.buffer[self.begin]
+        self.buffer[(self.begin + self.length) % self.buffsize] = x
+        self.begin += 1
+        self.begin %= self.buffsize
+        return ret
 
 
     def top(self):
+        """ Get the next value to be put out by the queue, without popping it out """
         if self.length <= 0:
             raise IndexError('Empty Queue')
 
-        else:
-            return self.buffer[self.begin]
+        return self.buffer[self.begin]
 
 
     def pop(self):
+        """ Pop out the next value of the queue """
         if self.length <= 0:
             raise IndexError('Empty Queue')
 
-        else:
-            ret = self.buffer[self.begin]
-            self.begin += 1
-            self.begin %= self.buffsize
-            self.length -= 1
-            return ret
+        ret = self.buffer[self.begin]
+        self.begin += 1
+        self.begin %= self.buffsize
+        self.length -= 1
+        return ret
 
     def is_full(self):
+        """ Check whether the queue is completely filled """
         return self.length == self.buffsize
 
 
     def is_empty(self):
+        """ Check wether the queue is empty """
         return self.length == 0
 
 
 class WindowEntropy:
+    """ Trace the entropy over a window of a sequence """
     def __init__(self, window_width, base=2, blank=None):
-        self.queue = Queue(window_width, default = blank)
+        self.queue = Queue(window_width, default=blank)
         self.window_width = window_width
         self.symbol_count = {}
         self.current_entropy = 0
@@ -110,6 +134,7 @@ class WindowEntropy:
 
 
     def count(self, x):
+        """ Count a new symbol """
         # push the symbol in the queue,
         # and catch what may be dropped out of it.
         dropped = self.queue.push(x)
@@ -124,7 +149,7 @@ class WindowEntropy:
             assert dropped in self.symbol_count,\
                 "symbol {} never counted".format(dropped)
             assert self.symbol_count[dropped] > 0,\
-                "self.symbol_count[{}] = {} <= 0".format(dropped,self.symbol_count[dropped])
+                "self.symbol_count[{}] = {} <= 0".format(dropped, self.symbol_count[dropped])
 
             # the old share of the dropped symbol
             h_old = eta(self.symbol_count[dropped] / self.window_width, self.base)
@@ -152,41 +177,16 @@ class WindowEntropy:
         self.current_entropy += h_new - h_old
 
 
-    def get_entropy(self, if_not_ready = None):
+    def get_entropy(self, if_not_ready=None):
+        """ Return the entropy traced, if the minimum path length is reached.
+
+        Keywords:
+            if_not_ready -- what to return, if the minimum path length is not reached.
+
+        Returns:
+            h -- entropy value of the current path window
+        """
         if not self.queue.is_full():
             return if_not_ready
-        else:
-            return self.current_entropy
 
-
-class FormulaSupply:
-  """ Support of formulae, holding at max 'buffsize' formulae,
-  and reloads at max 'buffsize' new, if necessary.
-  """
-  def __init__(self, file_paths, buffsize = 10):
-    self.file_paths = file_paths
-    self.length = len(self.file_paths)
-    self.buffer = []
-    self.buffsize = 10
-    self.__fill_buffer()
-
-  def __fill_buffer(self):
-    i = self.buffsize
-    while i > 0 and self.file_paths:
-        fp = self.file_paths.pop()
-        with open(fp, 'r') as f:
-            self.buffer.append((fp,s_utils.Formula(f.read())))
-        i -= 1
-
-  def __iter__(self):
-    return self
-
-  def __next__(self):
-    if not self.buffer and not self.file_paths:
-      raise StopIteration()
-    elif not self.buffer:
-      self.__fill_buffer()
-    return self.buffer.pop()
-
-  def __len__(self):
-    return self.length
+        return self.current_entropy

@@ -1,42 +1,41 @@
+"""
+## Module src.solver.gsat
+
+### Contents
+    - function gsat_distribution
+    - function gsat_heuristic
+    - function gsat
+"""
+
 import random
-import sys
 
-from src.solver.generic_solver import Context, generic_sls
-from src.solver.utils import DiffScores, Scores, Falselist
-from src.formula import Formula, Assignment
+from functools import partial
 
+from src.solver.generic_solver import generic_sls, Context
+from src.solver.utils import DiffScores
 
-class GSATContext(Context):
-    def __init__(self, formula, assgn):
-        assert isinstance(formula, Formula),\
-            "formula = {} :: {} is no Formula".format(formula, type(formula))
-        assert isinstance(assgn, Assignment),\
-            "assgn = {} :: {} is no Assignment".format(assgn, type(assgn))
-
-        self.formula = formula
-        self.variables = list(range(1,formula.num_vars+1))
-        self.assgn = assgn
-        self.falselist = Falselist()
-        self.score = DiffScores(formula, assgn, self.falselist)
-
-    def update(self, flipped_var):
-        assert isinstance(flipped_var, int),\
-            "flipped_var = {} :: {} is no int".format(flipped_var, type(flipped_var))
-        assert flipped_var > 0,\
-            "flipped_var = {} <= 0".format(flipped_var)
-
-        self.score.flip(
-            flipped_var,
-            self.formula,
-            self.assgn,
-            self.falselist
-        )
-
-    def is_sat(self):
-        return len(self.falselist) == 0
 
 def gsat_distribution(noise_param=0):
+    """ Constructs a function, returning the specific distribution of the GSAT heuristic.
+
+    Keywords:
+        noise_param -- only for compatibility; will be ignored
+
+    Returns:
+        dist -- function return a probability distribution, given a context value
+    """
+
     def dist(context):
+        """ Returns the specific probability distribution for the GSAT heuristic,
+        given a context.
+
+        Positionals:
+            context -- context to calculate the distribution from
+
+        Returns:
+            distr -- list, where distr[i] is the probability of variable i to be flipped
+        """
+
         # begin with an empty distribution
         distr = [0] * (context.formula.num_vars + 1)
 
@@ -53,8 +52,24 @@ def gsat_distribution(noise_param=0):
 
 
 def gsat_heuristic(noise_param=0):
+    """ Constructs the GSAT heuristik.
+
+    Keywords:
+        noise_param -- only for compatibility; will be ignored
+
+    Returns:
+        heur -- function, choosing a variable to be flipped.
+    """
     def heur(context, rand_gen=random):
-        score, best = context.score.get_best_bucket()
+        """ The GSAT heuristic.
+
+        Positionals:
+            context -- context of the current search state
+
+        Returns:
+            var -- variable to be flipped
+        """
+        _, best = context.score.get_best_bucket()
         return rand_gen.choice(list(best))
 
     return heur
@@ -67,12 +82,28 @@ def gsat(
         noise_param=0,              # will be ignored
         hamming_dist=0,
         rand_gen=random):
+
+    """ GSAT Solver.
+
+    Positionals:
+        formula -- formula, for which to find a satisfying assignment
+        measurement_constructor -- constructor for a measurement object
+        max_tries -- maximum number of tries, before unsucessful termination
+        max_flips -- maximum number of flips, before starting a new search
+
+    Keywords:
+        noise_param -- only for compatibility; will be ignored
+        hamming_dist -- force random assignment to be at a certain hamming distance
+                        to the known satsifying one.
+        rand_gen -- random number generator
+    """
+
     return generic_sls(
         gsat_heuristic(noise_param=noise_param),
         formula,
         max_tries,
         max_flips,
-        GSATContext,
+        partial(Context, DiffScores),
         measurement_constructor,
         hamming_dist=hamming_dist,
         rand_gen=rand_gen,

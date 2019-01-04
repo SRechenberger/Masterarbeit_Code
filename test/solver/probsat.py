@@ -1,12 +1,15 @@
-from test.solver.generic_solver import TestSolver, TestDistribution
-from src.solver.probsat import probsat, probsat_heuristic, probsat_distribution
-from src.solver.walksat import DefensiveContext
 from functools import partial
 
-class TestWalkSATDistr(TestDistribution):
+from test.solver.generic_solver import TestSolver, TestDistribution
+
+from src.solver.generic_solver import Context
+from src.solver.probsat import probsat, probsat_heuristic, probsat_distribution
+from src.solver.utils import Scores
+
+class TestProbSATDistr(TestDistribution):
     def test_distr(self):
         self.generic_test_distribution_against_heuristic(
-            DefensiveContext,
+            partial(Context, Scores),
             probsat_heuristic(noise_param=2.3),
             probsat_distribution(noise_param=2.3),
         )

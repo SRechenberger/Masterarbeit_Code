@@ -1,32 +1,40 @@
-import re
-import copy
-import os
+"""
+## Module src.solver.utils
+
+### Contents
+    - function max_seq
+    - class Falselist
+    - class DiffScores
+    - class scores
+"""
+
+
 import sys
 import operator
 from collections.abc import Sequence
 from src.formula import Formula, Assignment
 
 
-def max_seq(seq, key=lambda x:x, compare=operator.gt, modifier=lambda x:x):
+def max_seq(seq, key=lambda x: x, compare=operator.gt, modifier=lambda x: x):
     """ Finds all optima of a sequence regarding 'key' and 'compare' """
 
     assert isinstance(seq, Sequence),\
         "seq = {} :: {} is no Sequence".format(seq, type(seq))
-    assert len(seq) > 0,\
+    assert seq,\
         "seq = {} is empty".format(seq)
 
-    max_seq = [modifier(seq[0])]
+    max_seqence = [modifier(seq[0])]
     max_val = key(modifier(seq[0]))
     for x in seq[1:]:
         x = modifier(x)
         if compare(key(x), max_val):
-            max_seq = [x]
+            max_seqence = [x]
             max_val = key(x)
 
         elif key(x) == max_val:
-            max_seq.append(x)
+            max_seqence.append(x)
 
-    return max_val, max_seq
+    return max_val, max_seqence
 
 
 class Falselist:
@@ -43,6 +51,7 @@ class Falselist:
 
 
     def remove(self, elem):
+        """ remove element from falselist """
         assert elem in self.mapping
 
         idx = self.mapping[elem]
@@ -56,6 +65,7 @@ class Falselist:
 
 
     def add(self, elem):
+        """ add element to falselist """
         self.lst.append(elem)
         self.mapping[elem] = len(self.lst)-1
 
@@ -65,8 +75,9 @@ class Falselist:
 
 
 class DiffScores:
+    """ Score table for GSAT """
 
-    def self_test(self, formula, assignment, falselist):
+    def self_test(self, formula, assignment):
         """ Consistency test """
 
         # test num_true_lit
@@ -84,7 +95,7 @@ class DiffScores:
                 return False
 
         # test variable scores
-        for var in range(1,formula.num_vars+1):
+        for var in range(1, formula.num_vars+1):
             makes = 0
             breaks = 0
             sat_lit = var if assignment.get_value(var) else -var
@@ -106,7 +117,7 @@ class DiffScores:
                     "Variable {}: make {} break {} diff {} desired {}".format(
                         var, makes, breaks, diff, self.get_score(var)
                     ),
-                    file = sys.stderr,
+                    file=sys.stderr,
                 )
                 return False
 
@@ -118,12 +129,12 @@ class DiffScores:
 
 
     def __init__(self, formula, assignment, falselist):
-        assert isinstance(formula,Formula), \
-            "formula = {} :: {} is no Formula".format(formula,type(formula))
-        assert isinstance(assignment,Assignment), \
-            "assignment = {} :: {} is no Assignment".format(formula,type(assignment))
-        assert isinstance(falselist,Falselist), \
-            "falselist = {} :: {} is no Falselist".format(formula,type(falselist))
+        assert isinstance(formula, Formula), \
+            "formula = {} :: {} is no Formula".format(formula, type(formula))
+        assert isinstance(assignment, Assignment), \
+            "assignment = {} :: {} is no Assignment".format(formula, type(assignment))
+        assert isinstance(falselist, Falselist), \
+            "falselist = {} :: {} is no Falselist".format(formula, type(falselist))
 
         self.max_score = formula.max_occs
         self.crit_var = []
@@ -138,7 +149,7 @@ class DiffScores:
 
 
         # all variables have score 0 and are in the 0-bucket
-        for v in range(1,formula.num_vars+1):
+        for v in range(1, formula.num_vars+1):
             self.buckets[0].add(v)
             self.score[v] = 0
 
@@ -187,16 +198,20 @@ class DiffScores:
     def get_score(self, var):
         """ Returns the variable's break score """
 
-        assert type(var) == int, "var = {} :: {} is no int".format(var, type(var))
-        assert var > 0, "var = {} <= 0".format(var)
+        assert isinstance(var, int),\
+            "var = {} :: {} is no int".format(var, type(var))
+        assert var > 0,\
+            "var = {} <= 0".format(var)
 
         return self.score[var]
 
 
     def increment_score(self, variable):
         """ Increments the score of the variable and lifts it into the next higher bucket """
-        assert type(variable) == int, "variable = {} is no int".format(variable)
-        assert variable > 0, "variable = {} <= 0".format(variable)
+        assert isinstance(variable, int),\
+            "variable = {} :: {} is no int".format(variable, type(variable))
+        assert variable > 0,\
+            "variable = {} <= 0".format(variable)
 
         # if the flipped variable has the best score,
         # and is lifted, then the best score is to be incremented
@@ -214,12 +229,13 @@ class DiffScores:
             self.buckets[self.score[variable]].add(variable)
 
 
-
     def decrement_score(self, variable):
         """ Decrements the score of the variable and lowers it into the next lower bucket """
 
-        assert type(variable) == int, "variable = {} is no int".format(variable)
-        assert variable > 0, "variable = {} <= 0".format(variable)
+        assert isinstance(variable, int),\
+            "variable = {} :: {} is no int".format(variable, type(variable))
+        assert variable > 0,\
+            "variable = {} <= 0".format(variable)
 
 
         # lower variable to next lower bucket
@@ -239,18 +255,27 @@ class DiffScores:
 
 
     def flip(self, variable, formula, assignment, falselist):
-        assert type(variable) == int, \
+        """ Update scoreboard with flipped variable
+
+        Positionals:
+            variable -- flipped variable
+            formula -- input formula
+            assignment -- current assignment
+            falselist -- current falselist
+        """
+
+        assert isinstance(variable, int), \
             "variable = {} :: {} is no int".format(variable, type(variable))
         assert variable > 0, "variable = {} <= 0".format(variable)
-        assert isinstance(formula,Formula), \
-            "formula = {} :: {} is no Formula".format(formula,type(formula))
-        assert isinstance(assignment,Assignment), \
-            "assignment = {} :: {} is no Assignment".format(formula,type(assignment))
-        assert isinstance(falselist,Falselist), \
-            "falselist = {} :: {} is no Falselist".format(formula,type(falselist))
+        assert isinstance(formula, Formula), \
+            "formula = {} :: {} is no Formula".format(formula, type(formula))
+        assert isinstance(assignment, Assignment), \
+            "assignment = {} :: {} is no Assignment".format(formula, type(assignment))
+        assert isinstance(falselist, Falselist), \
+            "falselist = {} :: {} is no Falselist".format(formula, type(falselist))
 
         # a[v] = -a[v]
-        assignment.flip(variable) # TODO this does not really belong here
+        assignment.flip(variable)
         # satisfyingLiteral = a[v] ? v : -v
         satisfying_literal = variable if assignment.is_true(variable) else -variable
         # falsifyingLiteral = a[v] ? -v : v
@@ -310,7 +335,8 @@ class DiffScores:
 
 
 class Scores:
-    def self_test(self, formula, assignment, falselist):
+    """ Scoreboard for WalkSAT and ProbSAT """
+    def self_test(self, formula, assignment):
         """ Consistency test """
 
         # test num_true_lit
@@ -328,9 +354,8 @@ class Scores:
                 return False
 
         # test variable scores
-        for var in range(1,formula.num_vars+1):
+        for var in range(1, formula.num_vars+1):
             breaks = 0
-            sat_lit = var if assignment.get_value(var) else -var
 
             ## count make and break score
             # satisfying occurrences
@@ -341,9 +366,9 @@ class Scores:
             if breaks != self.get_break_score(var):
                 print(
                     "Variable {}: break {} desired {}".format(
-                        var, breaks, self.get_score(var)
+                        var, breaks, self.get_break_score(var)
                     ),
-                    file = sys.stderr,
+                    file=sys.stderr,
                 )
                 return False
 
@@ -355,12 +380,12 @@ class Scores:
 
 
     def __init__(self, formula, assignment, falselist):
-        assert isinstance(formula,Formula), \
-            "formula = {} :: {} is no Formula".format(formula,type(formula))
-        assert isinstance(assignment,Assignment), \
-            "assignment = {} :: {} is no Assignment".format(formula,type(assignment))
-        assert isinstance(falselist,Falselist), \
-            "falselist = {} :: {} is no Falselist".format(formula,type(falselist))
+        assert isinstance(formula, Formula), \
+            "formula = {} :: {} is no Formula".format(formula, type(formula))
+        assert isinstance(assignment, Assignment), \
+            "assignment = {} :: {} is no Assignment".format(formula, type(assignment))
+        assert isinstance(falselist, Falselist), \
+            "falselist = {} :: {} is no Falselist".format(formula, type(falselist))
 
 
         self.formula = formula
@@ -379,7 +404,7 @@ class Scores:
 
 
         # all variables have score 0 and are in the 0-bucket
-        for v in range(1,formula.num_vars+1):
+        for v in range(1, formula.num_vars+1):
             self.buckets[0].add(v)
             self.breaks[v] = 0
 
@@ -414,14 +439,14 @@ class Scores:
         """ Returns the first non-empty bucket """
         return self.buckets[self.best_score]
 
-        raise RuntimeError("all buckets are empty")
-
 
     def get_break_score(self, var):
         """ Returns the variable's break score """
 
-        assert type(var) == int, "var = {} :: {} is no int".format(var, type(var))
-        assert var > 0, "var = {} <= 0".format(var)
+        assert isinstance(var, int),\
+            "var = {} :: {} is no int".format(var, type(var))
+        assert var > 0,\
+            "var = {} <= 0".format(var)
 
         return self.breaks[var]
 
@@ -429,8 +454,10 @@ class Scores:
     def increment_break_score(self, variable):
         """ Increments the Break score of the variable and lifts it into the next higher bucket """
 
-        assert type(variable) == int, "variable = {} is no int".format(variable)
-        assert variable > 0, "variable = {} <= 0".format(variable)
+        assert isinstance(variable, int),\
+            "variable = {} is no int".format(variable)
+        assert variable > 0,\
+            "variable = {} <= 0".format(variable)
 
         # remove variable from old bucket
         self.buckets[self.breaks[variable]].remove(variable)
@@ -450,9 +477,12 @@ class Scores:
     def decrement_break_score(self, variable):
         """ Decrements the Break score of the variable and lowers it into the next lower bucket """
 
-        assert type(variable) == int, "variable = {} is no int".format(variable)
-        assert variable > 0, "variable = {} <= 0".format(variable)
-        assert variable in self.breaks, "variable = {} not listed in self.breaks".format(variable)
+        assert isinstance(variable, int),\
+            "variable = {} is no int".format(variable)
+        assert variable > 0,\
+            "variable = {} <= 0".format(variable)
+        assert variable in self.breaks,\
+            "variable = {} not listed in self.breaks".format(variable)
 
         # remove variable from old bucket
         self.buckets[self.breaks[variable]].remove(variable)
@@ -469,15 +499,23 @@ class Scores:
 
 
     def flip(self, variable, formula, assignment, falselist):
-        assert type(variable) == int, \
+        """ Update scoreboard with flipped variable
+
+        Positionals:
+            variable -- flipped variable
+            formula -- input formula
+            assignment -- current assignment
+            falselist -- current falselist
+        """
+        assert isinstance(variable, int), \
             "variable = {} :: {} is no int".format(variable, type(variable))
         assert variable > 0, "variable = {} <= 0".format(variable)
-        assert isinstance(formula,Formula), \
-            "formula = {} :: {} is no Formula".format(formula,type(formula))
-        assert isinstance(assignment,Assignment), \
-            "assignment = {} :: {} is no Assignment".format(formula,type(assignment))
-        assert isinstance(falselist,Falselist), \
-            "falselist = {} :: {} is no Falselist".format(formula,type(falselist))
+        assert isinstance(formula, Formula), \
+            "formula = {} :: {} is no Formula".format(formula, type(formula))
+        assert isinstance(assignment, Assignment), \
+            "assignment = {} :: {} is no Assignment".format(formula, type(assignment))
+        assert isinstance(falselist, Falselist), \
+            "falselist = {} :: {} is no Falselist".format(formula, type(falselist))
 
         # a[v] = -a[v]
         assignment.flip(variable)
@@ -496,7 +534,7 @@ class Scores:
                 # remove from falselist
                 falselist.remove(clause_idx)
                 # 'variable' now breaks this clause
-                self.increment_break_score(variable)    # TODO this line triggers the error
+                self.increment_break_score(variable)
                 # make 'variable' critical
                 self.crit_var[clause_idx] = variable
 
