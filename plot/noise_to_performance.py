@@ -44,10 +44,11 @@ def plot_noise_to_performance(in_filepath, figsize=(10,5), outfile=DEFAULT_OUTFI
             x='noise_param',
             y='runtime',
             data=data,
-            marker='o',
+            # marker='o',
             ax=ax,
             estimator=numpy.mean,
             legend='full',
+            color='g',
         )
 
         g = data.groupby('noise_param').apply(numpy.mean)

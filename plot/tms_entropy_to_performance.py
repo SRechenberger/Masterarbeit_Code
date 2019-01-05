@@ -67,6 +67,7 @@ def plot_tms_entropy_to_performance(
            #  hue='converged',
             data=data,
             marker='+',
+            alpha=0.9,
             ax=ax,
         )
         h_mean = numpy.mean(data['tms_entropy'])

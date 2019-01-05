@@ -57,7 +57,7 @@ def plot_path_entropy_to_performance(
                 x=metric,
                 y='runtime',
                 data=data,
-                marker='o',
+                marker='+',
                 ax=ax,
             )
             h_mean = numpy.mean(data[metric])

@@ -28,8 +28,8 @@ def plot_noise_to_entropy_overview(
     )
 
     xlims = dict(
-        WalkSAT=[0,1],
-        ProbSAT=[0,4],
+        WalkSAT=[-0.01,1.01],
+        ProbSAT=[-0.1,4.1],
     )
     ylims = dict(
         single_entropy=[3, 8],
@@ -62,7 +62,7 @@ def plot_noise_to_entropy_overview(
                 x='noise_param',
                 y=metric,
                 data=data,
-                # marker='o',
+                marker='+',
                 ax=ax,
                 alpha=0.8,
             )
