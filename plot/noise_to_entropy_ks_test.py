@@ -93,7 +93,7 @@ def plot_noise_to_entropy_ks_test(
                 label = lambda *args: dict()
 
             for color, alpha in zip(['b','g','r','k'], [0.01, 0.05, 0.1, 0.2]):
-                D = math.sqrt(-0.5*math.log(alpha/2)/100)
+                D = math.sqrt(-0.5*math.log(alpha/2)/200)
 
                 ax.axhline(
                     y=D,
@@ -103,7 +103,7 @@ def plot_noise_to_entropy_ks_test(
                 )
 
             ax.set_xlabel(f'${LABELS[solver]}$')
-            ax.set_ylabel(f'${LABELS["ks_stat"]}$')
+            ax.set_ylabel(f'$D$')
             ax.legend()#loc='upper left')
 
     seaborn.despine()
