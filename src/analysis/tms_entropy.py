@@ -10,14 +10,15 @@ Functions:
 
 import os
 import sqlite3
-import pandas
+
+from functools import partial
+import multiprocessing as mp
 
 import numpy as np
-import multiprocessing as mp
+import pandas
 
 import src.analysis.utils as utils
 
-from functools import partial
 
 CREATE_TMS_ENTROPY = """
 CREATE TABLE IF NOT EXISTS tms_entropy
@@ -118,7 +119,7 @@ def tms_entropy_values(in_filepath, only_convergent=True, verbose=False):
         DataFrame having the columns ['solver', 'noise_param', 'formula_id', 'tms_entropy']
     """
     results = []
-    for file in map(partial(os.path.join,in_filepath), os.listdir(in_filepath)):
+    for file in map(partial(os.path.join, in_filepath), os.listdir(in_filepath)):
         if verbose:
             print(f'Loading from {file}... ', end='', flush=True)
         with sqlite3.connect(file, timeout=30) as conn:
@@ -196,7 +197,7 @@ def tms_entropy_to_performance(folder, only_convergend=True):
                         f_id,
                         (10*(1-sat) if sat < 1 else 1) * runtime,
                         tms_entropy,
-                        converged, 
+                        converged,
                     )
                 )
 
@@ -204,4 +205,3 @@ def tms_entropy_to_performance(folder, only_convergend=True):
         results,
         columns=['formula_id', 'runtime', 'tms_entropy', 'converged'],
     )
-
