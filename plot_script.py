@@ -56,15 +56,15 @@ argparser.add_argument(
     '--noise_to_entropy_overview',
     type=str,
     nargs='+',
-    metavar=('FIELD', 'METRICS'),
+    metavar='FIELD',
     help='Plots figure to compare noise parameter and entropy for a specific field FIELD'
 )
 
 argparser.add_argument(
     '--path_entropy_to_performance',
     type=str,
-    nargs='+',
-    metavar=('FIELD', 'METRICS'),
+    nargs=1,
+    metavar='FIELD',
     help='Plots figure to compare entropy and performance'
 )
 
@@ -168,7 +168,7 @@ if __name__ == '__main__':
     if args.noise_to_entropy_overview:
         plot_noise_to_entropy_overview(
             args.data_folder,
-            args.noise_to_entropy_overview[1:],
+            metrics,
             figsize=args.figsize,
             outfile=outfile,
             field=args.noise_to_entropy_overview[0],
@@ -181,7 +181,7 @@ if __name__ == '__main__':
     if args.path_entropy_to_performance:
         plot_path_entropy_to_performance(
             args.data_folder,
-            args.noise_to_entropy_overview[1:],
+            metrics,
             figsize=args.figsize,
             outfile=outfile,
             field=args.path_entropy_to_performance[0],

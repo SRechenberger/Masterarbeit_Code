@@ -33,15 +33,22 @@ def plot_hamming_dist_to_state_entropy(
             walksat=[0.0, 0.4, 0.57, 1.0],
             probsat=[0.0, 2.3, 2.6, 4.0],
         ),
+        2: dict(
+            gsat=[0],
+        ),
+        3: dict(
+            walksat=[0.0, 0.4, 0.57, 1.0],
+            probsat=[0.0, 2.3, 2.6, 4.0],
+        ),
 
     }
 
     solvers = types[type_idx]
 
-    if type_idx in [0]:
+    if type_idx in [0,2,3]:
         entropy_label = LABELS['state_entropy']
 
-    elif type_idx in [1]:
+    elif type_idx in [1,3]:
         entropy_label = LABELS['state_entropy_square']
 
     seaborn.set()
@@ -54,11 +61,12 @@ def plot_hamming_dist_to_state_entropy(
         figsize=figsize,
         sharex=True,
         sharey=True,
+        squeeze=False,
     )
     fig.tight_layout()
 
     for y, (solver, noises) in enumerate(solvers.items()):
-        ax=axes[y]
+        ax=axes[0][y]
         line_drawn = False
         for noise in noises:
             file = os.path.join(filepath, SOLVER_LABELS[solver], f'{solver}-{noise}.db')
@@ -69,7 +77,7 @@ def plot_hamming_dist_to_state_entropy(
                 print('Done.')
             data['hamming_dist'] = data['hamming_dist'] / 512
             data['state_entropy'] = data['state_entropy'] * math.log(513, 2)
-            if type_idx == 1:
+            if type_idx in [1]:
                 data['state_entropy'] = 2 ** data['state_entropy']
 
 
@@ -88,7 +96,7 @@ def plot_hamming_dist_to_state_entropy(
                     x=x_extr,
                     linestyle=':',
                     color='g',
-                    label=f'$d = {x_extr}$'
+                    label=f'$d = {x_extr:.2f}$'
                 )
                 line_drawn = True
 
