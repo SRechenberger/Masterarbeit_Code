@@ -20,6 +20,7 @@ def plot_hamming_dist_to_state_entropy(
         outfile=DEFAULT_OUTFILE,
         figsize=(10, 3),
         verbose=False,
+        context='paper',
     ):
     xlim=[0,512]
     types = {
@@ -45,7 +46,7 @@ def plot_hamming_dist_to_state_entropy(
 
     seaborn.set()
     seaborn.set_style('ticks', {'axes.grid': True, 'grid.linestyle': '-'})
-    seaborn.set_context('paper')
+    seaborn.set_context(context)
 
     fig, axes = pyplt.subplots(
         1,

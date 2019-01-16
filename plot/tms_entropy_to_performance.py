@@ -18,6 +18,7 @@ def plot_tms_entropy_to_performance(
         outfile=DEFAULT_OUTFILE,
         figsize=(10, 12),
         verbose=False,
+        context='paper',
     ):
     solvers = ['GSAT', 'WalkSAT_Opt', 'ProbSAT_Opt']
 
@@ -48,7 +49,7 @@ def plot_tms_entropy_to_performance(
 
     seaborn.set()
     seaborn.set_style('ticks', {'axes.grid': True, 'grid.linestyle': '-'})
-    seaborn.set_context('paper')
+    seaborn.set_context(context)
     fig, axes = pyplt.subplots(
         1,
         len(solvers),

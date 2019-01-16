@@ -13,7 +13,7 @@ pyplt.rc(
 )
 
 
-def plot_noise_to_cond_entropy(in_filepath, figsize=(10,5), outfile=DEFAULT_OUTFILE, field='average', verbose=False):
+def plot_noise_to_cond_entropy(in_filepath, figsize=(10,5), outfile=DEFAULT_OUTFILE, field='average', verbose=False, context='paper'):
     solvers = ['WalkSAT', 'ProbSAT']
     xlims = dict(
         WalkSAT=[0,1],
@@ -42,7 +42,7 @@ def plot_noise_to_cond_entropy(in_filepath, figsize=(10,5), outfile=DEFAULT_OUTF
     # plot data
     seaborn.set()
     seaborn.set_style('ticks', {'axes.grid': True, 'grid.linestyle': '-'})
-    seaborn.set_context('paper')
+    seaborn.set_context(context)
     fig, axes = pyplt.subplots(1, 2, sharey=True, figsize=figsize)
     fig.tight_layout()
     for y, solver in enumerate(solvers):

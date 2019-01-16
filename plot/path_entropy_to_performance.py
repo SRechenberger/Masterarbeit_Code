@@ -20,6 +20,7 @@ def plot_path_entropy_to_performance(
         field='average',
         figsize=(10, 12),
         verbose=False,
+        context='paper',
     ):
     solvers = ['gsat', 'walksat', 'probsat']
 
@@ -39,7 +40,7 @@ def plot_path_entropy_to_performance(
 
     seaborn.set()
     seaborn.set_style('ticks', {'axes.grid': True, 'grid.linestyle': '-'})
-    seaborn.set_context('paper')
+    seaborn.set_context(context)
     fig, axes = pyplt.subplots(
         len(metrics),
         len(solvers),

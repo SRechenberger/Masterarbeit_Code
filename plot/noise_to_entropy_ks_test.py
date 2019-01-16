@@ -21,6 +21,7 @@ def plot_noise_to_entropy_ks_test(
         figsize=(10,12),
         outfile=DEFAULT_OUTFILE,
         field='average',
+        context='paper',
         verbose=False):
     solvers = ['WalkSAT', 'ProbSAT']
 
@@ -44,7 +45,7 @@ def plot_noise_to_entropy_ks_test(
 
     seaborn.set()
     seaborn.set_style('ticks', {'axes.grid': True, 'grid.linestyle': '-'})
-    seaborn.set_context('paper')
+    seaborn.set_context(context)
 
     fig, axes = pyplt.subplots(
         len(metrics),

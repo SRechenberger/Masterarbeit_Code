@@ -35,6 +35,12 @@ argparser.add_argument(
 )
 
 argparser.add_argument(
+    '--context',
+    type=str,
+    help='plot context'
+)
+
+argparser.add_argument(
     '--outfile',
     type=str,
     help='output file; default: plot.pdf'
@@ -49,16 +55,16 @@ argparser.add_argument(
 argparser.add_argument(
     '--noise_to_entropy_overview',
     type=str,
-    nargs=1,
-    metavar='FIELD',
+    nargs='+',
+    metavar=('FIELD', 'METRICS'),
     help='Plots figure to compare noise parameter and entropy for a specific field FIELD'
 )
 
 argparser.add_argument(
     '--path_entropy_to_performance',
     type=str,
-    nargs=1,
-    metavar='FIELD',
+    nargs='+',
+    metavar=('FIELD', 'METRICS'),
     help='Plots figure to compare entropy and performance'
 )
 
@@ -145,22 +151,29 @@ if __name__ == '__main__':
     else:
         metrics = ['single_entropy', 'joint_entropy', 'cond_entropy', 'mutual_information']
 
+    if args.context:
+        context = args.context
+    else:
+        context = 'paper'
+
     if args.noise_to_performance:
         plot_noise_to_performance(
             args.data_folder,
             figsize=args.figsize,
             outfile=outfile,
             verbose=args.verbose,
+            context=context,
         )
 
     if args.noise_to_entropy_overview:
         plot_noise_to_entropy_overview(
             args.data_folder,
-            metrics,
+            args.noise_to_entropy_overview[1:],
             figsize=args.figsize,
             outfile=outfile,
             field=args.noise_to_entropy_overview[0],
             verbose=args.verbose,
+            context=context,
         )
         if args.verbose:
             print('Done.')
@@ -168,11 +181,12 @@ if __name__ == '__main__':
     if args.path_entropy_to_performance:
         plot_path_entropy_to_performance(
             args.data_folder,
-            metrics,
+            args.noise_to_entropy_overview[1:],
             figsize=args.figsize,
             outfile=outfile,
             field=args.path_entropy_to_performance[0],
             verbose=args.verbose,
+            context=context,
         )
         if args.verbose:
             print('Done.')
@@ -185,6 +199,7 @@ if __name__ == '__main__':
             outfile=outfile,
             field=args.noise_to_entropy_ks_test[0],
             verbose=args.verbose,
+            context=context,
         )
         if args.verbose:
             print('Done.')
@@ -197,6 +212,7 @@ if __name__ == '__main__':
             outfile=outfile,
             field=args.entropy_distr[0],
             verbose=args.verbose,
+            context=context,
         )
         if args.verbose:
             print('Done.')
@@ -208,6 +224,7 @@ if __name__ == '__main__':
             outfile=outfile,
             figsize=args.figsize,
             verbose=args.verbose,
+            context=context,
         )
         if args.verbose:
             print('Done.')
@@ -224,6 +241,7 @@ if __name__ == '__main__':
             outfile=outfile,
             figsize=args.figsize,
             verbose=args.verbose,
+            context=context,
         )
         if args.verbose:
             print('Done.')
@@ -234,6 +252,7 @@ if __name__ == '__main__':
             outfile=outfile,
             figsize=args.figsize,
             verbose=args.verbose,
+            context=context,
         )
         if args.verbose:
             print('Done.')
@@ -244,6 +263,7 @@ if __name__ == '__main__':
             outfile=outfile,
             figsize=args.figsize,
             verbose=args.verbose,
+            context=context,
         )
         if args.verbose:
             print('Done.')
@@ -254,6 +274,7 @@ if __name__ == '__main__':
             figsize=args.figsize,
             outfile=outfile,
             verbose=args.verbose,
+            context=context,
         )
         if args.verbose:
             print('Done.')
