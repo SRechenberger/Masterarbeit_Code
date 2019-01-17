@@ -65,10 +65,7 @@ def plot_entropy_distr(
                 'skewnorm',
                 (gamma, mu, sigma),
             )
-            if context == 'paper':
-                lbl=r'$\mu = {:.2f}$, $\sigma = {:.2f}$, $\gamma = {:.2f}$, $D = {:.2f}$'.format(mu, sigma, gamma, D)
-            else:
-                lbl = r'${:.2f}$, ${:.2f}$, ${:.2f}$, ${:.2f}$'.format(mu, sigma, gamma, D)
+            lbl=r'$\mu = {:.2f}$, $\sigma = {:.2f}$, $\gamma = {:.2f}$'.format(mu, sigma, gamma)
 
 
             seaborn.distplot(
